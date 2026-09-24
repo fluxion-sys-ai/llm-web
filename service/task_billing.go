@@ -66,6 +66,12 @@ func LogTaskConsumption(c *gin.Context, info *relaycommon.RelayInfo, task *model
 		}
 	}
 	appendTaskLogInfo(task, other)
+	// The same routing detail the synchronous relays record: which channel was
+	// tried, and for a multi-key channel which key served it. Without it a task
+	// log names the provider but not the account, so a provider's invoice
+	// cannot be reconciled per key - and a key that is quietly failing or
+	// overcharging cannot be told from its neighbours.
+	AppendRelayLogAdminInfo(c, info, other)
 	attachQuotaSaturation(c, info, other)
 	model.RecordConsumeLog(c, info.UserId, model.RecordConsumeLogParams{
 		ChannelId: info.ChannelId,
