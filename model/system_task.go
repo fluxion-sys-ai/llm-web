@@ -265,6 +265,36 @@ func ClaimSystemTask(id int64, taskType string, runnerID string, lockUntil int64
 	return &task, true, nil
 }
 
+// TryHoldSystemLease takes, or renews, a lease named by type. It is the
+// whole-process cousin of the per-task locks below: work that runs on a timer
+// and must run on one node at a time asks for it every tick, and does nothing
+// on the ticks where it does not get it.
+//
+// The lease expires on a deadline rather than on a disconnect, so a node that
+// dies holds it for at most ttlSeconds more - pick a ttl of a few ticks, so a
+// slow pass does not lose the lease to its own neighbour.
+func TryHoldSystemLease(leaseType string, holder string, ttlSeconds int64) bool {
+	now := common.GetTimestamp()
+	lockUntil := now + ttlSeconds
+	acquired, _, err := acquireSystemTaskLock(leaseType, holder, holder, now, lockUntil)
+	if err != nil {
+		return false
+	}
+	if acquired {
+		return true
+	}
+	// Not acquired either because somebody else holds it, or because we do:
+	// renewing is the same statement, narrowed to our own name.
+	result := DB.Model(&SystemTaskLock{}).
+		Where("type = ? AND locked_by = ?", leaseType, holder).
+		Updates(map[string]any{
+			"task_id":      holder,
+			"locked_until": lockUntil,
+			"updated_at":   now,
+		})
+	return result.Error == nil && result.RowsAffected > 0
+}
+
 func acquireSystemTaskLock(taskType string, taskID string, lockedBy string, now int64, lockUntil int64) (bool, string, error) {
 	lock := &SystemTaskLock{
 		Type:        taskType,

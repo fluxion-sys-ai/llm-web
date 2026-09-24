@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -203,8 +204,18 @@ func StartFastTaskPolling() {
 	} else {
 		interval = 500 * time.Millisecond
 	}
+	// One node polls, not all of them. Billing is safe either way - a task's
+	// terminal transition is compare-and-set, so only one node ever settles it
+	// - but every node polling means the provider is asked once per node per
+	// tick, and a provider that rate-limits counts those.
+	//
+	// The lease is renewed on every tick by whoever holds it and expires a few
+	// ticks after a node stops, so losing the polling node costs one lease
+	// period of latency rather than the jobs themselves.
+	holder := fmt.Sprintf("%s-%s", common.NodeName, common.GetRandomString(8))
+	leaseTTL := int64(math.Ceil(fastPollLeaseTTL(interval)))
 	gopool.Go(func() {
-		common.SysLog(fmt.Sprintf("fast task polling started: tick=%s", interval))
+		common.SysLog(fmt.Sprintf("fast task polling started: tick=%s lease=%ds holder=%s", interval, leaseTTL, holder))
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for range ticker.C {
@@ -214,10 +225,24 @@ func StartFastTaskPolling() {
 						common.SysLog(fmt.Sprintf("fast task polling recovered: %v", r))
 					}
 				}()
+				if !model.TryHoldSystemLease(fastPollLeaseType, holder, leaseTTL) {
+					return
+				}
 				runFastTaskPollingOnce(context.Background())
 			}()
 		}
 	})
+}
+
+const fastPollLeaseType = "fast-task-poll"
+
+// fastPollLeaseTTL is how long the lease outlives the tick that took it: long
+// enough that a pass slower than one tick does not lose it, short enough that
+// another node takes over quickly when this one stops. Four ticks, and never
+// less than five seconds - a 500 ms tick would otherwise hand the lease around
+// on any hiccup.
+func fastPollLeaseTTL(interval time.Duration) float64 {
+	return math.Max(5, 4*interval.Seconds())
 }
 
 // runFastTaskPollingOnce polls the due tasks of fast channels, and only those.
