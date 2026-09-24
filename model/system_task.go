@@ -6,6 +6,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type SystemTaskStatus string
@@ -303,7 +304,19 @@ func acquireSystemTaskLock(taskType string, taskID string, lockedBy string, now 
 		LockedUntil: lockUntil,
 		UpdatedAt:   now,
 	}
-	if err := DB.Create(lock).Error; err == nil {
+	// Losing this race is the normal case, not a failure: every node that is
+	// not the poller tries and finds the lease taken. A plain Create turns that
+	// into a duplicate-key error, which GORM logs at error level once per node
+	// per cycle - pages of "postgres error SQLSTATE 23505" that mean the thing
+	// is working, and that bury the errors that do not.
+	//
+	// ON CONFLICT DO NOTHING says the same thing without raising: rows affected
+	// is one when we took the lease, zero when somebody already held it.
+	claimed := DB.Clauses(clause.OnConflict{DoNothing: true}).Create(lock)
+	if claimed.Error != nil {
+		return false, "", claimed.Error
+	}
+	if claimed.RowsAffected > 0 {
 		return true, "", nil
 	}
 
