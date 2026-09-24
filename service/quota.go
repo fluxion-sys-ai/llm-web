@@ -484,8 +484,8 @@ func checkAndSendQuotaNotify(relayInfo *relaycommon.RelayInfo, quota int, preCon
 			quotaTooLow = true
 		}
 		if quotaTooLow {
-			prompt := "您的额度即将用尽"
-			topUpLink := PaymentReturnURL("/wallet")
+			prompt := "Your credit balance is running low"
+			topUpLink := PaymentReturnURL("/profile/?tab=billing")
 
 			// 根据通知方式生成不同的内容格式
 			var content string
@@ -498,14 +498,14 @@ func checkAndSendQuotaNotify(relayInfo *relaycommon.RelayInfo, quota int, preCon
 
 			if notifyType == dto.NotifyTypeBark {
 				// Bark推送使用简短文本，不支持HTML
-				content = "{{value}}，剩余额度：{{value}}，请及时充值"
+				content = "{{value}}. Remaining balance: {{value}}. Please add credits."
 				values = []any{prompt, logger.FormatQuota(relayInfo.UserQuota)}
 			} else if notifyType == dto.NotifyTypeGotify {
-				content = "{{value}}，当前剩余额度为 {{value}}，请及时充值。"
+				content = "{{value}}. Your remaining balance is {{value}}. Please add credits."
 				values = []any{prompt, logger.FormatQuota(relayInfo.UserQuota)}
 			} else {
 				// 默认内容格式，适用于Email和Webhook（支持HTML）
-				content = "{{value}}，当前剩余额度为 {{value}}，为了不影响您的使用，请及时充值。<br/>充值链接：<a href='{{value}}'>{{value}}</a>"
+				content = "{{value}}. Your remaining balance is {{value}}. Add credits to keep generating without interruption.<br/>Add credits: <a href='{{value}}'>{{value}}</a>"
 				values = []any{prompt, logger.FormatQuota(relayInfo.UserQuota), topUpLink, topUpLink}
 			}
 
@@ -538,8 +538,8 @@ func checkAndSendSubscriptionQuotaNotify(relayInfo *relaycommon.RelayInfo) {
 			return
 		}
 
-		prompt := "您的订阅额度即将用尽"
-		topUpLink := PaymentReturnURL("/wallet")
+		prompt := "Your subscription credits are running low"
+		topUpLink := PaymentReturnURL("/profile/?tab=billing")
 
 		var content string
 		var values []any
@@ -549,13 +549,13 @@ func checkAndSendSubscriptionQuotaNotify(relayInfo *relaycommon.RelayInfo) {
 		}
 
 		if notifyType == dto.NotifyTypeBark {
-			content = "{{value}}，剩余额度：{{value}}，请及时充值"
+			content = "{{value}}. Remaining balance: {{value}}. Please add credits."
 			values = []any{prompt, logger.FormatQuota(int(remaining))}
 		} else if notifyType == dto.NotifyTypeGotify {
-			content = "{{value}}，当前剩余额度为 {{value}}，请及时充值。"
+			content = "{{value}}. Your remaining balance is {{value}}. Please add credits."
 			values = []any{prompt, logger.FormatQuota(int(remaining))}
 		} else {
-			content = "{{value}}，当前剩余额度为 {{value}}，为了不影响您的使用，请及时充值。<br/>充值链接：<a href='{{value}}'>{{value}}</a>"
+			content = "{{value}}. Your remaining balance is {{value}}. Add credits to keep generating without interruption.<br/>Add credits: <a href='{{value}}'>{{value}}</a>"
 			values = []any{prompt, logger.FormatQuota(int(remaining)), topUpLink, topUpLink}
 		}
 
