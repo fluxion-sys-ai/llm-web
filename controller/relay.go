@@ -856,7 +856,15 @@ func respondTaskSubmissionError(c *gin.Context, taskErr *taskdto.TaskError) {
 // respondTaskError 统一输出 Task 错误响应（含 429 限流提示改写）
 func respondTaskError(c *gin.Context, taskErr *taskdto.TaskError) {
 	if taskErr.StatusCode == http.StatusTooManyRequests {
-		taskErr.Message = "当前分组上游负载已饱和，请稍后再试"
+		// A busy provider is a wait, not a fault in the request, and the customer
+		// reads this. Whatever the upstream said is kept when it is a sentence
+		// rather than a JSON body, because "12 jobs queued, about 4 minutes" is
+		// worth more than "try again later".
+		upstream := strings.TrimSpace(taskErr.Message)
+		taskErr.Message = "The model is busy right now. Please try again in a moment."
+		if upstream != "" && !strings.HasPrefix(upstream, "{") && !strings.HasPrefix(upstream, "[") {
+			taskErr.Message += " (" + upstream + ")"
+		}
 	}
 	c.JSON(taskErr.StatusCode, taskErr)
 }
