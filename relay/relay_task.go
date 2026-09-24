@@ -523,7 +523,13 @@ func tryRealtimeFetch(task *model.Task, isOpenAIVideoAPI bool) []byte {
 		return nil
 	}
 
-	resp, err := adaptor.FetchTask(baseURL, channelModel.Key, task, proxy)
+	// The key that submitted the task, not the channel's key field - which is
+	// every key at once on a multi-key channel (model.InitTask).
+	fetchKey := channelModel.Key
+	if task.PrivateData.Key != "" {
+		fetchKey = task.PrivateData.Key
+	}
+	resp, err := adaptor.FetchTask(baseURL, fetchKey, task, proxy)
 	if err != nil || resp == nil {
 		return nil
 	}

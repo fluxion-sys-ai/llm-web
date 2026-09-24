@@ -230,7 +230,21 @@ func InitTask(platform constant.TaskPlatform, relayInfo *commonRelay.RelayInfo) 
 	properties := Properties{}
 	privateData := TaskPrivateData{}
 	if relayInfo != nil && relayInfo.ChannelMeta != nil {
-		if relayInfo.ChannelMeta.ChannelType == constant.ChannelTypeGemini ||
+		// Remember which key submitted this task.
+		//
+		// A multi-key channel picks a different key per request, but an async
+		// task belongs to the key that created it: most providers will not show
+		// job X to key B. Polling reads Channel.Key, which in multi-key mode is
+		// the whole newline-separated list, so without this the poll goes out
+		// with a key the provider has never seen - and the failure is silent,
+		// because a task that cannot be polled just never finishes.
+		//
+		// Everything downstream already prefers this field when it is set
+		// (service/task_polling.go updateVideoSingleTask, and the plugin
+		// adaptor's queryContext); upstream only ever filled it for Gemini and
+		// Vertex, which need a per-task key for their own reasons.
+		if relayInfo.ChannelMeta.ChannelIsMultiKey ||
+			relayInfo.ChannelMeta.ChannelType == constant.ChannelTypeGemini ||
 			relayInfo.ChannelMeta.ChannelType == constant.ChannelTypeVertexAi {
 			privateData.Key = relayInfo.ChannelMeta.ApiKey
 		}

@@ -351,12 +351,83 @@ func UpdateBatchTasks(ctx context.Context, adaptor BatchTaskPollingAdaptor, task
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		err := updateBatchTasks(ctx, adaptor, channelId, taskIds, taskM)
-		if err != nil {
-			logger.LogError(ctx, fmt.Sprintf("渠道 #%d 更新异步任务失败: %s", channelId, err.Error()))
+		// One batch call covers many tasks with one key, so tasks submitted by
+		// different keys of a multi-key channel cannot share a call: split them
+		// first and poll each group with its own key.
+		for _, group := range groupTaskIdsByKey(taskIds, taskM) {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			err := updateBatchTasks(ctx, adaptor, channelId, group, taskM)
+			if err != nil {
+				logger.LogError(ctx, fmt.Sprintf("渠道 #%d 更新异步任务失败: %s", channelId, err.Error()))
+			}
 		}
 	}
 	return nil
+}
+
+// groupTaskIdsByKey splits a channel's pending tasks by the key that submitted
+// them (model.InitTask records it for multi-key channels). Tasks with no key
+// recorded - everything from a single-key channel, and anything created before
+// that was pinned - stay in one group and poll with the channel's own key, so
+// the common case is exactly one group and one call, as before.
+func groupTaskIdsByKey(taskIds []string, taskM map[string]*model.Task) [][]string {
+	groups := make(map[string][]string)
+	order := make([]string, 0, 2)
+	for _, id := range taskIds {
+		key := ""
+		if task := taskM[id]; task != nil {
+			key = task.PrivateData.Key
+		}
+		if _, seen := groups[key]; !seen {
+			order = append(order, key)
+		}
+		groups[key] = append(groups[key], id)
+	}
+	out := make([][]string, 0, len(order))
+	for _, key := range order {
+		out = append(out, groups[key])
+	}
+	return out
+}
+
+// batchPollKey is the key to poll a group of tasks with: the one that submitted
+// them, or the channel's own when none was recorded.
+func batchPollKey(ch *model.Channel, tasks []*model.Task) string {
+	for _, task := range tasks {
+		if task != nil && task.PrivateData.Key != "" {
+			return task.PrivateData.Key
+		}
+	}
+	return firstEnabledKey(ch)
+}
+
+// firstEnabledKey is a usable single key for a channel, without rotating it.
+//
+// Channel.Key is every key joined by newlines in multi-key mode, so it must
+// never be sent upstream as-is. GetNextEnabledKey would return one key but also
+// advance the polling index, which would skew how new requests are spread; this
+// only reads. It is a fallback for a task with no key recorded - one created
+// before keys were pinned - which is a guess either way.
+func firstEnabledKey(ch *model.Channel) string {
+	if ch == nil {
+		return ""
+	}
+	if !ch.ChannelInfo.IsMultiKey {
+		return ch.Key
+	}
+	keys := ch.GetKeys()
+	for index, key := range keys {
+		if status, ok := ch.ChannelInfo.MultiKeyStatusList[index]; ok && status != common.ChannelStatusEnabled {
+			continue
+		}
+		return key
+	}
+	if len(keys) > 0 {
+		return keys[0]
+	}
+	return ""
 }
 
 func updateBatchTasks(ctx context.Context, adaptor BatchTaskPollingAdaptor, channelId int, taskIds []string, taskM map[string]*model.Task) error {
@@ -398,11 +469,12 @@ func updateBatchTasks(ctx context.Context, adaptor BatchTaskPollingAdaptor, chan
 			tasks = append(tasks, task)
 		}
 	}
+	pollKey := batchPollKey(ch, tasks)
 	info := &relaycommon.RelayInfo{}
 	info.ChannelMeta = &relaycommon.ChannelMeta{ChannelBaseUrl: baseURL}
-	info.ApiKey = ch.Key
+	info.ApiKey = pollKey
 	adaptor.Init(info)
-	resp, err := adaptor.FetchBatchTasks(baseURL, ch.Key, tasks, proxy)
+	resp, err := adaptor.FetchBatchTasks(baseURL, pollKey, tasks, proxy)
 	if err != nil {
 		common.SysLog(fmt.Sprintf("Get Task Do req error: %v", err))
 		return recordPollFailureForTasks(ctx, adaptor, tasks, pollClassTransport, 0, err.Error())
@@ -571,7 +643,9 @@ func updateVideoTasks(ctx context.Context, platform constant.TaskPlatform, chann
 	info.ChannelMeta = &relaycommon.ChannelMeta{
 		ChannelBaseUrl: cacheGetChannel.GetBaseURL(),
 	}
-	info.ApiKey = cacheGetChannel.Key
+	// Each task below is fetched with its own recorded key (updateVideoSingleTask);
+	// this only primes the adaptor, and must not be the whole key list.
+	info.ApiKey = firstEnabledKey(cacheGetChannel)
 	adaptor.Init(info)
 	disablePollingSleep := cacheGetChannel.GetOtherSettings().DisableTaskPollingSleep
 	for i, taskId := range taskIds {
