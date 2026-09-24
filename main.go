@@ -155,6 +155,9 @@ func main() {
 	// switch are enforced inside the runner and each handler's Enabled().
 	controller.RegisterScheduledSystemTasks()
 	service.StartSystemTaskRunner()
+	// Channels that asked to be polled quickly (setting.poll_interval_ms) are
+	// polled here rather than by the 15 s system-task scheduler.
+	service.StartFastTaskPolling()
 
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true

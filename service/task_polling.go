@@ -6,7 +6,9 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -132,6 +134,124 @@ type TaskPollSummary struct {
 // when the lease is lost) and, when report is non-nil, reports progress as
 // (processedPlatforms, totalPlatforms). It returns immediately if the task
 // adaptor factory has not been wired yet, to avoid a nil call during startup.
+// --- polling cadence, per channel -------------------------------------------
+//
+// The system-task scheduler runs every 15 seconds, measures intervals in whole
+// seconds and writes a task row per run. That is the right shape for a hosted
+// API where a job takes minutes: the tick is noise next to the work.
+//
+// It is the wrong shape for a provider we run ourselves. A few-step model
+// finishes a clip in about 17 seconds, and a 15 second tick is then most of
+// what the customer waits for - twice over, since both "started" and
+// "completed" wait for one. So a channel may declare its own cadence
+// (setting.poll_interval_ms) and is then polled by the loop below, at that
+// cadence, outside the scheduler. Channels that declare nothing are untouched.
+
+const defaultChannelPollInterval = 15 * time.Second
+const fastPollFloor = 100 * time.Millisecond
+
+var (
+	channelPollMu   sync.Mutex
+	channelPolledAt = map[int]time.Time{}
+)
+
+// channelPollInterval is what this channel asked for, or the scheduler's.
+func channelPollInterval(channelId int) time.Duration {
+	channel, err := model.CacheGetChannel(channelId)
+	if err != nil || channel == nil {
+		return defaultChannelPollInterval
+	}
+	if ms := channel.GetSetting().PollIntervalMs; ms > 0 {
+		interval := time.Duration(ms) * time.Millisecond
+		if interval < fastPollFloor {
+			return fastPollFloor
+		}
+		return interval
+	}
+	return defaultChannelPollInterval
+}
+
+// isFastChannel reports whether this channel is the fast loop's business.
+func isFastChannel(channelId int) bool {
+	return channelPollInterval(channelId) < defaultChannelPollInterval
+}
+
+// channelPollDue answers once per interval per channel, and records the answer.
+func channelPollDue(channelId int, now time.Time) bool {
+	interval := channelPollInterval(channelId)
+	channelPollMu.Lock()
+	defer channelPollMu.Unlock()
+	if last, seen := channelPolledAt[channelId]; seen && now.Sub(last) < interval {
+		return false
+	}
+	channelPolledAt[channelId] = now
+	return true
+}
+
+// StartFastTaskPolling polls channels that asked to be polled quickly. It costs
+// nothing while nothing is in flight: with no unfinished tasks the loop makes
+// one indexed count per tick and returns.
+func StartFastTaskPolling() {
+	if !constant.UpdateTask {
+		return
+	}
+	interval := fastPollFloor
+	if ms, err := strconv.Atoi(os.Getenv("TASK_POLL_FAST_MS")); err == nil && ms > 0 {
+		if candidate := time.Duration(ms) * time.Millisecond; candidate > interval {
+			interval = candidate
+		}
+	} else {
+		interval = 500 * time.Millisecond
+	}
+	gopool.Go(func() {
+		common.SysLog(fmt.Sprintf("fast task polling started: tick=%s", interval))
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for range ticker.C {
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						common.SysLog(fmt.Sprintf("fast task polling recovered: %v", r))
+					}
+				}()
+				runFastTaskPollingOnce(context.Background())
+			}()
+		}
+	})
+}
+
+// runFastTaskPollingOnce polls the due tasks of fast channels, and only those.
+func runFastTaskPollingOnce(ctx context.Context) {
+	if GetTaskAdaptorFunc == nil || !model.HasUnfinishedSyncTasks() {
+		return
+	}
+	now := time.Now()
+	platformTask := make(map[constant.TaskPlatform]map[int][]string)
+	taskM := make(map[string]*model.Task)
+	for _, task := range model.GetAllUnFinishSyncTasks(constant.TaskQueryLimit) {
+		upstreamID := task.GetUpstreamTaskID()
+		if upstreamID == "" || !isFastChannel(task.ChannelId) {
+			continue
+		}
+		if _, ok := platformTask[task.Platform]; !ok {
+			platformTask[task.Platform] = make(map[int][]string)
+		}
+		platformTask[task.Platform][task.ChannelId] = append(platformTask[task.Platform][task.ChannelId], upstreamID)
+		taskM[upstreamID] = task
+	}
+	for platform, channels := range platformTask {
+		for channelId := range channels {
+			if !channelPollDue(channelId, now) {
+				delete(channels, channelId)
+			}
+		}
+		if len(channels) == 0 {
+			continue
+		}
+		DispatchPlatformUpdate(ctx, platform, channels, taskM)
+	}
+}
+
 func RunTaskPollingOnce(ctx context.Context, report func(processed, total int)) TaskPollSummary {
 	summary := TaskPollSummary{}
 	if GetTaskAdaptorFunc == nil {
@@ -173,6 +293,9 @@ func RunTaskPollingOnce(ctx context.Context, report func(processed, total int)) 
 				// 统计失败的未完成任务
 				nullTaskIds = append(nullTaskIds, task.ID)
 				continue
+			}
+			if isFastChannel(task.ChannelId) {
+				continue // polled by StartFastTaskPolling, at its own cadence
 			}
 			taskM[upstreamID] = task
 			taskChannelM[task.ChannelId] = append(taskChannelM[task.ChannelId], upstreamID)

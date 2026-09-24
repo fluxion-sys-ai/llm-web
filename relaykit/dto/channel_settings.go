@@ -12,6 +12,12 @@ import (
 
 type ChannelSettings struct {
 	TaskPluginKey          string `json:"task_plugin_key,omitempty"`
+	// PollIntervalMs is how often this channel's unfinished tasks are polled.
+	// Zero keeps the system-task scheduler's cadence (15 s), which suits a
+	// hosted API that takes minutes. A provider that finishes in seconds can
+	// ask for less, and is then polled by the fast loop in
+	// service/task_polling.go instead of by the scheduler.
+	PollIntervalMs         int    `json:"poll_interval_ms,omitempty"`
 	ForceFormat            bool   `json:"force_format,omitempty"`
 	ThinkingToContent      bool   `json:"thinking_to_content,omitempty"`
 	Proxy                  string `json:"proxy"`
