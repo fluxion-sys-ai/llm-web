@@ -171,7 +171,8 @@ func FormatQuota(quota int) string {
 	case operation_setting.QuotaDisplayTypeTokens:
 		return fmt.Sprintf("%d", quota)
 	default:
-		return fmt.Sprintf("＄%.6f", q/common.QuotaPerUnit)
+		// A plain dollar sign: this string reaches customers in API errors.
+		return fmt.Sprintf("$%.2f", q/common.QuotaPerUnit)
 	}
 }
 
