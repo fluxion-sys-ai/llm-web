@@ -5,10 +5,30 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/smtp"
+	"os"
 	"slices"
 	"strings"
 	"time"
 )
+
+// smtpEhloName is the name this server announces in EHLO. Go's net/smtp says
+// "localhost", which Google's SMTP relay refuses outright ("421 4.7.0 Try
+// again later, closing connection. (EHLO)"); the client then falls back to
+// HELO, sees no extensions, and the operator is told the server does not
+// support STARTTLS. Announce something real instead: SMTP_EHLO_NAME, else the
+// domain the mail is from, else this host's name.
+func smtpEhloName() string {
+	if name := strings.TrimSpace(os.Getenv("SMTP_EHLO_NAME")); name != "" {
+		return name
+	}
+	if parts := strings.Split(SMTPFrom, "@"); len(parts) == 2 && parts[1] != "" {
+		return parts[1]
+	}
+	if host, err := os.Hostname(); err == nil && host != "" && host != "localhost" {
+		return host
+	}
+	return "localhost"
+}
 
 func generateMessageID() (string, error) {
 	split := strings.Split(SMTPFrom, "@")
@@ -52,12 +72,23 @@ func newSMTPClient(addr string) (*smtp.Client, error) {
 			_ = conn.Close()
 			return nil, err
 		}
+		if err := client.Hello(smtpEhloName()); err != nil {
+			_ = client.Close()
+			return nil, fmt.Errorf("SMTP server rejected EHLO %s: %w", smtpEhloName(), err)
+		}
 		return client, nil
 	}
 
 	client, err := smtp.Dial(addr)
 	if err != nil {
 		return nil, err
+	}
+
+	// Greet before anything asks about extensions: Extension() would otherwise
+	// greet as "localhost" and silently fall back to HELO.
+	if err := client.Hello(smtpEhloName()); err != nil {
+		_ = client.Close()
+		return nil, fmt.Errorf("SMTP server rejected EHLO %s: %w", smtpEhloName(), err)
 	}
 
 	if SMTPStartTLSEnabled {
