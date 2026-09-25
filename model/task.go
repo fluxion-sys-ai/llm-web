@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -415,6 +416,51 @@ func HasUnfinishedSyncTasks() bool {
 		Limit(1).
 		Pluck("id", &id).Error
 	return err == nil && id != 0
+}
+
+// ensureUniqueTaskIDIndex makes task_id unique, which everything already
+// assumes it is.
+//
+// GetByTaskId returns one row, the sidecar keys its own tables on task_id, and
+// a provider's callback is matched by it - but the column carried a plain index,
+// so the invariant was enforced by convention alone. Two rows with one task_id
+// would give whichever the planner returned first, differently in different
+// queries, and a duplicate submit would bill twice for one video.
+//
+// Partial on task_id <> ”: the column is documented as "不一定有" - not always
+// present - and a blank id is not an identity, so blanks are left out rather
+// than made to collide.
+//
+// It refuses rather than fails when the data already disagrees. A unique index
+// cannot be built over duplicates, and a migration that aborts would leave the
+// platform refusing to start over a hardening measure that was never load
+// bearing. So it counts first, says loudly what it found, and carries on -
+// which is the outcome an operator can act on.
+func ensureUniqueTaskIDIndex() error {
+	if common.UsingMainDatabase(common.DatabaseTypeMySQL) {
+		return nil
+	}
+	var duplicates int64
+	err := DB.Raw("SELECT COUNT(*) FROM (SELECT task_id FROM tasks" +
+		" WHERE task_id <> '' GROUP BY task_id HAVING COUNT(*) > 1) d").
+		Scan(&duplicates).Error
+	if err != nil {
+		common.SysLog(fmt.Sprintf("could not check tasks.task_id for duplicates: %v", err))
+		return nil
+	}
+	if duplicates > 0 {
+		common.SysError(fmt.Sprintf(
+			"tasks.task_id is not unique: %d values appear more than once, so the unique"+
+				" index was not created. Every lookup by task_id may return either row."+
+				" Resolve the duplicates and restart.", duplicates))
+		return nil
+	}
+	if err := DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_task_id_unique" +
+		" ON tasks (task_id) WHERE task_id <> ''").Error; err != nil {
+		// Not fatal for the same reason: this is a guard, not a requirement.
+		common.SysError(fmt.Sprintf("could not make tasks.task_id unique: %v", err))
+	}
+	return nil
 }
 
 // ensureUnfinishedTaskIndex creates the partial index the poll loop lives on.
