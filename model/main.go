@@ -371,6 +371,9 @@ func migrateDB() error {
 	if err != nil {
 		return err
 	}
+	if err := ensureUnfinishedTaskIndex(); err != nil {
+		return err
+	}
 	if err := InitializeUserAuthVersions(); err != nil {
 		return err
 	}

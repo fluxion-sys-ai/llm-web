@@ -12,6 +12,8 @@ import (
 	"github.com/QuantumNous/new-api/pkg/billingexpr"
 	commonRelay "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relaykit/dto"
+
+	"gorm.io/gorm"
 )
 
 type TaskStatus string
@@ -360,10 +362,24 @@ func TaskGetAllTasks(startIdx int, num int, queryParams SyncTaskQueryParams) []*
 	return tasks
 }
 
+// unfinishedTaskPredicate is what "still in flight" means, as SQL, in one
+// place. It is written once because idx_tasks_unfinished is a PARTIAL index on
+// exactly this text: Postgres only uses a partial index for a query it can
+// prove implies the index predicate, and the cheapest way to be sure of that
+// is for the two to be the same string. A query that spells the same condition
+// differently - "status NOT IN (\'FAILURE\',\'SUCCESS\')" says the same thing -
+// silently drops back to a sequential scan of the whole table.
+const unfinishedTaskPredicate = `progress <> '100%' AND status <> 'FAILURE' AND status <> 'SUCCESS'`
+
+// unfinishedTasks scopes a query to the tasks still in flight, via the partial
+// index. Callers add their own ordering and limit.
+func unfinishedTasks(tx *gorm.DB) *gorm.DB {
+	return tx.Where(unfinishedTaskPredicate)
+}
+
 func GetTimedOutUnfinishedTasks(cutoffUnix int64, limit int) []*Task {
 	var tasks []*Task
-	err := DB.Where("progress != ?", "100%").
-		Where("status NOT IN ?", []string{TaskStatusFailure, TaskStatusSuccess}).
+	err := unfinishedTasks(DB.Model(&Task{})).
 		Where("submit_time < ?", cutoffUnix).
 		Order("submit_time").
 		Limit(limit).
@@ -376,9 +392,7 @@ func GetTimedOutUnfinishedTasks(cutoffUnix int64, limit int) []*Task {
 
 func GetAllUnFinishSyncTasks(limit int) []*Task {
 	var tasks []*Task
-	var err error
-	// get all tasks progress is not 100%
-	err = DB.Where("progress != ?", "100%").Where("status != ?", TaskStatusFailure).Where("status != ?", TaskStatusSuccess).Limit(limit).Order("id").Find(&tasks).Error
+	err := unfinishedTasks(DB.Model(&Task{})).Limit(limit).Order("id").Find(&tasks).Error
 	if err != nil {
 		return nil
 	}
@@ -389,15 +403,37 @@ func GetAllUnFinishSyncTasks(limit int) []*Task {
 // still in progress. It is a cheap existence check (LIMIT 1) used to decide
 // whether the async_task_poll system task needs to run; when no task is pending
 // the scheduler skips creating a row entirely.
+//
+// "Cheap" is load-bearing and was not free: the fast poll loop asks this ten
+// times a second forever, and with no index for it each ask was a sequential
+// scan of every task ever created - worst precisely when the answer is no,
+// since LIMIT 1 can only stop early when it finds something. Hence the partial
+// index, which holds only the in-flight rows and so is empty when idle.
 func HasUnfinishedSyncTasks() bool {
 	var id int64
-	err := DB.Model(&Task{}).
-		Where("progress != ?", "100%").
-		Where("status != ?", TaskStatusFailure).
-		Where("status != ?", TaskStatusSuccess).
+	err := unfinishedTasks(DB.Model(&Task{})).
 		Limit(1).
 		Pluck("id", &id).Error
 	return err == nil && id != 0
+}
+
+// ensureUnfinishedTaskIndex creates the partial index the poll loop lives on.
+//
+// AutoMigrate cannot express it: a GORM index tag indexes a column, and what is
+// wanted here is the small set of rows matching unfinishedTaskPredicate. MySQL
+// has no partial indexes at all, so there it is skipped and the scan stands -
+// the deployment this matters for is Postgres.
+//
+// Not CONCURRENTLY: this runs during migration, before the node serves, and a
+// concurrent build cannot be wrapped in a transaction and leaves an invalid
+// index behind when it fails. The trade is that a second node starting up
+// against a very large tasks table blocks task writes while it builds. At the
+// sizes this index is for - it holds only unfinished rows - that is brief.
+func ensureUnfinishedTaskIndex() error {
+	if common.UsingMainDatabase(common.DatabaseTypeMySQL) {
+		return nil
+	}
+	return DB.Exec(`CREATE INDEX IF NOT EXISTS idx_tasks_unfinished ON tasks (id) WHERE ` + unfinishedTaskPredicate).Error
 }
 
 func GetByOnlyTaskId(taskId string) (*Task, bool, error) {

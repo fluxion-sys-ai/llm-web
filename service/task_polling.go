@@ -190,8 +190,16 @@ func channelPollDue(channelId int, now time.Time) bool {
 }
 
 // StartFastTaskPolling polls channels that asked to be polled quickly. It costs
-// nothing while nothing is in flight: with no unfinished tasks the loop makes
-// one indexed count per tick and returns.
+// one indexed existence check per tick while nothing is in flight, and nothing
+// else: no lease write, no transaction, no scan.
+//
+// That sentence used to be aspirational. The loop took the poll lease before
+// asking whether there was anything to poll, and taking the lease is a SELECT,
+// an INSERT and an UPDATE inside a transaction - so an idle platform spent
+// about eighteen hundred statements and twelve hundred row versions a minute,
+// on a one-row table, establishing ten times a second that there was nothing
+// to do. The order is now the other way round, which is also the right way
+// round: the cheap question first, and the lease only once the answer is yes.
 func StartFastTaskPolling() {
 	if !constant.UpdateTask {
 		return
@@ -209,13 +217,23 @@ func StartFastTaskPolling() {
 	// - but every node polling means the provider is asked once per node per
 	// tick, and a provider that rate-limits counts those.
 	//
-	// The lease is renewed on every tick by whoever holds it and expires a few
-	// ticks after a node stops, so losing the polling node costs one lease
-	// period of latency rather than the jobs themselves.
+	// The lease is renewed by its holder with half of it still to run, and
+	// expires a few ticks after a node stops, so losing the polling node costs
+	// one lease period of latency rather than the jobs themselves.
 	holder := fmt.Sprintf("%s-%s", common.NodeName, common.GetRandomString(8))
 	leaseTTL := int64(math.Ceil(fastPollLeaseTTL(interval)))
+	lease := &pollLease{
+		// Renew at half the lease rather than on every tick. A 100 ms tick
+		// against a 5 second lease renewed forty-nine times more often than it
+		// needed to, and half a lease is ample slack for a pass that runs long.
+		renewAfter: time.Duration(leaseTTL) * time.Second / 2,
+		// A node that lost the race waits a second. The lease cannot come free
+		// before it expires, so asking at tick speed is noise - and a second is
+		// still well inside the lease, so a takeover stays prompt.
+		retryAfter: time.Second,
+	}
 	gopool.Go(func() {
-		common.SysLog(fmt.Sprintf("fast task polling started: tick=%s lease=%ds holder=%s", interval, leaseTTL, holder))
+		common.SysLog(fmt.Sprintf("fast task polling started: tick=%s lease=%ds renew=%s holder=%s", interval, leaseTTL, lease.renewAfter, holder))
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for range ticker.C {
@@ -225,7 +243,17 @@ func StartFastTaskPolling() {
 						common.SysLog(fmt.Sprintf("fast task polling recovered: %v", r))
 					}
 				}()
-				if !model.TryHoldSystemLease(fastPollLeaseType, holder, leaseTTL) {
+				// Nothing in flight is the common case for a hosted API, and
+				// this is the whole cost of discovering it: one lookup in a
+				// partial index that holds only the unfinished tasks, and so
+				// is empty exactly when the answer is no.
+				if !model.HasUnfinishedSyncTasks() {
+					return
+				}
+				held := lease.held(time.Now(), func() bool {
+					return model.TryHoldSystemLease(fastPollLeaseType, holder, leaseTTL)
+				})
+				if !held {
 					return
 				}
 				runFastTaskPollingOnce(context.Background())
@@ -235,6 +263,39 @@ func StartFastTaskPolling() {
 }
 
 const fastPollLeaseType = "fast-task-poll"
+
+// pollLease remembers whether this node holds the fast-poll lease, so that the
+// loop can believe it between renewals instead of re-establishing it ten times
+// a second. Every field is touched only from the polling goroutine.
+type pollLease struct {
+	renewAfter  time.Duration
+	retryAfter  time.Duration
+	holding     bool
+	nextAttempt time.Time
+}
+
+// held reports whether this node may poll on this tick. It calls tryHold only
+// when the lease is due - to renew it if we hold it, to try for it if we do
+// not - and otherwise answers from what it already knows.
+//
+// Believing a lease between renewals is safe because the renewal happens with
+// half the lease still to run: to keep polling after somebody else has taken
+// over, this node would have to be stopped for longer than that and then
+// resume, and one lease period of two pollers costs duplicate provider
+// requests, not duplicate billing - a task's terminal transition is
+// compare-and-set, so only one node ever settles it.
+func (l *pollLease) held(now time.Time, tryHold func() bool) bool {
+	if now.Before(l.nextAttempt) {
+		return l.holding
+	}
+	l.holding = tryHold()
+	if l.holding {
+		l.nextAttempt = now.Add(l.renewAfter)
+	} else {
+		l.nextAttempt = now.Add(l.retryAfter)
+	}
+	return l.holding
+}
 
 // fastPollLeaseTTL is how long the lease outlives the tick that took it: long
 // enough that a pass slower than one tick does not lose it, short enough that
@@ -247,7 +308,9 @@ func fastPollLeaseTTL(interval time.Duration) float64 {
 
 // runFastTaskPollingOnce polls the due tasks of fast channels, and only those.
 func runFastTaskPollingOnce(ctx context.Context) {
-	if GetTaskAdaptorFunc == nil || !model.HasUnfinishedSyncTasks() {
+	// The caller has already established that something is unfinished; asking
+	// again here would only repeat that query on every busy tick.
+	if GetTaskAdaptorFunc == nil {
 		return
 	}
 	now := time.Now()
