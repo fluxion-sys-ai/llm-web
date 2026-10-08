@@ -135,3 +135,48 @@ func TestTaskLogDTOKeepsFailureReasonAndDoesNotMarkPluginTaskLegacy(t *testing.T
 	assert.Empty(t, pluginView.ResultURL)
 	assert.Empty(t, pluginView.FailReason)
 }
+
+func TestTaskDataHidesTheUpstreamProviderFromCustomers(t *testing.T) {
+	task := &model.Task{
+		TaskID:     "task_video",
+		Platform:   "byteplus",
+		Status:     model.TaskStatusSuccess,
+		Properties: model.Properties{OriginModelName: "Seedance-2.5"},
+	}
+	task.SetData(map[string]any{
+		"id":     "cgt-20260927051904-c858p",
+		"model":  "dreamina-seedance-2-5-260628",
+		"prompt": "a cat on a wall",
+		"ratio":  "21:9",
+		"status": "succeeded",
+		"content": map[string]any{
+			"video_url": "https://ark-acg-ap-southeast-1.tos-ap-southeast-1.volces.com/dreamina-seedance-2-5/3001199553/Video/x.mp4",
+		},
+		"frames": []any{"https://provider.example/a.png", "not-a-url"},
+	})
+	stored := string(task.Data)
+
+	userView := tasksToDto([]*model.Task{task}, false, common.RoleCommonUser)[0]
+	var seen map[string]any
+	require.NoError(t, common.Unmarshal(userView.Data, &seen))
+
+	// The model a customer sees is the one they bought, not the provider's SKU.
+	assert.Equal(t, "Seedance-2.5", seen["model"])
+	// Nothing that names or links to the provider survives, at any depth.
+	assert.NotContains(t, string(userView.Data), "dreamina")
+	assert.NotContains(t, string(userView.Data), "volces.com")
+	assert.NotContains(t, string(userView.Data), "://")
+	assert.Equal(t, map[string]any{}, seen["content"], "a URL-only object is left empty, not removed")
+	assert.Equal(t, []any{"not-a-url"}, seen["frames"], "URLs inside arrays go too")
+	// What the customer's own history is built from is untouched.
+	assert.Equal(t, "a cat on a wall", seen["prompt"])
+	assert.Equal(t, "21:9", seen["ratio"])
+	assert.Equal(t, "succeeded", seen["status"])
+
+	// An admin keeps the record whole, and reading it as a customer did not
+	// damage the stored row.
+	adminView := tasksToDto([]*model.Task{task}, false, common.RoleAdminUser)[0]
+	assert.Contains(t, string(adminView.Data), "dreamina-seedance-2-5-260628")
+	assert.Contains(t, string(adminView.Data), "volces.com")
+	assert.JSONEq(t, stored, string(task.Data))
+}

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -394,6 +395,69 @@ func GetUserTask(c *gin.Context) {
 	common.ApiSuccess(c, pageInfo)
 }
 
+// taskDataForCustomer is a task's payload with the upstream provider's identity
+// taken out of it. The payload is stored exactly as the provider returned it,
+// which is what a support question or a billing dispute needs, and is not what
+// was sold: it names the provider's own model and links to the provider's
+// storage. A customer sees the model they bought and no absolute URLs; an admin
+// keeps the record whole.
+func taskDataForCustomer(task *model.Task) json.RawMessage {
+	if len(task.Data) == 0 {
+		return task.Data
+	}
+	var payload map[string]any
+	if err := common.Unmarshal(task.Data, &payload); err != nil {
+		// This exists because the contents are not ours to hand back, so a
+		// payload that cannot be read is withheld rather than forwarded.
+		return nil
+	}
+	if _, named := payload["model"]; named {
+		payload["model"] = task.Properties.OriginModelName
+	}
+	cleaned, err := common.Marshal(withoutAbsoluteURLs(payload, 0))
+	if err != nil {
+		return nil
+	}
+	return cleaned
+}
+
+// withoutAbsoluteURLs returns a decoded payload with every absolute URL removed,
+// at any depth. A provider's result link carries its hostname and our account
+// identifier in the path, and nothing a customer is shown is fetched from it -
+// the platform serves its own copy - so the whole class of value goes, rather
+// than a list of hosts that would need extending for every provider we add.
+func withoutAbsoluteURLs(node any, depth int) any {
+	if depth > 8 {
+		return node
+	}
+	switch value := node.(type) {
+	case string:
+		if strings.Contains(value, "://") {
+			return nil
+		}
+		return value
+	case map[string]any:
+		for key, child := range value {
+			cleaned := withoutAbsoluteURLs(child, depth+1)
+			if cleaned == nil {
+				delete(value, key)
+				continue
+			}
+			value[key] = cleaned
+		}
+		return value
+	case []any:
+		kept := value[:0]
+		for _, child := range value {
+			if cleaned := withoutAbsoluteURLs(child, depth+1); cleaned != nil {
+				kept = append(kept, cleaned)
+			}
+		}
+		return kept
+	}
+	return node
+}
+
 func tasksToDto(tasks []*model.Task, fillUser bool, viewerRole int) []*dto.TaskDto {
 	var userIDMap map[int]*model.UserBase
 	if fillUser {
@@ -422,6 +486,9 @@ func tasksToDto(tasks []*model.Task, fillUser bool, viewerRole int) []*dto.TaskD
 			if taskFailReasonIsLegacyResultURL(task.FailReason) {
 				item.FailReason = ""
 			}
+		}
+		if viewerRole < common.RoleAdminUser {
+			item.Data = taskDataForCustomer(task)
 		}
 		if viewerRole >= common.RoleAdminUser {
 			adminInfo := &dto.TaskAdminInfo{}
