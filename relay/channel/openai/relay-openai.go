@@ -24,13 +24,29 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 		return nil
 	}
 
-	if !forceFormat && !thinkToContent {
+	// A mapped model answers under the upstream's name, because model_mapping is
+	// applied to the request and never to the response. Clients copy the model
+	// out of a reply and send it back, and that name is not one this gateway
+	// accepts, so the reply reports what was asked for. Conditional because it
+	// costs a parse per chunk, which only a mapped model should pay.
+	renameModel := info.HasChannelMeta() && info.IsModelMapped && info.GetOriginModelName() != ""
+
+	if !forceFormat && !thinkToContent && !renameModel {
 		return helper.StringData(c, data)
 	}
 
 	var lastStreamResponse dto.ChatCompletionsStreamResponse
 	if err := common.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
+		if renameModel && !forceFormat && !thinkToContent {
+			// Only the model name was being rewritten, and a chunk that does not
+			// parse has none to rewrite. Forwarding it unchanged keeps the stream
+			// behaving as it did before this rename existed.
+			return helper.StringData(c, data)
+		}
 		return err
+	}
+	if renameModel {
+		lastStreamResponse.Model = info.GetOriginModelName()
 	}
 
 	if !thinkToContent {
@@ -310,15 +326,28 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 
 	applyUsagePostProcessing(info, &simpleResponse.Usage, responseBody)
 
+	// See sendStreamData: the reply reports the model the client asked for, not
+	// the one model_mapping chose upstream.
+	renameModel := info.HasChannelMeta() && info.IsModelMapped &&
+		info.GetOriginModelName() != "" && info.GetOriginModelName() != simpleResponse.Model
+	if renameModel {
+		simpleResponse.Model = info.GetOriginModelName()
+	}
+
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
-		if usageModified {
+		if usageModified || renameModel {
 			var bodyMap map[string]any
 			err = common.Unmarshal(responseBody, &bodyMap)
 			if err != nil {
 				return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 			}
-			bodyMap["usage"] = simpleResponse.Usage
+			if usageModified {
+				bodyMap["usage"] = simpleResponse.Usage
+			}
+			if renameModel {
+				bodyMap["model"] = simpleResponse.Model
+			}
 			responseBody, _ = common.Marshal(bodyMap)
 		}
 		if forceFormat {
