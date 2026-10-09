@@ -48,6 +48,32 @@ export function normalizeHref(href: string): string {
     : withoutQuery
 }
 
+export function isTopNavActive(pathname: string, href: string): boolean {
+  const current = normalizeHref(pathname)
+  const destination = normalizeHref(href)
+
+  if (destination === '/pricing') {
+    return (
+      (current === '/pricing' || current.startsWith('/pricing/')) &&
+      current !== '/pricing/overview'
+    )
+  }
+
+  if (destination === '/blog') {
+    return (
+      current === '/blog' ||
+      current.startsWith('/blog/') ||
+      current === '/docs' ||
+      current.startsWith('/docs/')
+    )
+  }
+
+  return (
+    current === destination ||
+    (destination === '/dashboard' && current.startsWith('/dashboard/'))
+  )
+}
+
 /**
  * Check if a navigation item is active
  * @param href - Current URL
@@ -87,8 +113,9 @@ export function checkIsActive(
         }
         return false
       })
-    )
+    ) {
       return true
+    }
   }
 
   // For regular link items, check the item's URL

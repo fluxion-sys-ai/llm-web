@@ -49,10 +49,10 @@ export function AppSidebar() {
   const shouldReduce = useReducedMotion()
 
   return (
-    <Sidebar collapsible={collapsible} variant={variant}>
+    <Sidebar collapsible={collapsible} variant={variant} className='bg-sidebar'>
       {view && <SidebarViewHeader view={view} />}
 
-      <SidebarContent className='py-2'>
+      <SidebarContent className='gap-1 py-3'>
         <AnimatePresence mode='wait' initial={false}>
           <motion.div
             key={key}

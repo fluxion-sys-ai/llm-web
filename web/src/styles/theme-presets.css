@@ -32,6 +32,11 @@ For commercial licensing, please contact support@quantumnous.com
  *   blocks so an explicit user choice overrides the preset's default radius.
  */
 
+/* Explicit color presets keep links and emphasis in their own palette. */
+[data-theme-preset] {
+  --brand: var(--primary);
+}
+
 /* ── Underground ──────────────────────────────────────────────────────── */
 [data-theme-preset='underground'] {
   --primary: oklch(0.5315 0.0694 156.19);

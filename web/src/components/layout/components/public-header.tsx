@@ -21,10 +21,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { FluxionWordmark } from '@/components/fluxion-wordmark'
 import { NotificationPopover } from '@/components/notification-popover'
 import { ProfileDropdown } from '@/components/profile-dropdown'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNotifications } from '@/hooks/use-notifications'
@@ -34,8 +33,12 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { defaultTopNavLinks } from '../config/top-nav.config'
+import { isTopNavActive } from '../lib/url-utils'
 import type { TopNavLink } from '../types'
+import { GpuNavMenu } from './gpu-nav-menu'
 import { HeaderLogo } from './header-logo'
+import { ModelsNavMenu } from './models-nav-menu'
+import { ResourcesNavMenu } from './resources-nav-menu'
 
 const AUTH_PROMPT_SECONDS = 5
 
@@ -48,8 +51,6 @@ export interface PublicHeaderProps {
   navLinks?: TopNavLink[]
   mobileLinks?: TopNavLink[]
   navContent?: React.ReactNode
-  showThemeSwitch?: boolean
-  showLanguageSwitcher?: boolean
   logo?: React.ReactNode
   siteName?: string
   homeUrl?: string
@@ -64,8 +65,6 @@ export interface PublicHeaderProps {
 export function PublicHeader(props: PublicHeaderProps) {
   const {
     navLinks = defaultTopNavLinks,
-    showThemeSwitch = true,
-    showLanguageSwitcher = true,
     logo: customLogo,
     siteName: customSiteName,
     homeUrl = '/',
@@ -75,7 +74,6 @@ export function PublicHeader(props: PublicHeaderProps) {
 
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [authPromptTarget, setAuthPromptTarget] =
     useState<AuthPromptTarget | null>(null)
@@ -97,13 +95,6 @@ export function PublicHeader(props: PublicHeaderProps) {
   const isAuthenticated = !!user
   const displaySiteName = customSiteName || systemName
   const links = dynamicLinks.length > 0 ? dynamicLinks : navLinks
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : ''
@@ -175,53 +166,82 @@ export function PublicHeader(props: PublicHeaderProps) {
 
   return (
     <>
-      <header className='pointer-events-none fixed inset-x-0 top-0 z-50'>
-        <div
-          className={cn(
-            'pointer-events-auto mx-auto transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
-            scrolled ? 'max-w-[52rem] px-3 pt-3' : 'max-w-7xl px-4 pt-0 md:px-6'
-          )}
-        >
-          <nav
-            className={cn(
-              'flex items-center justify-between transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]',
-              scrolled
-                ? 'bg-background/60 ring-border/50 h-12 rounded-2xl pr-1.5 pl-4 shadow-[0_2px_16px_-6px_rgba(0,0,0,0.08),0_0_0_0.5px_rgba(0,0,0,0.02)] ring-[0.5px] backdrop-blur-2xl dark:shadow-[0_2px_16px_-6px_rgba(0,0,0,0.4)]'
-                : 'h-16 px-2'
-            )}
-          >
+      <header className='border-border bg-background/80 fixed inset-x-0 top-0 z-50 border-b backdrop-blur-md'>
+        <div className='mx-auto w-full max-w-(--page-max) px-6'>
+          <nav className='flex h-14 items-center gap-6'>
             {/* Logo */}
             <Link
               to={homeUrl}
               className='group flex shrink-0 items-center gap-2.5'
             >
-              <div className='flex size-7 shrink-0 items-center justify-center transition-all duration-300 group-hover:scale-105'>
+              <div className='flex size-7 shrink-0 items-center justify-center transition-opacity duration-150 group-hover:opacity-80'>
                 {loading ? (
                   <Skeleton className='size-full rounded-lg' />
-                ) : customLogo ? (
-                  customLogo
                 ) : (
-                  <HeaderLogo
-                    src={systemLogo}
-                    loading={loading}
-                    logoLoaded={logoLoaded}
-                    className='size-full rounded-lg object-contain'
-                  />
+                  customLogo || (
+                    <HeaderLogo
+                      src={systemLogo}
+                      loading={loading}
+                      logoLoaded={logoLoaded}
+                      className='size-full rounded-lg object-contain'
+                    />
+                  )
                 )}
               </div>
-              <span className='text-sm font-semibold tracking-tight'>
-                {loading ? <Skeleton className='h-4 w-16' /> : displaySiteName}
-              </span>
+              {loading ? (
+                <Skeleton className='h-4 w-24' />
+              ) : (
+                <FluxionWordmark name={displaySiteName} className='text-lg' />
+              )}
             </Link>
 
             {/* Desktop nav */}
-            <div className='hidden items-center gap-0.5 sm:flex'>
-              {links.map((link, i) => {
-                const isActive = pathname === link.href
+            <div className='hidden items-center gap-0.5 whitespace-nowrap lg:flex'>
+              {links.map((link) => {
+                const isActive = isTopNavActive(pathname, link.href)
+                if (
+                  link.href === '/pricing' &&
+                  !link.external &&
+                  !link.disabled &&
+                  !link.requiresAuth
+                ) {
+                  return (
+                    <ModelsNavMenu
+                      key={`${link.href}:${link.title}`}
+                      active={isActive}
+                    />
+                  )
+                }
+                if (
+                  link.href === '/gpu' &&
+                  !link.external &&
+                  !link.disabled &&
+                  !link.requiresAuth
+                ) {
+                  return (
+                    <GpuNavMenu
+                      key={`${link.href}:${link.title}`}
+                      active={isActive}
+                    />
+                  )
+                }
+                if (
+                  link.href === '/blog' &&
+                  !link.external &&
+                  !link.disabled &&
+                  !link.requiresAuth
+                ) {
+                  return (
+                    <ResourcesNavMenu
+                      key={`${link.href}:${link.title}`}
+                      active={isActive}
+                    />
+                  )
+                }
                 if (link.external) {
                   return (
                     <a
-                      key={i}
+                      key={`${link.href}:${link.title}`}
                       href={link.href}
                       target='_blank'
                       rel='noopener noreferrer'
@@ -239,8 +259,10 @@ export function PublicHeader(props: PublicHeaderProps) {
                 }
                 return (
                   <Link
-                    key={i}
+                    key={`${link.href}:${link.title}`}
                     to={link.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    activeOptions={{ exact: true }}
                     disabled={link.disabled}
                     onClick={(event) => handleNavLinkClick(event, link)}
                     className={cn(
@@ -255,15 +277,10 @@ export function PublicHeader(props: PublicHeaderProps) {
                   </Link>
                 )
               })}
+            </div>
 
-              {(showLanguageSwitcher ||
-                showThemeSwitch ||
-                showNotifications) && (
-                <div className='bg-border/40 mx-2 h-4 w-px' />
-              )}
-
-              {showLanguageSwitcher && <LanguageSwitcher />}
-              {showThemeSwitch && <ThemeSwitch />}
+            {/* Desktop actions */}
+            <div className='ml-auto hidden shrink-0 items-center gap-0.5 lg:flex'>
               {showNotifications && (
                 <NotificationPopover
                   open={notifications.popoverOpen}
@@ -279,27 +296,31 @@ export function PublicHeader(props: PublicHeaderProps) {
 
               {showAuthButtons && (
                 <>
-                  <div className='bg-border/40 mx-1 h-4 w-px' />
+                  {showNotifications && (
+                    <div className='bg-border/40 mx-1 h-4 w-px' />
+                  )}
                   {loading ? (
                     <Skeleton className='h-8 w-20 rounded-lg' />
-                  ) : isAuthenticated ? (
-                    <ProfileDropdown />
                   ) : (
-                    <Button
-                      size='sm'
-                      className='h-8 rounded-lg px-3.5 text-xs font-medium'
-                      render={<Link to='/sign-in' />}
-                    >
-                      {t('Sign in')}
-                    </Button>
+                    <>
+                      {isAuthenticated && <ProfileDropdown />}
+                      {!isAuthenticated && (
+                        <Button
+                          size='sm'
+                          className='h-9 rounded-lg px-4 text-sm font-medium'
+                          render={<Link to='/sign-in' preload={false} />}
+                        >
+                          {t('Sign in')}
+                        </Button>
+                      )}
+                    </>
                   )}
                 </>
               )}
             </div>
 
             {/* Mobile: compact actions + hamburger */}
-            <div className='flex items-center gap-2 sm:hidden'>
-              {showThemeSwitch && <ThemeSwitch />}
+            <div className='ml-auto flex items-center gap-2 lg:hidden'>
               {showAuthButtons && !loading && isAuthenticated && (
                 <ProfileDropdown />
               )}
@@ -339,17 +360,63 @@ export function PublicHeader(props: PublicHeaderProps) {
 
       {/* Mobile full-screen overlay */}
       <div
+        inert={!mobileOpen}
         className={cn(
-          'bg-background/98 fixed inset-0 z-40 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] sm:pointer-events-none sm:hidden',
+          'bg-background/98 fixed inset-0 z-40 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:pointer-events-none lg:hidden',
           mobileOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0'
         )}
       >
-        <div className='flex h-full flex-col justify-between px-8 pt-20 pb-10'>
+        <div className='mx-auto flex h-full w-full max-w-(--page-max) flex-col justify-between gap-8 overflow-y-auto px-6 pt-20 pb-10'>
           <nav className='flex flex-col gap-1'>
             {links.map((link, i) => {
-              const isActive = pathname === link.href
+              const isActive = isTopNavActive(pathname, link.href)
+              if (
+                link.href === '/pricing' &&
+                !link.external &&
+                !link.disabled &&
+                !link.requiresAuth
+              ) {
+                return mobileOpen ? (
+                  <ModelsNavMenu
+                    key={`${link.href}:${link.title}`}
+                    mobile
+                    active={isActive}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                ) : null
+              }
+              if (
+                link.href === '/gpu' &&
+                !link.external &&
+                !link.disabled &&
+                !link.requiresAuth
+              ) {
+                return mobileOpen ? (
+                  <GpuNavMenu
+                    key={`${link.href}:${link.title}`}
+                    mobile
+                    active={isActive}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                ) : null
+              }
+              if (
+                link.href === '/blog' &&
+                !link.external &&
+                !link.disabled &&
+                !link.requiresAuth
+              ) {
+                return mobileOpen ? (
+                  <ResourcesNavMenu
+                    key={`${link.href}:${link.title}`}
+                    mobile
+                    active={isActive}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                ) : null
+              }
               const linkClassName = cn(
                 'flex items-center gap-3 py-3 text-base font-medium tracking-tight transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                 mobileOpen
@@ -364,7 +431,7 @@ export function PublicHeader(props: PublicHeaderProps) {
               if (link.external) {
                 return (
                   <a
-                    key={i}
+                    key={`${link.href}:${link.title}`}
                     href={link.href}
                     target='_blank'
                     rel='noopener noreferrer'
@@ -380,8 +447,10 @@ export function PublicHeader(props: PublicHeaderProps) {
               }
               return (
                 <Link
-                  key={i}
+                  key={`${link.href}:${link.title}`}
                   to={link.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  activeOptions={{ exact: true }}
                   disabled={link.disabled}
                   onClick={(event) => handleNavLinkClick(event, link, true)}
                   className={linkClassName}
@@ -405,6 +474,7 @@ export function PublicHeader(props: PublicHeaderProps) {
             {showAuthButtons && (
               <Link
                 to={isAuthenticated ? '/dashboard' : '/sign-in'}
+                preload={false}
                 onClick={() => setMobileOpen(false)}
                 className='bg-foreground text-background inline-flex h-10 items-center justify-center rounded-lg text-sm font-medium transition-opacity hover:opacity-90 active:opacity-80'
               >

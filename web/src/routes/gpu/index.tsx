@@ -16,8 +16,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export type AboutResponse = {
-  success: boolean
-  message: string
-  data?: string
-}
+import { createFileRoute } from '@tanstack/react-router'
+import z from 'zod'
+
+import { GpuCatalogPage } from '@/features/gpu'
+import { gpuCatalog } from '@/features/gpu/data'
+
+const gpuSearchSchema = z.object({
+  gpu: z
+    .enum(gpuCatalog.map((gpu) => gpu.id))
+    .optional()
+    .catch(undefined),
+})
+
+export const Route = createFileRoute('/gpu/')({
+  validateSearch: gpuSearchSchema,
+  component: GpuCatalogPage,
+})

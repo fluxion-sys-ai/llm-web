@@ -19,6 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 // Static translation keys that don't get picked up by the t('...') regex.
 // These cover dynamic labels (e.g. constants, configs) that are passed into t at runtime.
 export const STATIC_I18N_KEYS = [
+  // Homepage copy rendered by Trans with emphasis.
+  'A <strong>specialized inference engine</strong> for every model–GPU pair.',
   'Account deletion',
   // Model management and metadata synchronization
   'No matching channels',
@@ -51,6 +53,14 @@ export const STATIC_I18N_KEYS = [
   'Rankings',
   'Docs',
   'About',
+
+  // GPU catalog descriptions
+  'PCIe acceleration for model inference and training.',
+  'Hopper acceleration for demanding language model workloads.',
+  'High-memory compute for training and serving language models.',
+  'Expanded GPU memory for larger models and longer contexts.',
+  'Blackwell compute for large-scale AI training and inference.',
+  'High-capacity Blackwell compute for the largest model workloads.',
 
   // Sidebar views (drill-in workspaces)
   'System Settings',

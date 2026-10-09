@@ -20,10 +20,25 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { PricingSidebar } from '../components/pricing-sidebar'
 import {
   PricingToolbar,
   type PricingToolbarProps,
 } from '../components/pricing-toolbar'
+import type { PricingModel } from '../types'
+
+function pricingModel(overrides: Partial<PricingModel> = {}): PricingModel {
+  return {
+    id: 1,
+    model_name: 'example-model',
+    quota_type: 0,
+    model_ratio: 1,
+    completion_ratio: 3,
+    enable_groups: ['default'],
+    supported_endpoint_types: ['openai'],
+    ...overrides,
+  }
+}
 
 function toolbarProps(): PricingToolbarProps {
   return {
@@ -51,7 +66,14 @@ function toolbarProps(): PricingToolbarProps {
     groups: ['default', 'premium'],
     groupRatios: { default: 1, premium: 3 },
     tags: [],
-    models: [],
+    models: [
+      pricingModel(),
+      pricingModel({
+        id: 2,
+        model_name: 'premium-model',
+        enable_groups: ['premium'],
+      }),
+    ],
     hasActiveFilters: false,
     activeFilterCount: 0,
     onClearFilters: vi.fn(),
@@ -142,5 +164,137 @@ describe('pricing controls', () => {
     expect(props.onClearFilters).toHaveBeenCalledOnce()
     await user.keyboard('{Escape}')
     expect(await screen.findByRole('button', { name: /Filter/ })).toHaveFocus()
+  })
+
+  it('hides single-value technical filters in both desktop and mobile catalogs', async () => {
+    const props = {
+      ...toolbarProps(),
+      models: [pricingModel()],
+      groups: ['default'],
+    }
+    const user = userEvent.setup()
+    const sidebar = render(<PricingSidebar {...props} />)
+
+    expect(
+      screen.getByRole('button', { name: 'Developers' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Capabilities & use cases' })
+    ).toBeInTheDocument()
+    for (const name of ['Groups', 'Pricing Type', 'Endpoint Type']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
+    }
+
+    sidebar.unmount()
+    render(<PricingToolbar {...props} />)
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    for (const name of ['Groups', 'Pricing Type', 'Endpoint Type']) {
+      expect(
+        within(dialog).queryByRole('button', { name })
+      ).not.toBeInTheDocument()
+    }
+    expect(
+      within(dialog).getByRole('button', { name: 'Developers' })
+    ).toBeInTheDocument()
+  })
+
+  it('shows technical filters when models offer distinct groups, billing types, and endpoints', () => {
+    const props = toolbarProps()
+    props.models = [
+      pricingModel(),
+      pricingModel({
+        id: 2,
+        model_name: 'request-model',
+        enable_groups: ['premium'],
+        quota_type: 1,
+        supported_endpoint_types: ['anthropic'],
+      }),
+    ]
+    render(<PricingSidebar {...props} />)
+
+    for (const name of ['Groups', 'Pricing Type', 'Endpoint Type']) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    }
+    expect(
+      screen.queryByRole('button', { name: /^Task billing/ })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /^Video/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps active zero-result filters visible so users can clear them', async () => {
+    const props = toolbarProps()
+    const user = userEvent.setup()
+    render(
+      <PricingSidebar
+        {...props}
+        models={[pricingModel()]}
+        groupFilter='premium'
+        quotaTypeFilter='request'
+        endpointTypeFilter='embeddings'
+        hasActiveFilters
+      />
+    )
+
+    for (const name of [/premium/, /^Per Request/, /^Embeddings/]) {
+      expect(screen.getByRole('button', { name })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+    }
+    await user.click(screen.getByRole('button', { name: 'All Groups' }))
+    await user.click(screen.getByRole('button', { name: /^All Models/ }))
+    await user.click(screen.getByRole('button', { name: /^All Types/ }))
+    expect(props.onGroupChange).toHaveBeenCalledWith('all')
+    expect(props.onQuotaTypeChange).toHaveBeenCalledWith('all')
+    expect(props.onEndpointTypeChange).toHaveBeenCalledWith('all')
+  })
+
+  it('offers catalog sorting without price controls when all prices are pending', async () => {
+    const props = toolbarProps()
+    const user = userEvent.setup()
+    render(
+      <PricingToolbar
+        {...props}
+        models={[pricingModel({ pricing_status: 'pending' })]}
+        sortBy='featured'
+      />
+    )
+
+    for (const name of ['Standard', 'Recharge', '/1M', '/1K']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
+    }
+    expect(
+      screen.getByRole('button', { name: 'Card view' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Table view' })
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Featured' }))
+    expect(
+      screen.queryByRole('menuitem', { name: 'Price: Low to High' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitem', { name: 'Price: High to Low' })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('menuitem', { name: 'Context: Longest' }))
+    expect(props.onSortChange).toHaveBeenCalledWith('context')
+  })
+
+  it('retains price controls when the catalog includes a published price', () => {
+    render(
+      <PricingToolbar
+        {...toolbarProps()}
+        models={[
+          pricingModel({ pricing_status: 'pending' }),
+          pricingModel({ id: 2 }),
+        ]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Standard' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '/1M' })).toBeInTheDocument()
   })
 })

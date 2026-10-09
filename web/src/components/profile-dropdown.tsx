@@ -18,15 +18,16 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useNavigate } from '@tanstack/react-router'
 import { User, Wallet, LogOut, Settings, ShieldCheck } from 'lucide-react'
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { LanguageSwitcher } from '@/components/language-switcher'
 import { SignOutDialog } from '@/components/sign-out-dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -34,11 +35,14 @@ import {
 import useDialogState from '@/hooks/use-dialog'
 import { useIsSidebarModuleVisible } from '@/hooks/use-sidebar-config'
 import { useUserDisplay } from '@/hooks/use-user-display'
-import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
+import { getUserAvatarFallback } from '@/lib/avatar'
 import { ROLE } from '@/lib/roles'
 import { useAuthStore } from '@/stores/auth-store'
 
-const avatarFallbackClassName = 'font-semibold text-white'
+const avatarFallbackClassName = 'bg-primary text-primary-foreground font-medium'
+const menuIconClassName =
+  'bg-brand/8 text-brand flex size-8 shrink-0 items-center justify-center rounded-md'
+const menuItemClassName = 'gap-3 rounded-lg px-2 py-2'
 
 export function ProfileDropdown() {
   const { t } = useTranslation()
@@ -51,33 +55,38 @@ export function ProfileDropdown() {
   const isSecurityVisible = useIsSidebarModuleVisible('/security')
   const avatarName = user?.username || displayName
   const avatarFallback = getUserAvatarFallback(avatarName)
-  const avatarFallbackStyle = useMemo(
-    () => getUserAvatarStyle(avatarName),
-    [avatarName]
-  )
 
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger
-          render={<Button variant='ghost' className='relative size-6 p-0' />}
+          aria-label={t('Profile')}
+          openOnHover
+          closeDelay={150}
+          render={
+            <Button
+              variant='ghost'
+              className='h-10 gap-2 rounded-full p-1 sm:h-11 sm:pl-3'
+            />
+          }
         >
-          <Avatar className='size-6'>
-            <AvatarFallback
-              className={`${avatarFallbackClassName} text-[11px]`}
-              style={avatarFallbackStyle}
-            >
+          <span className='hidden max-w-40 truncate text-sm font-medium sm:block md:hidden lg:block'>
+            {displayName}
+          </span>
+          <Avatar className='size-8 sm:size-9'>
+            <AvatarFallback className={`${avatarFallbackClassName} text-xs`}>
               {avatarFallback}
             </AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' sideOffset={8} className='w-56'>
-          <div className='flex items-center gap-2 px-1.5 py-1.5'>
-            <Avatar className='size-8'>
-              <AvatarFallback
-                className={`${avatarFallbackClassName} text-xs`}
-                style={avatarFallbackStyle}
-              >
+        <DropdownMenuContent
+          align='end'
+          sideOffset={8}
+          className='w-64 max-w-[calc(100vw-2rem)] p-1.5'
+        >
+          <div className='flex items-center gap-3 px-2 py-2.5'>
+            <Avatar className='size-9'>
+              <AvatarFallback className={`${avatarFallbackClassName} text-xs`}>
                 {avatarFallback}
               </AvatarFallback>
             </Avatar>
@@ -103,45 +112,78 @@ export function ProfileDropdown() {
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
-            <User className='size-4' />
-            {t('Profile')}
-          </DropdownMenuItem>
-
-          {isSecurityVisible && (
-            <DropdownMenuItem onClick={() => navigate({ to: '/security' })}>
-              <ShieldCheck className='size-4' />
-              {t('Security & Access')}
-            </DropdownMenuItem>
-          )}
-
-          {isWalletVisible && (
-            <DropdownMenuItem onClick={() => navigate({ to: '/wallet' })}>
-              <Wallet className='size-4' />
-              {t('Wallet')}
-            </DropdownMenuItem>
-          )}
-
-          {isSuperAdmin && (
+          <DropdownMenuGroup>
             <DropdownMenuItem
-              onClick={() =>
-                navigate({
-                  to: '/system-settings/site/$section',
-                  params: { section: 'system-info' },
-                })
-              }
+              className={menuItemClassName}
+              onClick={() => navigate({ to: '/profile' })}
             >
-              <Settings className='size-4' />
-              {t('System Settings')}
+              <span aria-hidden='true' className={menuIconClassName}>
+                <User />
+              </span>
+              {t('Profile')}
             </DropdownMenuItem>
-          )}
+
+            {isSecurityVisible && (
+              <DropdownMenuItem
+                className={menuItemClassName}
+                onClick={() => navigate({ to: '/security' })}
+              >
+                <span aria-hidden='true' className={menuIconClassName}>
+                  <ShieldCheck />
+                </span>
+                {t('Security & Access')}
+              </DropdownMenuItem>
+            )}
+
+            {isWalletVisible && (
+              <DropdownMenuItem
+                className={menuItemClassName}
+                onClick={() => navigate({ to: '/wallet' })}
+              >
+                <span aria-hidden='true' className={menuIconClassName}>
+                  <Wallet />
+                </span>
+                {t('Wallet')}
+              </DropdownMenuItem>
+            )}
+
+            {isSuperAdmin && (
+              <DropdownMenuItem
+                className={menuItemClassName}
+                onClick={() =>
+                  navigate({
+                    to: '/system-settings/site/$section',
+                    params: { section: 'system-info' },
+                  })
+                }
+              >
+                <span aria-hidden='true' className={menuIconClassName}>
+                  <Settings />
+                </span>
+                {t('System Settings')}
+              </DropdownMenuItem>
+            )}
+
+            <LanguageSwitcher variant='submenu' />
+          </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem variant='destructive' onClick={() => setOpen(true)}>
-            <LogOut className='size-4' />
-            {t('Sign out')}
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              className={menuItemClassName}
+              variant='destructive'
+              onClick={() => setOpen(true)}
+            >
+              <span
+                aria-hidden='true'
+                className='bg-destructive/10 flex size-8 shrink-0 items-center justify-center rounded-md'
+              >
+                <LogOut />
+              </span>
+              {t('Sign out')}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 

@@ -65,8 +65,8 @@ export function NavGroup({ title, items }: NavGroupProps) {
   const href = useLocation({ select: (location) => location.href })
 
   return (
-    <SidebarGroup className='px-2 py-1'>
-      <SidebarGroupLabel className='text-muted-foreground/70 px-2 text-[11px] font-medium tracking-wider uppercase'>
+    <SidebarGroup className='px-3 py-1 group-data-[collapsible=icon]:px-1.5'>
+      <SidebarGroupLabel className='text-muted-foreground px-2 text-[11px] font-medium tracking-wide uppercase'>
         {title}
       </SidebarGroupLabel>
       <SidebarMenu>
@@ -125,6 +125,7 @@ function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
+        className='data-active:bg-primary data-active:text-primary-foreground data-active:hover:bg-primary data-active:hover:text-primary-foreground h-9 rounded-lg'
         isActive={checkIsActive(href, item)}
         tooltip={item.title}
         render={
@@ -176,7 +177,9 @@ function SidebarMenuCollapsible({
     >
       <CollapsibleTrigger
         className='group/collapsible-trigger'
-        render={<SidebarMenuButton tooltip={item.title} />}
+        render={
+          <SidebarMenuButton className='h-9 rounded-lg' tooltip={item.title} />
+        }
       >
         {item.icon && <item.icon className='shrink-0' />}
         <span className='min-w-0 flex-1 truncate'>{item.title}</span>
@@ -188,6 +191,7 @@ function SidebarMenuCollapsible({
           {item.items.map((subItem) => (
             <SidebarMenuSubItem key={subItem.title}>
               <SidebarMenuSubButton
+                className='data-active:bg-primary data-active:text-primary-foreground data-active:hover:bg-primary data-active:hover:text-primary-foreground data-active:[&>svg]:text-primary-foreground h-8 rounded-lg'
                 isActive={checkIsActive(href, subItem)}
                 render={
                   <Link
@@ -226,6 +230,7 @@ function SidebarMenuCollapsedDropdown({
           className='group/dropdown-trigger'
           render={
             <SidebarMenuButton
+              className='data-active:bg-primary data-active:text-primary-foreground data-active:hover:bg-primary data-active:hover:text-primary-foreground h-9 rounded-lg'
               tooltip={item.title}
               isActive={checkIsActive(href, item)}
             />
@@ -248,7 +253,7 @@ function SidebarMenuCollapsedDropdown({
                 render={
                   <Link
                     to={sub.url}
-                    className={`${checkIsActive(href, sub) ? 'bg-secondary' : ''}`}
+                    className={`${checkIsActive(href, sub) ? 'bg-primary text-primary-foreground' : ''}`}
                   />
                 }
               >

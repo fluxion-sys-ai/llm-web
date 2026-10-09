@@ -45,7 +45,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
 
-import { getSortLabels, type SortOption, type ViewMode } from '../constants'
+import { getSortLabels, SORT_OPTIONS, type ViewMode } from '../constants'
 import type { PricingModel, PricingVendor, TokenUnit } from '../types'
 import { PricingSidebar } from './pricing-sidebar'
 
@@ -84,9 +84,19 @@ export function PricingToolbar(props: PricingToolbarProps) {
   const { t } = useTranslation()
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const sortLabels = getSortLabels(t)
+  const allPricesPending =
+    props.models.length > 0 &&
+    props.models.every((model) => model.pricing_status === 'pending')
+  const sortOptions = Object.entries(sortLabels).filter(
+    ([value]) =>
+      !allPricesPending ||
+      (value !== SORT_OPTIONS.PRICE_LOW && value !== SORT_OPTIONS.PRICE_HIGH)
+  )
+  const selectedSortLabel =
+    sortOptions.find(([value]) => value === props.sortBy)?.[1] ?? t('Sort')
 
   return (
-    <div className='bg-card rounded-xl border p-3'>
+    <div className='border-border bg-card rounded-lg border p-3'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
           <Button
@@ -120,34 +130,42 @@ export function PricingToolbar(props: PricingToolbarProps) {
         </div>
 
         <div className='flex min-w-0 flex-wrap items-center gap-2'>
-          <ToggleGroup
-            value={[props.showRechargePrice ? 'recharge' : 'standard']}
-            onValueChange={(values) => {
-              if (values.length > 0) {
-                props.onRechargePriceChange(values[0] === 'recharge')
-              }
-            }}
-            variant='outline'
-            size='sm'
-            aria-label={t('Price display mode')}
-          >
-            <ToggleGroupItem value='standard'>{t('Standard')}</ToggleGroupItem>
-            <ToggleGroupItem value='recharge'>{t('Recharge')}</ToggleGroupItem>
-          </ToggleGroup>
-          <ToggleGroup
-            value={[props.tokenUnit]}
-            onValueChange={(values) => {
-              if (values[0] === 'M' || values[0] === 'K') {
-                props.onTokenUnitChange(values[0])
-              }
-            }}
-            variant='outline'
-            size='sm'
-            aria-label={t('Token unit')}
-          >
-            <ToggleGroupItem value='M'>/1M</ToggleGroupItem>
-            <ToggleGroupItem value='K'>/1K</ToggleGroupItem>
-          </ToggleGroup>
+          {!allPricesPending && (
+            <ToggleGroup
+              value={[props.showRechargePrice ? 'recharge' : 'standard']}
+              onValueChange={(values) => {
+                if (values.length > 0) {
+                  props.onRechargePriceChange(values[0] === 'recharge')
+                }
+              }}
+              variant='outline'
+              size='sm'
+              aria-label={t('Price display mode')}
+            >
+              <ToggleGroupItem value='standard'>
+                {t('Standard')}
+              </ToggleGroupItem>
+              <ToggleGroupItem value='recharge'>
+                {t('Recharge')}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
+          {!allPricesPending && (
+            <ToggleGroup
+              value={[props.tokenUnit]}
+              onValueChange={(values) => {
+                if (values[0] === 'M' || values[0] === 'K') {
+                  props.onTokenUnitChange(values[0])
+                }
+              }}
+              variant='outline'
+              size='sm'
+              aria-label={t('Token unit')}
+            >
+              <ToggleGroupItem value='M'>/1M</ToggleGroupItem>
+              <ToggleGroupItem value='K'>/1K</ToggleGroupItem>
+            </ToggleGroup>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -161,11 +179,11 @@ export function PricingToolbar(props: PricingToolbarProps) {
               }
             >
               <ArrowUpDown className='size-3.5' />
-              <span>{sortLabels[props.sortBy as SortOption] || t('Sort')}</span>
+              <span>{selectedSortLabel}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end' className='w-44'>
               <DropdownMenuGroup>
-                {Object.entries(sortLabels).map(([value, label]) => (
+                {sortOptions.map(([value, label]) => (
                   <DropdownMenuItem
                     key={value}
                     onClick={() => props.onSortChange(value)}
@@ -199,7 +217,7 @@ export function PricingToolbar(props: PricingToolbarProps) {
           <SheetHeader className={sideDrawerHeaderClassName()}>
             <SheetTitle>{t('Filter')}</SheetTitle>
             <SheetDescription>
-              {t('Filter models by provider, group, type, endpoint, and tags.')}
+              {t('Filter models by developer and capability.')}
             </SheetDescription>
           </SheetHeader>
           <div className={sideDrawerFormClassName('gap-0')}>

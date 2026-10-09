@@ -150,10 +150,13 @@ describe('model cards', () => {
       within(endpointField).getByText('openai-response, openai')
     ).toHaveAttribute('title', endpoints.join(', '))
     expect(within(endpointField).getByText('+3')).toBeVisible()
-    expect(
-      within(tagField).getByText('video-generation, high-resolution')
-    ).toHaveAttribute('title', tags.join(', '))
-    expect(within(tagField).getByText('+4')).toBeVisible()
+    for (const tag of tags.slice(0, 4)) {
+      expect(within(tagField).getByText(tag)).toBeVisible()
+    }
+    expect(within(tagField).getByText('+2')).toHaveAttribute(
+      'title',
+      tags.slice(4).join(', ')
+    )
     expect(
       within(screen.getByRole('group', { name: 'Pricing' })).getByText(
         'Token-based'

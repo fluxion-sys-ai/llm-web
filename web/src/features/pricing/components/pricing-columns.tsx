@@ -26,7 +26,9 @@ import {
 } from '@/components/data-table'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge } from '@/components/status-badge'
+import { formatTokens } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
+import { cn } from '@/lib/utils'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
 import {
@@ -45,7 +47,9 @@ import { ModelPriceCell, type ModelPriceCellOptions } from './model-price-cell'
 // Pricing Table Columns
 // ----------------------------------------------------------------------------
 
-export type PricingColumnsOptions = ModelPriceCellOptions
+export type PricingColumnsOptions = ModelPriceCellOptions & {
+  catalogMode?: boolean
+}
 
 export function usePricingColumns(
   options: PricingColumnsOptions = {}
@@ -61,7 +65,7 @@ export function usePricingColumns(
 
   const tokenUnitLabel = tokenUnit === 'K' ? '1K' : '1M'
 
-  return [
+  const columns: ColumnDef<PricingModel>[] = [
     // Model column
     {
       accessorKey: 'model_name',
@@ -77,8 +81,13 @@ export function usePricingColumns(
         return (
           <div className='flex max-w-full min-w-0 items-center gap-2'>
             {modelIcon}
-            <span className='truncate font-mono text-sm font-medium'>
-              {model.model_name}
+            <span
+              className={cn(
+                'truncate text-sm font-medium',
+                model.display_name ? 'font-sans' : 'font-mono'
+              )}
+            >
+              {model.display_name || model.model_name}
             </span>
           </div>
         )
@@ -117,6 +126,7 @@ export function usePricingColumns(
       header: t('Cached'),
       cell: ({ row }) => {
         const model = row.original
+        if (model.pricing_status === 'pending') return <span>—</span>
         const dynamicSummary = getDynamicPricingSummary(model, {
           tokenUnit,
           showRechargePrice,
@@ -131,7 +141,7 @@ export function usePricingColumns(
         if (dynamicSummary) {
           if (dynamicSummary.isSpecialExpression) {
             return (
-              <span className='text-muted-foreground/50 text-xs'>
+              <span className='text-muted-foreground text-xs'>
                 {t('Special billing expression')}
               </span>
             )
@@ -141,7 +151,7 @@ export function usePricingColumns(
             (entry) => entry.field === 'cacheReadPrice'
           )
           if (!cacheEntry) {
-            return <span className='text-muted-foreground/30 text-xs'>—</span>
+            return <span className='text-muted-foreground text-xs'>—</span>
           }
 
           return (
@@ -149,7 +159,7 @@ export function usePricingColumns(
               <span className='font-mono text-sm tabular-nums'>
                 {stripTrailingZeros(cacheEntry.formatted)}
               </span>
-              <div className='text-muted-foreground/50 text-[10px]'>
+              <div className='text-muted-foreground text-[10px]'>
                 / {tokenUnitLabel}
               </div>
             </div>
@@ -157,13 +167,13 @@ export function usePricingColumns(
         }
 
         if (isUnconfiguredTaskUsageModel(model)) {
-          return <span className='text-muted-foreground/30 text-xs'>—</span>
+          return <span className='text-muted-foreground text-xs'>—</span>
         }
 
         const isTokenBased = isTokenBasedModel(model)
 
         if (!isTokenBased || model.cache_ratio == null) {
-          return <span className='text-muted-foreground/30 text-xs'>—</span>
+          return <span className='text-muted-foreground text-xs'>—</span>
         }
 
         const cachedPrice = stripTrailingZeros(
@@ -183,7 +193,7 @@ export function usePricingColumns(
             <span className='font-mono text-sm tabular-nums'>
               {cachedPrice}
             </span>
-            <div className='text-muted-foreground/50 text-[10px]'>
+            <div className='text-muted-foreground text-[10px]'>
               / {tokenUnitLabel}
             </div>
           </div>
@@ -200,7 +210,7 @@ export function usePricingColumns(
       cell: ({ row }) => {
         const model = row.original
         if (!model.vendor_name) {
-          return <span className='text-muted-foreground/50 text-xs'>—</span>
+          return <span className='text-muted-foreground text-xs'>—</span>
         }
         const vendorIcon = model.vendor_icon
           ? getLobeIcon(model.vendor_icon, 12)
@@ -210,7 +220,7 @@ export function usePricingColumns(
             {vendorIcon}
             <StatusBadge
               label={model.vendor_name}
-              autoColor={model.vendor_name}
+              variant='neutral'
               size='sm'
               copyable={false}
             />
@@ -232,8 +242,8 @@ export function usePricingColumns(
             items={tags.map((tag) => (
               <StatusBadge
                 key={tag}
-                label={tag}
-                autoColor={tag}
+                label={t(tag)}
+                variant='neutral'
                 size='sm'
                 copyable={false}
               />
@@ -257,7 +267,7 @@ export function usePricingColumns(
               <StatusBadge
                 key={ep}
                 label={ep}
-                autoColor={ep}
+                variant='neutral'
                 size='sm'
                 copyable={false}
               />
@@ -288,4 +298,47 @@ export function usePricingColumns(
       enableSorting: false,
     },
   ]
+
+  if (!options.catalogMode) return columns
+
+  const catalogColumns = columns.filter((column) => {
+    const key = 'accessorKey' in column ? column.accessorKey : column.id
+    return ![
+      'quota_type',
+      'cached_price',
+      'supported_endpoint_types',
+      'enable_groups',
+    ].includes(String(key))
+  })
+  catalogColumns.splice(
+    1,
+    0,
+    {
+      accessorKey: 'context_length',
+      header: t('Context window'),
+      cell: ({ row }) => (
+        <span className='font-mono tabular-nums'>
+          {row.original.context_length
+            ? formatTokens(row.original.context_length)
+            : '—'}
+        </span>
+      ),
+      size: 130,
+      enableSorting: false,
+    },
+    {
+      accessorKey: 'max_output_tokens',
+      header: t('Max output'),
+      cell: ({ row }) => (
+        <span className='font-mono tabular-nums'>
+          {row.original.max_output_tokens
+            ? formatTokens(row.original.max_output_tokens)
+            : '—'}
+        </span>
+      ),
+      size: 130,
+      enableSorting: false,
+    }
+  )
+  return catalogColumns
 }

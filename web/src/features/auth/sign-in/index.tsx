@@ -34,12 +34,12 @@ export function SignIn() {
     <AuthLayout>
       <div className='w-full space-y-8'>
         <div className='space-y-2'>
-          <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>
+          <h2 className='text-3xl font-semibold tracking-[-0.025em]'>
             {t('Sign in')}
           </h2>
           {!status?.self_use_mode_enabled &&
             status?.register_enabled !== false && (
-              <p className='text-muted-foreground text-left text-sm sm:text-base'>
+              <p className='text-muted-foreground text-left text-sm leading-relaxed'>
                 {t("Don't have an account?")}{' '}
                 <Link
                   to='/sign-up'
@@ -51,6 +51,14 @@ export function SignIn() {
               </p>
             )}
         </div>
+
+        {import.meta.env.DEV && import.meta.env.VITE_LLM_PREVIEW === '1' && (
+          <p className='bg-muted text-muted-foreground rounded-lg px-4 py-3 text-sm leading-relaxed'>
+            {t(
+              'Local preview account: preview / preview123. Use these sample credentials to explore the interface.'
+            )}
+          </p>
+        )}
 
         <UserAuthForm redirectTo={redirect} />
 

@@ -24,7 +24,11 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -35,7 +39,11 @@ import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
-export function LanguageSwitcher() {
+type LanguageSwitcherProps = {
+  variant?: 'button' | 'submenu'
+}
+
+export function LanguageSwitcher(props: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation()
   const user = useAuthStore((s) => s.auth.user)
   const currentLanguage = normalizeInterfaceLanguage(i18n.language)
@@ -53,6 +61,43 @@ export function LanguageSwitcher() {
     [i18n, user]
   )
 
+  const languageOptions = (
+    <DropdownMenuGroup>
+      {INTERFACE_LANGUAGE_OPTIONS.map((lang) => (
+        <DropdownMenuItem
+          key={lang.code}
+          onClick={() => handleChangeLanguage(lang.code)}
+          className='gap-3 px-2 py-2'
+        >
+          {lang.label}
+          <Check
+            aria-hidden='true'
+            className={cn('ms-auto', currentLanguage !== lang.code && 'hidden')}
+          />
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuGroup>
+  )
+
+  if (props.variant === 'submenu') {
+    return (
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger className='gap-3 rounded-lg px-2 py-2'>
+          <span
+            aria-hidden='true'
+            className='bg-brand/8 text-brand flex size-8 shrink-0 items-center justify-center rounded-md'
+          >
+            <Languages />
+          </span>
+          {t('Change language')}
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className='min-w-44' sideOffset={6}>
+          {languageOptions}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    )
+  }
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
@@ -61,23 +106,7 @@ export function LanguageSwitcher() {
         <Languages className='size-[1.2rem]' />
         <span className='sr-only'>{t('Change language')}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end'>
-        {INTERFACE_LANGUAGE_OPTIONS.map((lang) => (
-          <DropdownMenuItem
-            key={lang.code}
-            onClick={() => handleChangeLanguage(lang.code)}
-          >
-            {lang.label}
-            <Check
-              size={14}
-              className={cn(
-                'ms-auto',
-                currentLanguage !== lang.code && 'hidden'
-              )}
-            />
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
+      <DropdownMenuContent align='end'>{languageOptions}</DropdownMenuContent>
     </DropdownMenu>
   )
 }

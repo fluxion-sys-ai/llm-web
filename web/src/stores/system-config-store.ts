@@ -84,6 +84,8 @@ export const useSystemConfigStore = create<SystemConfigState>()(
           config: {
             ...state.config,
             ...newConfig,
+            systemName: DEFAULT_SYSTEM_NAME,
+            logo: DEFAULT_LOGO,
             currency: {
               ...state.config.currency,
               ...(newConfig.currency ?? {}),
@@ -95,6 +97,18 @@ export const useSystemConfigStore = create<SystemConfigState>()(
     }),
     {
       name: 'system-config-storage',
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<SystemConfigState> | undefined
+        return {
+          ...current,
+          config: {
+            ...current.config,
+            ...saved?.config,
+            systemName: DEFAULT_SYSTEM_NAME,
+            logo: DEFAULT_LOGO,
+          },
+        }
+      },
       partialize: (state) => ({
         config: state.config,
         loadedLogoUrl: state.loadedLogoUrl,

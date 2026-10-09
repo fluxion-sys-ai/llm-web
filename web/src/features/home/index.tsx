@@ -26,7 +26,9 @@ import { useTheme } from '@/context/theme-provider'
 import { isLikelyHtml } from '@/lib/content-format'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { CTA, Features, Hero, HowItWorks, Stats } from './components'
+import { CTA, LlmHero } from './components'
+import { LlmFeaturedModels } from './components/sections/llm-featured-models'
+import { LlmIntegration } from './components/sections/llm-integration'
 import { useHomePageContent } from './hooks'
 
 export function Home() {
@@ -122,11 +124,12 @@ export function Home() {
 
   return (
     <PublicLayout showMainContainer={false}>
-      <Hero isAuthenticated={isAuthenticated} />
-      <Stats />
-      <Features />
-      <HowItWorks />
-      <CTA isAuthenticated={isAuthenticated} />
+      <main>
+        <LlmHero />
+        <LlmFeaturedModels />
+        <LlmIntegration />
+        <CTA isAuthenticated={isAuthenticated} />
+      </main>
       <Footer />
     </PublicLayout>
   )

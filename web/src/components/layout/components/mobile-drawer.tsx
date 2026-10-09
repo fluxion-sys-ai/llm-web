@@ -174,7 +174,7 @@ function MobileSignInButton({ onNavigate }: MobileSignInButtonProps) {
       variant='secondary'
       size='sm'
       className='h-10 w-full'
-      render={<Link to='/sign-in' onClick={onNavigate} />}
+      render={<Link to='/sign-in' preload={false} onClick={onNavigate} />}
     >
       {t('Sign in')}
     </Button>

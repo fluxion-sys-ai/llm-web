@@ -25,8 +25,6 @@ import {
   FlaskConical,
   Key,
   LayoutDashboard,
-  ListTodo,
-  MessageSquare,
   PlugZap,
   Radio,
   ServerCog,
@@ -40,7 +38,10 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import type { SidebarData } from '@/components/layout/types'
+import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
 import { ROLE } from '@/lib/roles'
+
+import { useStatus } from './use-status'
 
 /**
  * Root navigation groups for the application sidebar.
@@ -50,6 +51,10 @@ import { ROLE } from '@/lib/roles'
  */
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
+  const { status } = useStatus()
+  const pricingEnabled = parseHeaderNavModulesFromStatus(
+    status as Record<string, unknown> | null
+  ).pricing.enabled
 
   return {
     navGroups: [
@@ -62,11 +67,9 @@ export function useSidebarData(): SidebarData {
             url: '/playground',
             icon: FlaskConical,
           },
-          {
-            title: t('Chat'),
-            icon: MessageSquare,
-            type: 'chat-presets',
-          },
+          ...(pricingEnabled
+            ? [{ title: t('Models & Pricing'), url: '/pricing', icon: Box }]
+            : []),
         ],
       },
       {
@@ -97,13 +100,6 @@ export function useSidebarData(): SidebarData {
             title: t('Audit Logs'),
             url: '/usage-logs/audit',
             icon: ClipboardList,
-          },
-          {
-            title: t('Task Logs'),
-            url: '/usage-logs/task',
-            activeUrls: ['/usage-logs/drawing'],
-            configUrls: ['/usage-logs/drawing', '/usage-logs/task'],
-            icon: ListTodo,
           },
         ],
       },

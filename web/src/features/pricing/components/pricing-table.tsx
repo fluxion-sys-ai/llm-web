@@ -61,6 +61,9 @@ export function PricingTable(props: PricingTableProps) {
   })
 
   const columns = usePricingColumns({
+    catalogMode:
+      models.length > 0 &&
+      models.every((model) => model.pricing_status === 'pending'),
     tokenUnit,
     priceRate,
     usdExchangeRate,

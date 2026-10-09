@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useSearch } from '@tanstack/react-router'
 import { useMemo, useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { useDebounce } from '@/hooks/use-debounce'
 
@@ -54,6 +55,7 @@ function normalizeViewMode(value: unknown): ViewMode {
 }
 
 export function useFilters(models: PricingModel[]) {
+  const { t } = useTranslation()
   const search = useSearch({ from: '/pricing/' })
   const [filterState, setFilterState] = useState<FilterState>(() => ({
     search: search.search,
@@ -70,7 +72,16 @@ export function useFilters(models: PricingModel[]) {
 
   const searchInput = filterState.search || ''
   const debouncedSearchInput = useDebounce(searchInput, 200)
-  const sortBy = filterState.sort || SORT_OPTIONS.NAME
+  const allPricesPending =
+    models.length > 0 &&
+    models.every((model) => model.pricing_status === 'pending')
+  const requestedSort = filterState.sort || SORT_OPTIONS.FEATURED
+  const sortBy =
+    allPricesPending &&
+    (requestedSort === SORT_OPTIONS.PRICE_LOW ||
+      requestedSort === SORT_OPTIONS.PRICE_HIGH)
+      ? SORT_OPTIONS.FEATURED
+      : requestedSort
   const vendorFilter = filterState.vendor || FILTER_ALL
   const groupFilter = filterState.group || FILTER_ALL
   const quotaTypeFilter = filterState.quotaType || QUOTA_TYPES.ALL
@@ -99,7 +110,7 @@ export function useFilters(models: PricingModel[]) {
   )
   const setSortBy = useCallback(
     (v: string) =>
-      updateFilters({ sort: v === SORT_OPTIONS.NAME ? undefined : v }),
+      updateFilters({ sort: v === SORT_OPTIONS.FEATURED ? undefined : v }),
     [updateFilters]
   )
   const setVendorFilter = useCallback(
@@ -149,15 +160,19 @@ export function useFilters(models: PricingModel[]) {
   const filteredModels = useMemo(() => {
     if (!models || models.length === 0) return []
 
-    return filterAndSortModels(models, {
-      search: debouncedSearchInput,
-      vendor: vendorFilter,
-      group: groupFilter,
-      quotaType: quotaTypeFilter,
-      endpointType: endpointTypeFilter,
-      tag: tagFilter,
-      sortBy,
-    })
+    return filterAndSortModels(
+      models,
+      {
+        search: debouncedSearchInput,
+        vendor: vendorFilter,
+        group: groupFilter,
+        quotaType: quotaTypeFilter,
+        endpointType: endpointTypeFilter,
+        tag: tagFilter,
+        sortBy,
+      },
+      t
+    )
   }, [
     models,
     debouncedSearchInput,
@@ -167,6 +182,7 @@ export function useFilters(models: PricingModel[]) {
     endpointTypeFilter,
     tagFilter,
     sortBy,
+    t,
   ])
 
   const hasActiveFilters = useMemo(

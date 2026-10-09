@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useTranslation } from 'react-i18next'
 
 import { getCurrencyLabel } from '@/lib/currency'
+import { cn } from '@/lib/utils'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
@@ -67,7 +68,13 @@ export function ModelPriceCell(props: {
     unit: tokenUnitLabel,
   })
 
-  if (dynamic) {
+  if (props.model.pricing_status === 'pending') {
+    metrics = [
+      { label: t('Input'), value: t('To be configured') },
+      { label: t('Output'), value: t('To be configured') },
+    ]
+    caption = t('Per 1M tokens')
+  } else if (dynamic) {
     if (dynamic.isSpecialExpression) {
       return (
         <span className='block max-w-full min-w-0'>
@@ -175,7 +182,11 @@ export function ModelPriceCell(props: {
         {metrics.map((metric) => (
           <span
             key={metric.label}
-            className='flex min-w-0 flex-col items-start gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'
+            className={cn(
+              'flex min-w-0 flex-col items-start gap-y-0.5',
+              props.model.pricing_status !== 'pending' &&
+                'sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'
+            )}
           >
             <span
               className='text-muted-foreground min-w-0 truncate text-xs font-normal'
@@ -184,7 +195,12 @@ export function ModelPriceCell(props: {
               {metric.label}
             </span>
             <span
-              className='min-w-0 font-mono text-sm break-words whitespace-normal tabular-nums'
+              className={cn(
+                'min-w-0 text-sm break-words whitespace-normal',
+                props.model.pricing_status === 'pending'
+                  ? 'font-sans font-medium'
+                  : 'font-mono tabular-nums'
+              )}
               title={metric.value}
             >
               {metric.value}

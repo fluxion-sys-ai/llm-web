@@ -32,7 +32,7 @@ export type TopNavLink = {
 }
 
 /**
- * Generate top navigation links based on HeaderNavModules configuration from backend /api/status
+ * Combine gateway-configured navigation with the frontend GPU and resource pages.
  * Backend format example (stringified JSON):
  * {
  *   home: true,
@@ -55,9 +55,6 @@ export function useTopNavLinks(): TopNavLink[] {
     )
   }, [status])
 
-  // Documentation link (may be external)
-  const docsLink: string | undefined = status?.docs_link as string | undefined
-
   const isAuthed = !!auth?.user
 
   const links: TopNavLink[] = []
@@ -76,29 +73,17 @@ export function useTopNavLinks(): TopNavLink[] {
   const pricing = modules?.pricing
   if (pricing && typeof pricing === 'object' && pricing.enabled) {
     const requiresAuth = pricing.requireAuth && !isAuthed
-    links.push({ title: t('Model Square'), href: '/pricing', requiresAuth })
+    links.push({ title: t('Models & Pricing'), href: '/pricing', requiresAuth })
   }
 
-  // Rankings
-  const rankings = modules?.rankings
-  if (rankings && typeof rankings === 'object' && rankings.enabled) {
-    const requiresAuth = rankings.requireAuth && !isAuthed
-    links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
+  links.push({ title: t('GPU'), href: '/gpu' })
+
+  if (pricing && typeof pricing === 'object' && pricing.enabled) {
+    const requiresAuth = pricing.requireAuth && !isAuthed
+    links.push({ title: t('Pricing'), href: '/pricing/overview', requiresAuth })
   }
 
-  // Docs (supports external links)
-  if (modules?.docs !== false) {
-    if (docsLink) {
-      links.push({ title: t('Docs'), href: docsLink, external: true })
-    } else {
-      links.push({ title: t('Docs'), href: '/docs' })
-    }
-  }
-
-  // About
-  if (modules?.about !== false) {
-    links.push({ title: t('About'), href: '/about' })
-  }
+  links.push({ title: t('Resources'), href: '/blog' })
 
   return links
 }

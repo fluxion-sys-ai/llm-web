@@ -45,7 +45,11 @@ export function HeroButtons({ isAuthenticated }: HeroButtonsProps) {
         {t('Get Started')}
         <ArrowRight className='ml-2 h-5 w-5' />
       </Button>
-      <Button size='lg' variant='outline' render={<Link to='/sign-in' />}>
+      <Button
+        size='lg'
+        variant='outline'
+        render={<Link to='/sign-in' preload={false} />}
+      >
         {t('Sign In')}
       </Button>
     </>

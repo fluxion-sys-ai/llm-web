@@ -53,6 +53,11 @@ export default defineConfig(({ envMode }) => {
       },
     },
     source: {
+      define: {
+        'import.meta.env.VITE_LLM_PREVIEW': JSON.stringify(
+          process.env.VITE_LLM_PREVIEW || ''
+        ),
+      },
       entry: {
         index: './src/main.tsx',
       },

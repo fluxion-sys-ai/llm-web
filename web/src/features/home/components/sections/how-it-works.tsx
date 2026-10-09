@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Settings, Zap, BarChart3 } from 'lucide-react'
+import { Layers, MessageSquare, BarChart3 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { AnimateInView } from '@/components/animate-in-view'
@@ -27,36 +27,46 @@ export function HowItWorks() {
   const steps = [
     {
       num: '1',
-      title: t('Configure'),
+      title: t('Choose a Model'),
       desc: t(
-        'Add your API keys, set up channels and configure access permissions'
+        'Review the model catalog and pricing to find a model for your task.'
       ),
-      icon: <Settings className='size-6' strokeWidth={1.5} />,
+      icon: <Layers aria-hidden='true' className='size-6' strokeWidth={1.5} />,
     },
     {
       num: '2',
-      title: t('Connect'),
+      title: t('Try a Conversation'),
       desc: t(
-        'Connect through OpenAI, Claude, Gemini, and other compatible API routes'
+        'Open the Playground, select your model, and send your first message.'
       ),
-      icon: <Zap className='size-6' strokeWidth={1.5} />,
+      icon: (
+        <MessageSquare
+          aria-hidden='true'
+          className='size-6'
+          strokeWidth={1.5}
+        />
+      ),
     },
     {
       num: '3',
-      title: t('Monitor'),
-      desc: t('Track usage, costs and performance with real-time analytics'),
-      icon: <BarChart3 className='size-6' strokeWidth={1.5} />,
+      title: t('View Usage'),
+      desc: t(
+        'Check your usage and balance in the console as you chat or use the API.'
+      ),
+      icon: (
+        <BarChart3 aria-hidden='true' className='size-6' strokeWidth={1.5} />
+      ),
     },
   ]
 
   return (
-    <section className='border-border/40 relative z-10 border-t px-6 py-24 md:py-32'>
+    <section className='border-border relative z-10 border-t px-6 py-16 md:py-20'>
       <div className='mx-auto max-w-6xl'>
-        <AnimateInView className='mb-16 text-center md:mb-20'>
-          <p className='text-muted-foreground mb-3 text-xs font-medium tracking-widest uppercase'>
+        <AnimateInView className='mb-10 text-center md:mb-12'>
+          <p className='text-brand mb-3 text-xs font-medium tracking-wide'>
             {t('How It Works')}
           </p>
-          <h2 className='text-2xl font-bold tracking-tight md:text-3xl'>
+          <h2 className='text-2xl font-semibold tracking-tight md:text-3xl'>
             {t('Three steps to get started')}
           </h2>
         </AnimateInView>
@@ -70,10 +80,10 @@ export function HowItWorks() {
               className='relative flex flex-col items-center text-center'
             >
               <div className='relative mb-6'>
-                <div className='text-muted-foreground border-border/50 bg-muted/30 flex size-16 items-center justify-center rounded-2xl border transition-colors'>
+                <div className='text-brand border-border bg-muted/30 flex size-16 items-center justify-center rounded-xl border transition-colors'>
                   {step.icon}
                 </div>
-                <div className='bg-foreground text-background absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full text-xs font-bold'>
+                <div className='bg-foreground text-background absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full text-xs font-semibold'>
                   {step.num}
                 </div>
               </div>

@@ -36,6 +36,7 @@ import {
   StaticDataTable,
   staticDataTableClassNames as tableStyles,
 } from '@/components/data-table'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useStatus } from '@/hooks/use-status'
@@ -109,7 +110,7 @@ function buildChatSample(lang: Lang, ctx: SampleContext): string {
       `curl ${url} \\`,
       `  -H "Authorization: Bearer $${ctx.apiKeyEnv}" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${bodyJson.replace(/\n/g, '\n     ')}'`,
+      `  -d '${bodyJson.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
 
@@ -177,7 +178,7 @@ function buildAnthropicSample(lang: Lang, ctx: SampleContext): string {
       `  -H "x-api-key: $${ctx.apiKeyEnv}" \\`,
       `  -H "anthropic-version: 2023-06-01" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
@@ -249,7 +250,7 @@ function buildGeminiSample(lang: Lang, ctx: SampleContext): string {
     return [
       `curl '${url}' \\`,
       `  -H 'Content-Type: application/json' \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
@@ -299,7 +300,7 @@ function buildEmbeddingSample(lang: Lang, ctx: SampleContext): string {
       `curl ${url} \\`,
       `  -H "Authorization: Bearer $${ctx.apiKeyEnv}" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
@@ -365,7 +366,7 @@ function buildImageSample(lang: Lang, ctx: SampleContext): string {
       `curl ${url} \\`,
       `  -H "Authorization: Bearer $${ctx.apiKeyEnv}" \\`,
       `  -H "Content-Type: application/json" \\`,
-      `  -d '${body.replace(/\n/g, '\n     ')}'`,
+      `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
@@ -430,8 +431,9 @@ function buildSample(
 ): string {
   if (endpointType === 'anthropic') return buildAnthropicSample(lang, ctx)
   if (endpointType === 'gemini') return buildGeminiSample(lang, ctx)
-  if (endpointType === 'embeddings' || endpointType === 'jina-rerank')
+  if (endpointType === 'embeddings' || endpointType === 'jina-rerank') {
     return buildEmbeddingSample(lang, ctx)
+  }
   if (endpointType === 'image-generation') return buildImageSample(lang, ctx)
   return buildChatSample(lang, ctx)
 }
@@ -502,7 +504,7 @@ function CodeSamplesSection(props: {
       <div className='flex flex-wrap items-center gap-2'>
         {endpoints.length > 1 && (
           <Tabs value={endpointType} onValueChange={setEndpointType}>
-            <TabsList className='bg-muted/40 h-8 p-0.5'>
+            <TabsList className='border-border bg-muted h-9 rounded-lg border p-0.5'>
               {endpoints.map((ep) => (
                 <TabsTrigger
                   key={ep.type}
@@ -521,7 +523,7 @@ function CodeSamplesSection(props: {
           onValueChange={(v) => setLang(v as Lang)}
           className='ml-auto'
         >
-          <TabsList className='bg-muted/40 h-8 p-0.5'>
+          <TabsList className='border-border bg-muted h-9 rounded-lg border p-0.5'>
             {(Object.keys(LANG_LABELS) as Lang[]).map((l) => (
               <TabsTrigger key={l} value={l} className='h-7 px-2.5 text-xs'>
                 {LANG_LABELS[l]}
@@ -532,7 +534,11 @@ function CodeSamplesSection(props: {
       </div>
 
       <div className='mt-3'>
-        <CodeBlock code={code} language={LANG_HIGHLIGHT[lang]}>
+        <CodeBlock
+          className='border-border rounded-[10px] shadow-none'
+          code={code}
+          language={LANG_HIGHLIGHT[lang]}
+        >
           <CodeBlockCopyButton />
         </CodeBlock>
       </div>
@@ -598,7 +604,7 @@ function SupportedParametersSection(props: { model: PricingModel }) {
             cell: (p) => (
               <Badge
                 variant='secondary'
-                className='h-7 rounded-full px-2.5 font-mono text-sm font-normal'
+                className='h-auto rounded-md px-2 py-0.5 font-mono text-xs font-normal'
               >
                 {p.type}
               </Badge>
@@ -711,7 +717,7 @@ function RateLimitsSection(props: { model: PricingModel }) {
           },
         ]}
       />
-      <p className='text-muted-foreground mt-2 text-[11px] leading-relaxed'>
+      <p className='text-muted-foreground mt-3 text-xs leading-relaxed'>
         {t(
           'RPM = requests per minute, TPM = tokens per minute, RPD = requests per day. Limits apply per token group.'
         )}
@@ -729,9 +735,9 @@ function AuthSection() {
   return (
     <section>
       <SectionTitle icon={KeyRound}>{t('Authentication')}</SectionTitle>
-      <div className='border-border/60 bg-muted/20 flex items-start gap-2 rounded-lg border p-3'>
+      <div className='border-border bg-muted/40 flex items-start gap-3 rounded-lg border p-4'>
         <ChevronRight className='text-muted-foreground mt-0.5 size-3.5 shrink-0' />
-        <div className='space-y-1.5 text-xs leading-relaxed'>
+        <div className='space-y-2 text-sm leading-relaxed'>
           <p>
             {t('All requests must include')}{' '}
             <code className='bg-muted rounded px-1 py-0.5 font-mono text-[11px]'>
@@ -762,12 +768,28 @@ export function ModelDetailsApi(props: {
   model: PricingModel
   endpointMap: Record<string, { path?: string; method?: string }>
 }) {
+  const { t } = useTranslation()
+  const catalogOnly = props.model.pricing_status === 'pending'
+
   return (
     <div className='space-y-6'>
+      {catalogOnly && (
+        <Alert>
+          <AlertDescription>
+            {t(
+              'These API examples are integration references. Confirm the endpoint and model ID with your configured provider before making requests.'
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
       <CodeSamplesSection model={props.model} endpointMap={props.endpointMap} />
       <AuthSection />
-      <SupportedParametersSection model={props.model} />
-      <RateLimitsSection model={props.model} />
+      {!catalogOnly && (
+        <>
+          <SupportedParametersSection model={props.model} />
+          <RateLimitsSection model={props.model} />
+        </>
+      )}
     </div>
   )
 }
@@ -782,7 +804,7 @@ function SectionTitle(props: {
 }) {
   const Icon = props.icon
   return (
-    <h3 className='text-foreground mb-3 flex items-center gap-1.5 text-sm font-semibold'>
+    <h3 className='text-foreground mb-3 flex items-center gap-2 text-base font-semibold tracking-tight'>
       <Icon className='text-muted-foreground/70 size-3.5' />
       {props.children}
     </h3>

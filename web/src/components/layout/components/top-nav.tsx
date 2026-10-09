@@ -16,20 +16,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { Menu } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
-import { type TopNavLink } from '../types'
+import { isTopNavActive } from '../lib/url-utils'
+import type { TopNavLink } from '../types'
+import { GpuNavMenu } from './gpu-nav-menu'
+import { ModelsNavMenu } from './models-nav-menu'
+import { ResourcesNavMenu } from './resources-nav-menu'
 
 type TopNavProps = React.HTMLAttributes<HTMLElement> & {
   links: TopNavLink[]
@@ -40,89 +44,197 @@ type TopNavProps = React.HTMLAttributes<HTMLElement> & {
  * 在大屏幕显示水平导航，在小屏幕显示下拉菜单
  */
 export function TopNav({ className, links, ...props }: TopNavProps) {
+  const { t } = useTranslation()
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
   // 规范化链接，确保所有可选属性都有默认值
   const normalizedLinks = useMemo(
     () =>
       links.map((link) => ({
-        isActive: false,
         disabled: false,
         external: false,
         ...link,
+        isActive:
+          link.isActive ??
+          (!link.external && isTopNavActive(pathname, link.href)),
       })),
-    [links]
+    [links, pathname]
   )
 
   return (
     <>
       {/* 移动端下拉菜单 */}
       <div className='lg:hidden'>
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger
-            render={<Button size='icon' variant='outline' className='size-7' />}
+        <Popover open={mobileOpen} onOpenChange={setMobileOpen}>
+          <PopoverTrigger
+            render={
+              <Button
+                size='icon'
+                variant='outline'
+                className='size-8'
+                aria-label={t('Toggle navigation menu')}
+              />
+            }
           >
             <Menu />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side='bottom' align='start'>
-            {normalizedLinks.map(
-              ({ title, href, isActive, disabled, external }) => (
-                <DropdownMenuItem
-                  key={`${title}-${href}`}
-                  render={
-                    external ? (
-                      <a
-                        href={href}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className={!isActive ? 'text-muted-foreground' : ''}
-                      >
-                        {title}
-                      </a>
-                    ) : (
-                      <Link
-                        to={href}
-                        className={!isActive ? 'text-muted-foreground' : ''}
-                        disabled={disabled}
-                      >
-                        {title}
-                      </Link>
+          </PopoverTrigger>
+          <PopoverContent
+            align='start'
+            className='max-h-[calc(100dvh-6rem)] w-80 max-w-[calc(100vw-2rem)] gap-0 overflow-y-auto'
+          >
+            <nav aria-label={t('Navigation')}>
+              {normalizedLinks.map(
+                ({
+                  title,
+                  href,
+                  isActive,
+                  disabled,
+                  external,
+                  requiresAuth,
+                }) => {
+                  const closeMenu = () => setMobileOpen(false)
+                  if (
+                    href === '/pricing' &&
+                    !external &&
+                    !disabled &&
+                    !requiresAuth
+                  ) {
+                    return (
+                      <ModelsNavMenu
+                        key={`${title}-${href}`}
+                        mobile
+                        active={isActive}
+                        onNavigate={closeMenu}
+                      />
                     )
                   }
-                ></DropdownMenuItem>
-              )
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                  if (
+                    href === '/gpu' &&
+                    !external &&
+                    !disabled &&
+                    !requiresAuth
+                  ) {
+                    return (
+                      <GpuNavMenu
+                        key={`${title}-${href}`}
+                        mobile
+                        active={isActive}
+                        onNavigate={closeMenu}
+                      />
+                    )
+                  }
+                  if (
+                    href === '/blog' &&
+                    !external &&
+                    !disabled &&
+                    !requiresAuth
+                  ) {
+                    return (
+                      <ResourcesNavMenu
+                        key={`${title}-${href}`}
+                        mobile
+                        active={isActive}
+                        onNavigate={closeMenu}
+                      />
+                    )
+                  }
+                  const linkClassName = cn(
+                    'flex rounded-lg py-3 text-base font-medium',
+                    isActive ? 'text-foreground' : 'text-muted-foreground',
+                    disabled && 'pointer-events-none opacity-50'
+                  )
+                  return external ? (
+                    <a
+                      key={`${title}-${href}`}
+                      href={href}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      aria-disabled={disabled}
+                      tabIndex={disabled ? -1 : undefined}
+                      className={linkClassName}
+                      onClick={(event) => {
+                        if (disabled) {
+                          event.preventDefault()
+                          return
+                        }
+                        closeMenu()
+                      }}
+                    >
+                      {title}
+                    </a>
+                  ) : (
+                    <Link
+                      key={`${title}-${href}`}
+                      to={href}
+                      aria-current={isActive ? 'page' : undefined}
+                      activeOptions={{ exact: true }}
+                      className={linkClassName}
+                      disabled={disabled}
+                      onClick={closeMenu}
+                    >
+                      {title}
+                    </Link>
+                  )
+                }
+              )}
+            </nav>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* 桌面端水平导航 */}
       <nav
-        className={cn(
-          'hidden items-center space-x-4 lg:flex lg:space-x-4 xl:space-x-6',
-          className
-        )}
+        className={cn('hidden items-center gap-5 lg:flex xl:gap-6', className)}
         {...props}
       >
-        {normalizedLinks.map(({ title, href, isActive, disabled, external }) =>
-          external ? (
-            <a
-              key={`${title}-${href}`}
-              href={href}
-              target='_blank'
-              rel='noopener noreferrer'
-              className={`hover:text-primary text-sm font-medium transition-colors ${isActive ? '' : 'text-muted-foreground'}`}
-            >
-              {title}
-            </a>
-          ) : (
-            <Link
-              key={`${title}-${href}`}
-              to={href}
-              disabled={disabled}
-              className={`hover:text-primary text-sm font-medium transition-colors ${isActive ? '' : 'text-muted-foreground'}`}
-            >
-              {title}
-            </Link>
-          )
+        {normalizedLinks.map(
+          ({ title, href, isActive, disabled, external, requiresAuth }) => {
+            if (
+              href === '/pricing' &&
+              !external &&
+              !disabled &&
+              !requiresAuth
+            ) {
+              return (
+                <ModelsNavMenu key={`${title}-${href}`} active={isActive} />
+              )
+            }
+
+            if (href === '/gpu' && !external && !disabled && !requiresAuth) {
+              return <GpuNavMenu key={`${title}-${href}`} active={isActive} />
+            }
+
+            if (href === '/blog' && !external && !disabled && !requiresAuth) {
+              return (
+                <ResourcesNavMenu key={`${title}-${href}`} active={isActive} />
+              )
+            }
+
+            return external ? (
+              <a
+                key={`${title}-${href}`}
+                href={href}
+                target='_blank'
+                rel='noopener noreferrer'
+                className={`hover:text-foreground text-sm font-medium transition-colors ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                {title}
+              </a>
+            ) : (
+              <Link
+                key={`${title}-${href}`}
+                to={href}
+                aria-current={isActive ? 'page' : undefined}
+                activeOptions={{ exact: true }}
+                disabled={disabled}
+                className={`hover:text-foreground text-sm font-medium transition-colors ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                {title}
+              </Link>
+            )
+          }
         )}
       </nav>
     </>

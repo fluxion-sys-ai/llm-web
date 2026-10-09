@@ -1,0 +1,28 @@
+/* Reserve the preview disclosure's measured height, including wrapped text. */
+body[data-local-preview] {
+  padding-bottom: var(--local-preview-height, 0px);
+}
+
+body[data-local-preview] [data-slot='sidebar-wrapper'] {
+  min-height: calc(100svh - var(--local-preview-height, 0px));
+}
+
+body[data-local-preview] [data-slot='sidebar-inset'],
+body[data-local-preview] [data-slot='sidebar-container'] {
+  height: calc(
+    100svh - var(--app-header-height, 0px) - var(--local-preview-height, 0px)
+  );
+}
+
+body[data-local-preview] [data-slot='sidebar-container'] {
+  bottom: var(--local-preview-height, 0px);
+}
+
+body[data-local-preview]
+  [data-slot='sidebar'][data-variant='inset']
+  ~ [data-slot='sidebar-inset'] {
+  height: calc(
+    100svh - var(--app-header-height, 0px) - var(--local-preview-height, 0px) -
+      (var(--spacing) * 4)
+  );
+}

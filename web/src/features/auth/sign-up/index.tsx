@@ -40,6 +40,7 @@ export function SignUp() {
             {t('Already have an account?')}{' '}
             <Link
               to='/sign-in'
+              preload={false}
               className='hover:text-primary font-medium underline underline-offset-4'
             >
               {t('Sign in')}

@@ -20,9 +20,11 @@ For commercial licensing, please contact support@quantumnous.com
  * Application-wide constants
  */
 
-// System Configuration Defaults
-export const DEFAULT_SYSTEM_NAME = 'New API'
-export const DEFAULT_LOGO = '/logo.png'
+// This frontend has a fixed product identity, independent of gateway settings.
+export const DEFAULT_SYSTEM_NAME = 'Fluxion'
+export const DEFAULT_LOGO = '/fluxion-logo.svg'
+export const SITE_TITLE = 'Fluxion LLM'
+export const SITE_ICON = '/fluxion-icon.svg'
 
 // LocalStorage Keys
 export const STORAGE_KEYS = {

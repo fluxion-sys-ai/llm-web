@@ -104,7 +104,11 @@ function FilterChip(props: {
       size='sm'
       onClick={props.onClick}
       aria-pressed={props.active}
-      className='h-auto max-w-full gap-1.5 px-2 py-1 text-xs'
+      className={cn(
+        'h-auto max-w-full gap-1.5 rounded-md px-2 py-1 text-xs font-normal',
+        props.active &&
+          'border-brand/20 bg-brand/8 text-brand hover:bg-brand/12'
+      )}
       title={props.option.label}
     >
       {props.option.icon && (
@@ -131,7 +135,7 @@ function FilterSection(props: FilterSectionProps) {
   return (
     <Collapsible
       defaultOpen
-      className='border-border/70 border-b pb-3 last:border-b-0'
+      className='border-border border-b pb-3 last:border-b-0'
     >
       <CollapsibleTrigger className='group flex w-full items-center justify-between py-2.5 text-left'>
         <span className='text-foreground text-sm font-semibold'>
@@ -187,6 +191,9 @@ export function PricingSidebar(props: PricingSidebarProps) {
     ...props.groups.map((group) => ({
       value: group,
       label: group,
+      count: countBy(props.models, (model) =>
+        model.enable_groups.includes(group)
+      ),
       suffix: formatGroupRatio(props.groupRatios?.[group]),
     })),
   ]
@@ -228,7 +235,7 @@ export function PricingSidebar(props: PricingSidebarProps) {
     },
     ...props.tags.map((tag) => ({
       value: tag,
-      label: tag,
+      label: t(tag),
       count: countBy(props.models, (model) =>
         parseTags(model.tags)
           .map((item) => item.toLowerCase())
@@ -255,13 +262,39 @@ export function PricingSidebar(props: PricingSidebarProps) {
       })),
   ]
 
+  const visibleGroupOptions = groupOptions.filter(
+    (option) =>
+      option.value === FILTER_ALL ||
+      (option.count ?? 0) > 0 ||
+      option.value === props.groupFilter
+  )
+  const visibleQuotaOptions = quotaOptions.filter(
+    (option) =>
+      option.value === QUOTA_TYPES.ALL ||
+      (option.count ?? 0) > 0 ||
+      option.value === props.quotaTypeFilter
+  )
+  const visibleEndpointOptions = endpointOptions.filter(
+    (option) =>
+      option.value === ENDPOINT_TYPES.ALL ||
+      (option.count ?? 0) > 0 ||
+      option.value === props.endpointTypeFilter
+  )
+
   return (
-    <aside className={cn('bg-card rounded-xl border p-3', props.className)}>
+    <aside
+      className={cn(
+        'border-border bg-card rounded-lg border p-4',
+        props.className
+      )}
+    >
       <div className='mb-2.5 flex items-center justify-between gap-2'>
         <div>
-          <h2 className='text-foreground text-sm font-bold'>{t('Filter')}</h2>
+          <h2 className='text-foreground text-sm font-semibold tracking-tight'>
+            {t('Filter')}
+          </h2>
           <p className='text-muted-foreground mt-1 text-xs'>
-            {t('Refine models by provider, group, type, and tags.')}
+            {t('Filter models by developer and capability.')}
           </p>
         </div>
         <Button
@@ -283,37 +316,46 @@ export function PricingSidebar(props: PricingSidebarProps) {
         </Badge>
       )}
 
-      <div className='space-y-1'>
+      <div className='flex flex-col gap-1'>
         <FilterSection
-          title={t('Groups')}
-          value={props.groupFilter}
-          options={groupOptions}
-          onChange={props.onGroupChange}
-        />
-        <FilterSection
-          title={t('All Vendors')}
+          title={t('Developers')}
           value={props.vendorFilter}
           options={vendorOptions}
           onChange={props.onVendorChange}
         />
         <FilterSection
-          title={t('Model Tags')}
+          title={t('Capabilities & use cases')}
           value={props.tagFilter}
           options={tagOptions}
           onChange={props.onTagChange}
         />
-        <FilterSection
-          title={t('Pricing Type')}
-          value={props.quotaTypeFilter}
-          options={quotaOptions}
-          onChange={props.onQuotaTypeChange}
-        />
-        <FilterSection
-          title={t('Endpoint Type')}
-          value={props.endpointTypeFilter}
-          options={endpointOptions}
-          onChange={props.onEndpointTypeChange}
-        />
+        {(visibleGroupOptions.length > 2 ||
+          props.groupFilter !== FILTER_ALL) && (
+          <FilterSection
+            title={t('Groups')}
+            value={props.groupFilter}
+            options={visibleGroupOptions}
+            onChange={props.onGroupChange}
+          />
+        )}
+        {(visibleQuotaOptions.length > 2 ||
+          props.quotaTypeFilter !== QUOTA_TYPES.ALL) && (
+          <FilterSection
+            title={t('Pricing Type')}
+            value={props.quotaTypeFilter}
+            options={visibleQuotaOptions}
+            onChange={props.onQuotaTypeChange}
+          />
+        )}
+        {(visibleEndpointOptions.length > 2 ||
+          props.endpointTypeFilter !== ENDPOINT_TYPES.ALL) && (
+          <FilterSection
+            title={t('Endpoint Type')}
+            value={props.endpointTypeFilter}
+            options={visibleEndpointOptions}
+            onChange={props.onEndpointTypeChange}
+          />
+        )}
       </div>
     </aside>
   )

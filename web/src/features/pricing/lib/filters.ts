@@ -35,16 +35,30 @@ import { hasTaskUsageSchema } from './dynamic-price'
  */
 export function filterBySearch(
   models: PricingModel[],
-  query: string
+  query: string,
+  translate: (value: string) => string = (value) => value
 ): PricingModel[] {
   if (!query) return models
 
-  const lowerQuery = query.toLowerCase()
+  const lowerQuery = query.trim().toLowerCase()
+  const compactQuery = lowerQuery.replaceAll(/[\s._/-]+/g, '')
   return models.filter(
     (m) =>
       m.model_name?.toLowerCase().includes(lowerQuery) ||
+      (compactQuery.length > 0 &&
+        [m.model_name, m.display_name].some((name) =>
+          name
+            ?.toLowerCase()
+            .replaceAll(/[\s._/-]+/g, '')
+            .includes(compactQuery)
+        )) ||
       m.description?.toLowerCase().includes(lowerQuery) ||
+      (m.description &&
+        translate(m.description).toLowerCase().includes(lowerQuery)) ||
       m.tags?.toLowerCase().includes(lowerQuery) ||
+      parseTags(m.tags).some((tag) =>
+        translate(tag).toLowerCase().includes(lowerQuery)
+      ) ||
       m.vendor_name?.toLowerCase().includes(lowerQuery)
   )
 }
@@ -122,16 +136,42 @@ export function sortModels(
   const sorted = [...models]
 
   switch (sortBy) {
+    case SORT_OPTIONS.FEATURED:
+      sorted.sort(
+        (a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))
+      )
+      break
+    case SORT_OPTIONS.CONTEXT:
+      sorted.sort((a, b) => (b.context_length ?? 0) - (a.context_length ?? 0))
+      break
     case SORT_OPTIONS.NAME:
       sorted.sort((a, b) =>
-        (a.model_name || '').localeCompare(b.model_name || '')
+        (a.display_name || a.model_name || '').localeCompare(
+          b.display_name || b.model_name || ''
+        )
       )
       break
     case SORT_OPTIONS.PRICE_LOW:
-      sorted.sort((a, b) => getModelPrice(a) - getModelPrice(b))
+      sorted.sort((a, b) => {
+        if (a.pricing_status === 'pending' || b.pricing_status === 'pending') {
+          return (
+            Number(a.pricing_status === 'pending') -
+            Number(b.pricing_status === 'pending')
+          )
+        }
+        return getModelPrice(a) - getModelPrice(b)
+      })
       break
     case SORT_OPTIONS.PRICE_HIGH:
-      sorted.sort((a, b) => getModelPrice(b) - getModelPrice(a))
+      sorted.sort((a, b) => {
+        if (a.pricing_status === 'pending' || b.pricing_status === 'pending') {
+          return (
+            Number(a.pricing_status === 'pending') -
+            Number(b.pricing_status === 'pending')
+          )
+        }
+        return getModelPrice(b) - getModelPrice(a)
+      })
       break
   }
 
@@ -151,9 +191,10 @@ export function filterAndSortModels(
     endpointType: string
     tag: string
     sortBy: string
-  }
+  },
+  translate?: (value: string) => string
 ): PricingModel[] {
-  let result = filterBySearch(models, filters.search)
+  let result = filterBySearch(models, filters.search, translate)
   result = filterByVendor(result, filters.vendor)
   result = filterByGroup(result, filters.group)
   result = filterByQuotaType(result, filters.quotaType)
@@ -190,7 +231,7 @@ export function extractAllTags(models: PricingModel[]): string[] {
     }
   })
 
-  return Array.from(tagSet).sort((a, b) => a.localeCompare(b))
+  return [...tagSet].sort((a, b) => a.localeCompare(b))
 }
 
 /**

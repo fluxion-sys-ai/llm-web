@@ -47,6 +47,11 @@ export type BillingUsageExample = {
 export type PricingModel = {
   id: number
   model_name: string
+  display_name?: string
+  featured?: boolean
+  /** Unpublished Fluxion prices must never be rendered as zero-cost usage. */
+  pricing_status?: 'pending'
+  catalog_source?: { name: string; url: string; checked_at: string }
   description?: string
   icon?: string
   vendor_id?: number
