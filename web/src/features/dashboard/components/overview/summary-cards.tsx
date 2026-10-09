@@ -252,7 +252,7 @@ export function SummaryCards() {
   return (
     <div className='bg-card overflow-hidden rounded-xl border'>
       <div className='grid xl:grid-cols-[minmax(0,1fr)_19rem]'>
-        <div className='flex flex-col gap-2.5 p-3 sm:gap-3 sm:p-5'>
+        <div className='flex flex-col gap-5 p-4 sm:p-5'>
           <div className='flex flex-wrap items-start justify-between gap-3'>
             <div className='flex flex-col gap-1'>
               <h3 className='text-sm font-semibold sm:text-base'>
@@ -263,11 +263,11 @@ export function SummaryCards() {
               </p>
             </div>
           </div>
-          <StaggerContainer className='grid grid-cols-3 gap-1.5 sm:gap-3'>
+          <StaggerContainer className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
             {items.map((it) => (
               <StaggerItem
                 key={it.key}
-                className='bg-background rounded-lg border px-2 py-2 sm:rounded-xl sm:p-3'
+                className='bg-background rounded-xl border p-4'
               >
                 <StatCard
                   title={it.title}
@@ -285,7 +285,7 @@ export function SummaryCards() {
           </StaggerContainer>
         </div>
 
-        <div className='bg-muted/40 flex flex-col justify-between gap-3 border-t p-3 sm:gap-4 sm:p-5 xl:border-t-0 xl:border-l'>
+        <div className='bg-muted/30 flex flex-col justify-between gap-5 border-t p-4 sm:p-5 xl:border-t-0 xl:border-l'>
           <div className='flex flex-col gap-2 sm:gap-3'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-xs font-medium'>
@@ -296,13 +296,13 @@ export function SummaryCards() {
                   className={cn('size-1.5 rounded-full', healthCfg.dotClass)}
                   aria-hidden='true'
                 />
-                <span className='text-muted-foreground text-[11px] font-medium'>
+                <span className='text-muted-foreground text-xs font-medium'>
                   {t(healthCfg.labelKey)}
                 </span>
               </span>
             </div>
 
-            <div className='font-mono text-xl font-medium tracking-tight sm:text-2xl'>
+            <div className='text-3xl font-semibold tracking-tight tabular-nums'>
               {formatQuota(remainQuota)}
             </div>
 

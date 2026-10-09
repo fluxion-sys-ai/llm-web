@@ -52,7 +52,7 @@ export function AppSidebar() {
     <Sidebar collapsible={collapsible} variant={variant} className='bg-sidebar'>
       {view && <SidebarViewHeader view={view} />}
 
-      <SidebarContent className='gap-1 py-3'>
+      <SidebarContent className='gap-3 py-4'>
         <AnimatePresence mode='wait' initial={false}>
           <motion.div
             key={key}

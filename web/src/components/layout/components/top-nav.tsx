@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link, useRouterState } from '@tanstack/react-router'
+import { useRouterState } from '@tanstack/react-router'
 import { Menu } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -29,11 +29,11 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
+import { desktopTopNavItemClassName } from '../config/top-nav.config'
 import { isTopNavActive } from '../lib/url-utils'
 import type { TopNavLink } from '../types'
-import { GpuNavMenu } from './gpu-nav-menu'
 import { ModelsNavMenu } from './models-nav-menu'
-import { ResourcesNavMenu } from './resources-nav-menu'
+import { NavLinkItem } from './nav-link-item'
 
 type TopNavProps = React.HTMLAttributes<HTMLElement> & {
   links: TopNavLink[]
@@ -66,7 +66,7 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
   return (
     <>
       {/* 移动端下拉菜单 */}
-      <div className='lg:hidden'>
+      <div className='xl:hidden'>
         <Popover open={mobileOpen} onOpenChange={setMobileOpen}>
           <PopoverTrigger
             render={
@@ -110,72 +110,25 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
                       />
                     )
                   }
-                  if (
-                    href === '/gpu' &&
-                    !external &&
-                    !disabled &&
-                    !requiresAuth
-                  ) {
-                    return (
-                      <GpuNavMenu
-                        key={`${title}-${href}`}
-                        mobile
-                        active={isActive}
-                        onNavigate={closeMenu}
-                      />
-                    )
-                  }
-                  if (
-                    href === '/blog' &&
-                    !external &&
-                    !disabled &&
-                    !requiresAuth
-                  ) {
-                    return (
-                      <ResourcesNavMenu
-                        key={`${title}-${href}`}
-                        mobile
-                        active={isActive}
-                        onNavigate={closeMenu}
-                      />
-                    )
-                  }
                   const linkClassName = cn(
                     'flex rounded-lg py-3 text-base font-medium',
                     isActive ? 'text-foreground' : 'text-muted-foreground',
                     disabled && 'pointer-events-none opacity-50'
                   )
-                  return external ? (
-                    <a
+                  return (
+                    <NavLinkItem
                       key={`${title}-${href}`}
-                      href={href}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      aria-disabled={disabled}
-                      tabIndex={disabled ? -1 : undefined}
-                      className={linkClassName}
-                      onClick={(event) => {
-                        if (disabled) {
-                          event.preventDefault()
-                          return
-                        }
-                        closeMenu()
+                      link={{
+                        title,
+                        href,
+                        isActive,
+                        disabled,
+                        external,
+                        requiresAuth,
                       }}
-                    >
-                      {title}
-                    </a>
-                  ) : (
-                    <Link
-                      key={`${title}-${href}`}
-                      to={href}
-                      aria-current={isActive ? 'page' : undefined}
-                      activeOptions={{ exact: true }}
                       className={linkClassName}
-                      disabled={disabled}
                       onClick={closeMenu}
-                    >
-                      {title}
-                    </Link>
+                    />
                   )
                 }
               )}
@@ -186,7 +139,7 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
 
       {/* 桌面端水平导航 */}
       <nav
-        className={cn('hidden items-center gap-5 lg:flex xl:gap-6', className)}
+        className={cn('hidden items-center gap-0.5 xl:flex', className)}
         {...props}
       >
         {normalizedLinks.map(
@@ -202,37 +155,23 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
               )
             }
 
-            if (href === '/gpu' && !external && !disabled && !requiresAuth) {
-              return <GpuNavMenu key={`${title}-${href}`} active={isActive} />
-            }
-
-            if (href === '/blog' && !external && !disabled && !requiresAuth) {
-              return (
-                <ResourcesNavMenu key={`${title}-${href}`} active={isActive} />
-              )
-            }
-
-            return external ? (
-              <a
+            return (
+              <NavLinkItem
                 key={`${title}-${href}`}
-                href={href}
-                target='_blank'
-                rel='noopener noreferrer'
-                className={`hover:text-foreground text-sm font-medium transition-colors ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                {title}
-              </a>
-            ) : (
-              <Link
-                key={`${title}-${href}`}
-                to={href}
-                aria-current={isActive ? 'page' : undefined}
-                activeOptions={{ exact: true }}
-                disabled={disabled}
-                className={`hover:text-foreground text-sm font-medium transition-colors ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                {title}
-              </Link>
+                link={{
+                  title,
+                  href,
+                  isActive,
+                  disabled,
+                  external,
+                  requiresAuth,
+                }}
+                className={cn(
+                  desktopTopNavItemClassName,
+                  'hover:text-foreground transition-colors',
+                  isActive ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              />
             )
           }
         )}

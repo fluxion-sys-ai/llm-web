@@ -16,7 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { type TopNavLink } from '../types'
+import type { TopNavLink } from '../types'
+
+export const desktopTopNavItemClassName =
+  'inline-flex h-8 w-22 shrink-0 items-center justify-center rounded-lg px-2 text-sm font-medium'
 
 /**
  * Default top navigation links

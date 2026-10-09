@@ -27,6 +27,7 @@ import { ComboboxInput } from '@/components/ui/combobox-input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getUserModels } from '@/lib/api'
+import { getPublicApiServerAddress } from '@/lib/public-api-address'
 
 const APP_CONFIGS = {
   claude: {
@@ -58,12 +59,14 @@ function getServerAddress(): string {
     const raw = localStorage.getItem('status')
     if (raw) {
       const status = JSON.parse(raw)
-      if (status.server_address) return status.server_address
+      if (status.server_address) {
+        return getPublicApiServerAddress(status.server_address)
+      }
     }
   } catch {
     /* empty */
   }
-  return window.location.origin
+  return getPublicApiServerAddress(window.location.origin)
 }
 
 function buildCCSwitchURL(

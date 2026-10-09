@@ -35,9 +35,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+
+import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 
 import { getUserGroups, getUserModels } from '../api'
 import {
@@ -67,17 +69,29 @@ export function usePlaygroundOptions({
   updateConfig,
 }: UsePlaygroundOptionsParams) {
   const { t } = useTranslation()
+  const catalog = useLlmCatalog()
 
   const {
     data: modelsData,
     error: modelsError,
-    isError: isModelsError,
-    isLoading: isLoadingModels,
+    isLoading: isLoadingUserModels,
   } = useQuery({
     queryKey: ['playground-models', currentGroup],
     queryFn: () => getUserModels(currentGroup),
     enabled: currentGroup !== '',
   })
+
+  const isLoadingModels = isLoadingUserModels || catalog.isLoading
+  const optionError = modelsError ?? catalog.error
+  const availableModels = useMemo(() => {
+    if (isLoadingModels || optionError || !modelsData) return []
+    const catalogIds = new Set(
+      catalog.models
+        .filter((model) => model.availability !== 'coming_soon')
+        .map((model) => model.model_name)
+    )
+    return modelsData.filter((model) => catalogIds.has(model.value))
+  }, [isLoadingModels, optionError, modelsData, catalog.models])
 
   const {
     data: groupsData,
@@ -89,15 +103,15 @@ export function usePlaygroundOptions({
   })
 
   useEffect(() => {
-    if (!isModelsError) return
+    if (!optionError) return
 
     toast.error(
       getOptionLoadErrorMessage(
-        modelsError,
+        optionError,
         t('Failed to load playground models')
       )
     )
-  }, [isModelsError, modelsError, t])
+  }, [optionError, t])
 
   useEffect(() => {
     if (!isGroupsError) return
@@ -111,20 +125,20 @@ export function usePlaygroundOptions({
   }, [isGroupsError, groupsError, t])
 
   useEffect(() => {
-    if (!modelsData) return
+    setModels(availableModels)
+    if (isLoadingModels) return
 
-    setModels(modelsData)
-    const fallback = getModelFallback(modelsData, currentModel)
+    const fallback = getModelFallback(availableModels, currentModel)
 
     if (fallback) {
       updateConfig('model', fallback)
       return
     }
 
-    if (shouldClearModelForGroup(modelsData, currentModel)) {
+    if (shouldClearModelForGroup(availableModels, currentModel)) {
       updateConfig('model', '')
     }
-  }, [modelsData, currentModel, setModels, updateConfig])
+  }, [availableModels, isLoadingModels, currentModel, setModels, updateConfig])
 
   useEffect(() => {
     if (!groupsData) return

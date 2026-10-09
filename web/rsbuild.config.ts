@@ -6,6 +6,8 @@ import { pluginReact } from '@rsbuild/plugin-react'
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss'
 import { tanstackRouter } from '@tanstack/router-plugin/rspack'
 
+import { backendDevServer } from './scripts/backend-dev'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig(({ envMode }) => {
@@ -16,6 +18,7 @@ export default defineConfig(({ envMode }) => {
     'http://localhost:3000'
 
   const isProd = envMode === 'production'
+  const backendDev = !isProd && process.env.LLM_BACKEND_DEV === '1'
   const devProxy = Object.fromEntries(
     (['/api', '/v1', '/mj', '/pg'] as const).map((key) => [
       key,
@@ -54,6 +57,11 @@ export default defineConfig(({ envMode }) => {
     },
     source: {
       define: {
+        'import.meta.env.VITE_LLM_API_BASE_URL': JSON.stringify(
+          process.env.VITE_LLM_API_BASE_URL ||
+            env.rawPublicVars.VITE_LLM_API_BASE_URL ||
+            ''
+        ),
         'import.meta.env.VITE_LLM_PREVIEW': JSON.stringify(
           process.env.VITE_LLM_PREVIEW || ''
         ),
@@ -74,6 +82,12 @@ export default defineConfig(({ envMode }) => {
       host: '0.0.0.0',
       strictPort: false,
       proxy: devProxy,
+      ...(backendDev
+        ? backendDevServer(
+            process.env.LLM_BACKEND_URL || 'http://127.0.0.1:3310',
+            Number(process.env.LLM_FRONTEND_PORT || '3211')
+          )
+        : {}),
     },
     output: {
       // Production optimizations

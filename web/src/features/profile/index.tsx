@@ -16,7 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Main } from '@/components/layout'
+import { useTranslation } from 'react-i18next'
+
+import { SectionPageLayout } from '@/components/layout'
 import {
   CardStaggerContainer,
   CardStaggerItem,
@@ -32,6 +34,7 @@ import { SidebarModulesCard } from './components/sidebar-modules-card'
 import { useProfile } from './hooks'
 
 export function Profile() {
+  const { t } = useTranslation()
   const { profile, loading, refreshProfile } = useProfile()
   const { status } = useStatus()
   const permissions = useAuthStore((s) => s.auth.user?.permissions)
@@ -44,8 +47,12 @@ export function Profile() {
   const canConfigureSidebar = permissions?.sidebar_settings !== false
 
   return (
-    <Main>
-      <div className='min-h-0 flex-1 overflow-auto px-3 py-3 sm:px-4 sm:py-6'>
+    <SectionPageLayout>
+      <SectionPageLayout.Title>{t('Profile')}</SectionPageLayout.Title>
+      <SectionPageLayout.Description>
+        {t('Your account details, preferences, and notifications.')}
+      </SectionPageLayout.Description>
+      <SectionPageLayout.Content>
         <CardStaggerContainer className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6'>
           <CardStaggerItem>
             <ProfileHeader profile={profile} loading={loading} />
@@ -78,7 +85,7 @@ export function Profile() {
             </div>
           </CardStaggerItem>
         </CardStaggerContainer>
-      </div>
-    </Main>
+      </SectionPageLayout.Content>
+    </SectionPageLayout>
   )
 }

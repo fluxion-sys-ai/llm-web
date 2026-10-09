@@ -24,16 +24,17 @@ import { StaticDataTable } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { LoadingState } from '@/components/loading-state'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ModelBillingModeBadge } from '@/features/pricing/components/model-billing-mode-badge'
 import { ModelPriceCell } from '@/features/pricing/components/model-price-cell'
-import { usePricingData } from '@/features/pricing/hooks/use-pricing-data'
+import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 import { getLobeIcon } from '@/lib/lobe-icon'
 
 export function LlmPricing() {
   const { t } = useTranslation()
   const { models, isLoading, error, refetch, priceRate, usdExchangeRate } =
-    usePricingData()
+    useLlmCatalog()
 
   return (
     <section className='space-y-6' aria-label={t('LLM API')}>
@@ -96,8 +97,13 @@ export function LlmPricing() {
                     {getLobeIcon(model.icon || model.vendor_icon, 24)}
                   </span>
                   <span className='min-w-0'>
-                    <span className='block font-medium break-words'>
-                      {model.display_name || model.model_name}
+                    <span className='flex flex-wrap items-center gap-2'>
+                      <span className='font-medium break-words'>
+                        {model.display_name || model.model_name}
+                      </span>
+                      {model.availability === 'coming_soon' && (
+                        <Badge variant='outline'>{t('Coming soon')}</Badge>
+                      )}
                     </span>
                     {model.display_name &&
                       model.display_name !== model.model_name && (
@@ -114,7 +120,12 @@ export function LlmPricing() {
               header: t('Billing mode'),
               className: 'w-[22%] px-5',
               cellClassName: 'px-5 py-5 whitespace-normal',
-              cell: (model) => <ModelBillingModeBadge model={model} />,
+              cell: (model) =>
+                model.availability === 'coming_soon' ? (
+                  <span className='text-muted-foreground text-sm'>—</span>
+                ) : (
+                  <ModelBillingModeBadge model={model} />
+                ),
             },
             {
               id: 'price',

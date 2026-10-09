@@ -96,21 +96,21 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
       value: formatQuota(profile.quota),
       description: t('Remaining quota'),
       icon: WalletCards,
-      tone: 'success',
+      tone: 'neutral',
     },
     {
       label: t('Total Usage'),
       value: formatQuota(profile.used_quota),
       description: t('Total consumed quota'),
       icon: BarChart3,
-      tone: 'info',
+      tone: 'neutral',
     },
     {
       label: t('API Requests'),
       value: formatCompactNumber(profile.request_count),
       description: t('Total requests made'),
       icon: Activity,
-      tone: 'chart-4',
+      tone: 'neutral',
     },
   ]
 
@@ -139,7 +139,7 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
               />
               <StatusBadge
                 label={`${t('User ID')} ${profile.id}`}
-                variant='info'
+                variant='neutral'
                 copyText={String(profile.id)}
               />
             </div>
@@ -175,7 +175,7 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
                 </div>
               </div>
 
-              <div className='text-foreground mt-1.5 truncate font-mono text-lg font-bold tracking-tight tabular-nums sm:mt-2 sm:text-2xl'>
+              <div className='text-foreground mt-1.5 truncate text-lg font-semibold tracking-tight tabular-nums sm:mt-2 sm:text-2xl'>
                 {item.value}
               </div>
               <div className='text-muted-foreground/60 mt-1 hidden text-xs md:block'>

@@ -26,6 +26,7 @@ import {
 } from '@/components/data-table'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge } from '@/components/status-badge'
+import { Badge } from '@/components/ui/badge'
 import { formatTokens } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
@@ -89,6 +90,9 @@ export function usePricingColumns(
             >
               {model.display_name || model.model_name}
             </span>
+            {model.availability === 'coming_soon' && (
+              <Badge variant='secondary'>{t('Coming soon')}</Badge>
+            )}
           </div>
         )
       },
@@ -99,9 +103,12 @@ export function usePricingColumns(
     {
       accessorKey: 'quota_type',
       header: t('Type'),
-      cell: ({ row }) => (
-        <ModelBillingModeBadge model={row.original} className='-ml-1.5' />
-      ),
+      cell: ({ row }) =>
+        row.original.availability === 'coming_soon' ? (
+          <span className='text-muted-foreground'>—</span>
+        ) : (
+          <ModelBillingModeBadge model={row.original} className='-ml-1.5' />
+        ),
       size: 110,
       enableSorting: false,
     },
@@ -126,7 +133,12 @@ export function usePricingColumns(
       header: t('Cached'),
       cell: ({ row }) => {
         const model = row.original
-        if (model.pricing_status === 'pending') return <span>—</span>
+        if (
+          model.availability === 'coming_soon' ||
+          model.pricing_status === 'pending'
+        ) {
+          return <span>—</span>
+        }
         const dynamicSummary = getDynamicPricingSummary(model, {
           tokenUnit,
           showRechargePrice,

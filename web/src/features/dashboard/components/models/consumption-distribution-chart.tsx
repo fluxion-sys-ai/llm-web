@@ -21,7 +21,10 @@ import { AreaChart, BarChart3, WalletCards } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { EmptyState } from '@/components/empty-state'
+import { LoadingState } from '@/components/loading-state'
 import { IconBadge } from '@/components/ui/icon-badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useThemeCustomization } from '@/context/theme-customization-provider'
 import { useTheme } from '@/context/theme-provider'
 import {
@@ -120,42 +123,60 @@ export function ConsumptionDistributionChart(
   ].join('-')
 
   return (
-    <div className='overflow-hidden rounded-lg border'>
-      <div className='flex w-full flex-col gap-1.5 border-b px-3 py-2 sm:gap-3 sm:px-5 sm:py-3 lg:flex-row lg:items-center lg:justify-between'>
+    <Tabs
+      value={chartType}
+      onValueChange={(value) => {
+        const option = CONSUMPTION_DISTRIBUTION_CHART_OPTIONS.find(
+          (item) => item.value === value
+        )
+        if (option) setChartType(option.value)
+      }}
+      className='bg-card gap-0 overflow-hidden rounded-xl border'
+    >
+      <div className='flex w-full flex-col gap-4 border-b p-4 sm:px-5 xl:flex-row xl:items-center xl:justify-between'>
         <div className='flex items-center gap-2'>
-          <IconBadge tone='success' size='sm'>
+          <IconBadge tone='neutral' size='sm'>
             <WalletCards />
           </IconBadge>
-          <div className='text-sm font-semibold'>{t('Quota Distribution')}</div>
-          <span className='text-muted-foreground text-xs'>
+          <h3 className='text-sm font-semibold'>{t('Quota Distribution')}</h3>
+          <span className='text-muted-foreground ml-auto text-xs sm:ml-1'>
             {t('Total:')} {chartData.totalQuotaDisplay}
           </span>
         </div>
 
-        <div className='bg-muted/60 inline-flex h-7 w-full overflow-x-auto rounded-lg border p-0.5 sm:h-8 sm:w-auto'>
+        <TabsList
+          aria-label={t('Quota Distribution')}
+          className='max-w-full justify-start overflow-x-auto'
+        >
           {CONSUMPTION_DISTRIBUTION_CHART_OPTIONS.map((item) => {
             const Icon = CHART_TYPE_ICONS[item.value]
             return (
-              <button
-                key={item.value}
-                type='button'
-                onClick={() => setChartType(item.value)}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-colors ${
-                  chartType === item.value
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className='size-3.5' />
+              <TabsTrigger key={item.value} value={item.value}>
+                <Icon className='size-3.5' aria-hidden='true' />
                 {t(item.labelKey)}
-              </button>
+              </TabsTrigger>
             )
           })}
-        </div>
+        </TabsList>
       </div>
 
-      <div className='h-[300px] p-1.5 sm:h-96 sm:p-2'>
-        {themeReady && spec && (
+      <TabsContent
+        key={chartType}
+        value={chartType}
+        className='h-[320px] flex-none p-3 sm:h-96 sm:p-4'
+      >
+        {props.loading && <LoadingState className='h-full' />}
+        {!props.loading && props.data.length === 0 && (
+          <EmptyState
+            icon={WalletCards}
+            title={t('No usage in this period')}
+            description={t(
+              'Try another time range or send an API request to get started.'
+            )}
+            className='min-h-0 py-12'
+          />
+        )}
+        {!props.loading && props.data.length > 0 && themeReady && spec && (
           <VChart
             key={chartKey}
             spec={{
@@ -166,7 +187,7 @@ export function ConsumptionDistributionChart(
             option={VCHART_OPTION}
           />
         )}
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   )
 }

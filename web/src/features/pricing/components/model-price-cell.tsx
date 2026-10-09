@@ -48,6 +48,14 @@ export function ModelPriceCell(props: {
 }) {
   const { t } = useTranslation()
   const currency = useSystemConfigStore((state) => state.config.currency)
+  if (props.model.availability === 'coming_soon') {
+    return (
+      <span className='text-muted-foreground text-sm whitespace-normal'>
+        {t('Pricing will be announced')}
+      </span>
+    )
+  }
+
   const currencyLabel =
     currency.quotaDisplayType === 'TOKENS' ? 'USD' : getCurrencyLabel()
   const options = props.options ?? {}

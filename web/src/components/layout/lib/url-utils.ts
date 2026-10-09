@@ -59,13 +59,8 @@ export function isTopNavActive(pathname: string, href: string): boolean {
     )
   }
 
-  if (destination === '/blog') {
-    return (
-      current === '/blog' ||
-      current.startsWith('/blog/') ||
-      current === '/docs' ||
-      current.startsWith('/docs/')
-    )
+  if (destination === '/blog' || destination === '/docs') {
+    return current === destination || current.startsWith(`${destination}/`)
   }
 
   return (

@@ -24,6 +24,29 @@ import {
 } from '../constants'
 import type { PaymentMethod, PresetAmount, TopupInfo } from '../types'
 
+/** The customer wallet uses Stripe without changing shared gateway configuration. */
+export function getStripePaymentMethod(
+  topupInfo: TopupInfo | null
+): PaymentMethod | undefined {
+  if (
+    !topupInfo?.enable_stripe_topup ||
+    topupInfo.payment_compliance_confirmed === false
+  ) {
+    return undefined
+  }
+  const configured = topupInfo.pay_methods.find(
+    (method) => method.type === PAYMENT_TYPES.STRIPE
+  )
+  const minimums = [topupInfo.stripe_min_topup, configured?.min_topup]
+    .map(Number)
+    .filter((value) => Number.isFinite(value) && value > 0)
+  return {
+    name: 'Stripe',
+    type: PAYMENT_TYPES.STRIPE,
+    min_topup: Math.max(DEFAULT_MIN_TOPUP, ...minimums),
+  }
+}
+
 // ============================================================================
 // Payment Processing Functions
 // ============================================================================

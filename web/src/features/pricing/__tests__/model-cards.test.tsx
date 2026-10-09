@@ -80,6 +80,33 @@ afterEach(() => {
 })
 
 describe('model cards', () => {
+  it('marks a coming-soon model without prices or performance while keeping details browsable', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(
+      <ModelCard
+        model={pricingModel({
+          availability: 'coming_soon',
+          pricing_status: 'pending',
+          enable_groups: [],
+        })}
+        onClick={onClick}
+        perf={{ avg_latency_ms: 1200, avg_tps: 42, success_rate: 100 }}
+      />
+    )
+
+    expect(screen.getByText('Coming soon')).toBeVisible()
+    const pricing = screen.getByRole('group', { name: 'Pricing' })
+    expect(within(pricing).getByText('Pricing will be announced')).toBeVisible()
+    expect(within(pricing).queryByText(/[$¥€]/)).not.toBeInTheDocument()
+    expect(screen.queryByText('To be configured')).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText('Performance metrics for the last 24 hours')
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+    expect(onClick).toHaveBeenCalledOnce()
+  })
+
   it('copies the complete long model name without opening details', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()

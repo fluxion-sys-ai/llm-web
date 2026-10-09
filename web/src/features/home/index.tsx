@@ -28,7 +28,6 @@ import { useAuthStore } from '@/stores/auth-store'
 
 import { CTA, LlmHero } from './components'
 import { LlmFeaturedModels } from './components/sections/llm-featured-models'
-import { LlmIntegration } from './components/sections/llm-integration'
 import { useHomePageContent } from './hooks'
 
 export function Home() {
@@ -127,7 +126,6 @@ export function Home() {
       <main>
         <LlmHero />
         <LlmFeaturedModels />
-        <LlmIntegration />
         <CTA isAuthenticated={isAuthenticated} />
       </main>
       <Footer />

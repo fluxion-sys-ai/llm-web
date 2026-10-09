@@ -34,6 +34,8 @@ import {
 } from '@/components/ui/navigation-menu'
 import { cn } from '@/lib/utils'
 
+import { desktopTopNavItemClassName } from '../config/top-nav.config'
+
 type CatalogNavMenuProps = {
   id: string
   label: string
@@ -84,7 +86,8 @@ export function CatalogNavMenu(props: CatalogNavMenuProps) {
           <NavigationMenuTrigger
             aria-current={props.active ? 'page' : undefined}
             className={cn(
-              'hover:text-foreground focus-visible:text-foreground h-8 px-3 text-sm',
+              desktopTopNavItemClassName,
+              'hover:text-foreground focus-visible:text-foreground relative [&>svg]:absolute [&>svg]:top-auto [&>svg]:right-1 [&>svg]:ml-0',
               props.active ? 'text-foreground' : 'text-muted-foreground'
             )}
           >

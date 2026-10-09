@@ -49,6 +49,8 @@ export type PricingModel = {
   model_name: string
   display_name?: string
   featured?: boolean
+  /** Announced models remain visible but must not be offered for API calls. */
+  availability?: 'coming_soon'
   /** Unpublished Fluxion prices must never be rendered as zero-cost usage. */
   pricing_status?: 'pending'
   catalog_source?: { name: string; url: string; checked_at: string }

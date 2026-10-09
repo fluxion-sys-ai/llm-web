@@ -44,10 +44,11 @@ export function usePricingData(enabled = true) {
   )
 
   const models = useMemo(() => {
-    if (!data?.data || !data?.vendors) return []
+    if (!Array.isArray(data?.data)) return []
 
-    const vendorMap = new Map(data.vendors.map((v) => [v.id, v]))
-
+    const vendorMap = new Map(
+      (data.vendors ?? []).map((vendor) => [vendor.id, vendor])
+    )
     return data.data.map((model) => {
       const vendor = model.vendor_id
         ? vendorMap.get(model.vendor_id)
@@ -55,15 +56,16 @@ export function usePricingData(enabled = true) {
       return {
         ...model,
         key: model.model_name,
-        vendor_name: vendor?.name,
-        vendor_icon: vendor?.icon,
-        vendor_description: vendor?.description,
+        vendor_name: model.vendor_name || vendor?.name,
+        vendor_icon: model.vendor_icon || vendor?.icon,
+        vendor_description: model.vendor_description || vendor?.description,
         group_ratio: data.group_ratio,
       }
     })
   }, [data])
 
   return {
+    data,
     models,
     vendors: data?.vendors ?? [],
     groupRatio: data?.group_ratio ?? {},

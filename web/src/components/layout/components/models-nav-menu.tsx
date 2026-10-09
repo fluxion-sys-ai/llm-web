@@ -24,9 +24,10 @@ import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { LoadingState } from '@/components/loading-state'
+import { Badge } from '@/components/ui/badge'
 import { NavigationMenuLink } from '@/components/ui/navigation-menu'
 import { Separator } from '@/components/ui/separator'
-import { usePricingData } from '@/features/pricing/hooks/use-pricing-data'
+import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 import type { PricingModel } from '@/features/pricing/types'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
@@ -69,9 +70,14 @@ function ModelMenuLink(props: ModelMenuLinkProps) {
           <Grid2X2 className='text-brand size-5' />
         )}
       </span>
-      <span className='min-w-0'>
-        <span className='text-foreground block truncate font-medium'>
-          {label}
+      <span className='min-w-0 flex-1'>
+        <span className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
+          <span className='text-foreground min-w-0 truncate font-medium'>
+            {label}
+          </span>
+          {props.model?.availability === 'coming_soon' && (
+            <Badge variant='outline'>{t('Coming soon')}</Badge>
+          )}
         </span>
         {subtitle && (
           <span className='text-muted-foreground block truncate text-xs'>
@@ -107,7 +113,7 @@ function ModelMenuLink(props: ModelMenuLinkProps) {
 export function ModelsNavMenu(props: ModelsNavMenuProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const { models, isLoading, error, refetch } = usePricingData(open)
+  const { models, isLoading, error, refetch } = useLlmCatalog(open)
   const orderedModels = useMemo(
     () =>
       [...models].sort(

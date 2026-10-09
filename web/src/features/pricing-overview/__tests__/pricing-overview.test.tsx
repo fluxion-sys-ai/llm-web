@@ -47,7 +47,9 @@ const pricing: PricingData = {
       model_ratio: 0,
       completion_ratio: 0,
       pricing_status: 'pending',
+      availability: 'coming_soon',
       enable_groups: [],
+      output_modalities: ['text'],
     },
   ],
   vendors: [],
@@ -73,7 +75,7 @@ afterEach(() => {
   localStorage.clear()
 })
 
-async function renderPricingOverview() {
+async function renderPricingOverview(data = pricing) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
@@ -82,7 +84,7 @@ async function renderPricingOverview() {
   clients.push(client)
   client.setQueryData(['status'], { announcements_enabled: false })
   client.setQueryData(['notice'], { success: true, data: '' })
-  client.setQueryData(['pricing'], pricing)
+  client.setQueryData(['pricing'], data)
 
   const root = createRootRoute({ component: Outlet })
   const overview = createRoute({
@@ -153,17 +155,42 @@ it('defaults to LLM API and switches visible pricing panels with mouse and keybo
   expect(screen.getByRole('tabpanel', { name: 'LLM API' })).toBeVisible()
 })
 
-it('an unpublished model with zero ratios shows pending input and output prices instead of free usage', async () => {
+it('an upcoming model shows its availability and pricing announcement without an active billing mode or free usage', async () => {
   await renderPricingOverview()
   const panel = screen.getByRole('tabpanel', { name: 'LLM API' })
   const row = within(panel).getByRole('row', { name: /Catalog Model/ })
 
-  expect(within(row).getByText('Input')).toBeVisible()
-  expect(within(row).getByText('Output')).toBeVisible()
-  expect(within(row).getAllByText('To be configured')).toHaveLength(2)
-  expect(within(row).getByText('Per 1M tokens')).toBeVisible()
+  expect(
+    within(within(row).getByRole('link')).getByText('Coming soon')
+  ).toBeVisible()
+  expect(within(row).queryByText('Token-based')).not.toBeInTheDocument()
+  expect(within(row).getByRole('cell', { name: '—' })).toBeVisible()
+  expect(within(row).getByText('Pricing will be announced')).toBeVisible()
+  expect(within(row).queryByText('To be configured')).not.toBeInTheDocument()
   expect(within(row).queryByText(/free/i)).not.toBeInTheDocument()
   expect(within(row).queryByText(/[$¥€]/)).not.toBeInTheDocument()
+})
+
+it('an available model keeps its configured billing mode without a coming-soon label', async () => {
+  await renderPricingOverview({
+    ...pricing,
+    data: [
+      {
+        ...pricing.data[0],
+        model_name: 'available-model',
+        display_name: 'Available Model',
+        availability: undefined,
+        pricing_status: undefined,
+        model_ratio: 1,
+        completion_ratio: 2,
+      },
+    ],
+  })
+  const panel = screen.getByRole('tabpanel', { name: 'LLM API' })
+  const row = within(panel).getByRole('row', { name: /Available Model/ })
+
+  expect(within(row).getByText('Token-based')).toBeVisible()
+  expect(within(row).queryByText('Coming soon')).not.toBeInTheDocument()
 })
 
 it('model names open the canonical model detail and All Models opens the model catalog', async () => {

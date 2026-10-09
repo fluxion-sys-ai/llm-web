@@ -16,13 +16,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Link } from '@tanstack/react-router'
+import { useRouterState } from '@tanstack/react-router'
 
 import { useTopNavLinks } from '@/hooks/use-top-nav-links'
 import { cn } from '@/lib/utils'
 
-import { defaultTopNavLinks } from '../config/top-nav.config'
+import {
+  defaultTopNavLinks,
+  desktopTopNavItemClassName,
+} from '../config/top-nav.config'
+import { isTopNavActive } from '../lib/url-utils'
 import type { TopNavLink } from '../types'
+import { NavLinkItem } from './nav-link-item'
 
 interface PublicNavigationProps {
   /**
@@ -46,41 +51,29 @@ export function PublicNavigation({
 }: PublicNavigationProps = {}) {
   // Use the same logic as AppHeader: prioritize dynamic links from backend
   const dynamicLinks = useTopNavLinks()
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
   const defaultLinks = providedLinks || defaultTopNavLinks
-  const links = dynamicLinks.length > 0 ? dynamicLinks : defaultLinks
+  const links: TopNavLink[] =
+    dynamicLinks.length > 0 ? dynamicLinks : defaultLinks
 
   return (
-    <nav className={cn('hidden items-center gap-1 md:flex', className)}>
-      {links.map((link, index) => {
-        // Handle external links
-        if (link.external) {
-          return (
-            <a
-              key={index}
-              href={link.href}
-              target='_blank'
-              rel='noopener noreferrer'
-              className={cn(
-                'text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground inline-flex h-9 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors focus:outline-none',
-                link.disabled && 'pointer-events-none opacity-50'
-              )}
-            >
-              {link.title}
-            </a>
-          )
-        }
-        // Handle internal links
+    <nav className={cn('hidden items-center gap-0.5 md:flex', className)}>
+      {links.map((link) => {
+        const isActive =
+          link.isActive ??
+          (!link.external && isTopNavActive(pathname, link.href))
         return (
-          <Link
-            key={index}
-            to={link.href}
+          <NavLinkItem
+            key={`${link.href}:${link.title}`}
+            link={{ ...link, isActive }}
             className={cn(
-              'text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground inline-flex h-9 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors focus:outline-none',
-              link.disabled && 'pointer-events-none opacity-50'
+              desktopTopNavItemClassName,
+              'hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground bg-transparent transition-colors focus:outline-none',
+              isActive && 'text-foreground'
             )}
-          >
-            {link.title}
-          </Link>
+          />
         )
       })}
     </nav>

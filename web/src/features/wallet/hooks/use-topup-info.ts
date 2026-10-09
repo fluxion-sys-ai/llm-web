@@ -22,7 +22,7 @@ import { getTopupInfo } from '../api'
 import {
   generatePresetAmounts,
   mergePresetAmounts,
-  getMinTopupAmount,
+  getStripePaymentMethod,
 } from '../lib'
 import type {
   TopupInfo,
@@ -167,17 +167,17 @@ export function useTopupInfo() {
   const [topupInfo, setTopupInfo] = useState<TopupInfo | null>(null)
   const [presetAmounts, setPresetAmounts] = useState<PresetAmount[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchTopupInfo = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
 
       const response = await getTopupInfo()
 
       if (!response.success || !response.data) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to fetch topup info:', response.message)
-        return
+        throw new Error(response.message || 'Failed to fetch topup info')
       }
 
       const processedData: TopupInfo = {
@@ -203,13 +203,18 @@ export function useTopupInfo() {
         )
         setPresetAmounts(customPresets)
       } else {
-        const minTopup = getMinTopupAmount(processedData)
+        const minTopup = getStripePaymentMethod(processedData)?.min_topup || 1
         const defaultPresets = generatePresetAmounts(minTopup)
         setPresetAmounts(defaultPresets)
       }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Failed to fetch topup info:', err)
+      setTopupInfo(null)
+      setPresetAmounts([])
+      setError(
+        err instanceof Error ? err : new Error('Failed to fetch topup info')
+      )
     } finally {
       setLoading(false)
     }
@@ -231,6 +236,7 @@ export function useTopupInfo() {
     topupInfo,
     presetAmounts,
     loading,
+    error,
     refetch: fetchTopupInfo,
   }
 }

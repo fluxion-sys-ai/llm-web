@@ -12,7 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as DataPolicyRouteImport } from './routes/data-policy'
+import { Route as DpaRouteImport } from './routes/dpa'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as RefundsRouteImport } from './routes/refunds'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UserAgreementRouteImport } from './routes/user-agreement'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as authOauthRouteImport } from './routes/(auth)/oauth'
@@ -88,9 +93,34 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataPolicyRoute = DataPolicyRouteImport.update({
+  id: '/data-policy',
+  path: '/data-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DpaRoute = DpaRouteImport.update({
+  id: '/dpa',
+  path: '/dpa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
   id: '/privacy-policy',
   path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundsRoute = RefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UserAgreementRoute = UserAgreementRouteImport.update({
@@ -434,7 +464,12 @@ const AuthenticatedSystemSettingsSiteSectionRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/data-policy': typeof DataPolicyRoute
+  '/dpa': typeof DpaRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/user-agreement': typeof UserAgreementRoute
   '/system-settings': typeof AuthenticatedSystemSettingsRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
@@ -499,7 +534,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/data-policy': typeof DataPolicyRoute
+  '/dpa': typeof DpaRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/user-agreement': typeof UserAgreementRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/oauth': typeof authOauthRoute
@@ -566,7 +606,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/(auth)': typeof authRouteRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/data-policy': typeof DataPolicyRoute
+  '/dpa': typeof DpaRoute
+  '/privacy': typeof PrivacyRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
+  '/refunds': typeof RefundsRoute
+  '/terms': typeof TermsRoute
   '/user-agreement': typeof UserAgreementRoute
   '/_authenticated/system-settings': typeof AuthenticatedSystemSettingsRouteRouteWithChildren
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
@@ -633,7 +678,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/data-policy'
+    | '/dpa'
+    | '/privacy'
     | '/privacy-policy'
+    | '/refunds'
+    | '/terms'
     | '/user-agreement'
     | '/system-settings'
     | '/forgot-password'
@@ -698,7 +748,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/data-policy'
+    | '/dpa'
+    | '/privacy'
     | '/privacy-policy'
+    | '/refunds'
+    | '/terms'
     | '/user-agreement'
     | '/forgot-password'
     | '/oauth'
@@ -764,7 +819,12 @@ export interface FileRouteTypes {
     | '/'
     | '/(auth)'
     | '/_authenticated'
+    | '/data-policy'
+    | '/dpa'
+    | '/privacy'
     | '/privacy-policy'
+    | '/refunds'
+    | '/terms'
     | '/user-agreement'
     | '/_authenticated/system-settings'
     | '/(auth)/forgot-password'
@@ -832,7 +892,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   authRouteRoute: typeof authRouteRouteWithChildren
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  DataPolicyRoute: typeof DataPolicyRoute
+  DpaRoute: typeof DpaRoute
+  PrivacyRoute: typeof PrivacyRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  RefundsRoute: typeof RefundsRoute
+  TermsRoute: typeof TermsRoute
   UserAgreementRoute: typeof UserAgreementRoute
   errors401Route: typeof errors401Route
   errors403Route: typeof errors403Route
@@ -874,11 +939,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/data-policy': {
+      id: '/data-policy'
+      path: '/data-policy'
+      fullPath: '/data-policy'
+      preLoaderRoute: typeof DataPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dpa': {
+      id: '/dpa'
+      path: '/dpa'
+      fullPath: '/dpa'
+      preLoaderRoute: typeof DpaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy-policy': {
       id: '/privacy-policy'
       path: '/privacy-policy'
       fullPath: '/privacy-policy'
       preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refunds': {
+      id: '/refunds'
+      path: '/refunds'
+      fullPath: '/refunds'
+      preLoaderRoute: typeof RefundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/user-agreement': {
@@ -1453,7 +1553,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   authRouteRoute: authRouteRouteWithChildren,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  DataPolicyRoute: DataPolicyRoute,
+  DpaRoute: DpaRoute,
+  PrivacyRoute: PrivacyRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
+  RefundsRoute: RefundsRoute,
+  TermsRoute: TermsRoute,
   UserAgreementRoute: UserAgreementRoute,
   errors401Route: errors401Route,
   errors403Route: errors403Route,

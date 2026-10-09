@@ -58,6 +58,8 @@ export interface ModelCardProps {
 
 export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   const { t, i18n } = useTranslation()
+  const comingSoon = props.model.availability === 'coming_soon'
+  const pricingPending = comingSoon || props.model.pricing_status === 'pending'
   const tokenUnit = props.tokenUnit ?? DEFAULT_TOKEN_UNIT
   const priceRate = props.priceRate ?? 1
   const usdExchangeRate = props.usdExchangeRate ?? 1
@@ -89,7 +91,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     : null
   const cardExamplePrice = getCardExamplePrice(props.model, dynamicPriceOptions)
   let priceSummary: ReactNode
-  if (props.model.pricing_status === 'pending') {
+  if (pricingPending) {
     priceSummary = (
       <div className='col-span-full'>
         <ModelPriceCell model={props.model} />
@@ -304,70 +306,73 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           aria-label={t('Pricing')}
           className='mt-auto flex min-w-0 flex-col gap-1.5'
         >
-          {props.model.pricing_status !== 'pending' && (
+          {!pricingPending && (
             <ModelBillingModeBadge model={props.model} appearance='caption' />
           )}
           <div className='grid grid-cols-[repeat(auto-fit,minmax(88px,1fr))] gap-x-3 gap-y-2'>
             {priceSummary}
           </div>
         </div>
-        {props.model.pricing_status !== 'pending' &&
-          (groups.length > 0 || endpoints.length > 0) && (
-            <dl
-              className={cn(
-                'grid min-w-0 grid-cols-2 gap-3 text-xs',
-                (groups.length === 0 || endpoints.length === 0) && 'grid-cols-1'
-              )}
-            >
-              {groups.length > 0 && (
-                <div className='flex min-w-0 items-baseline gap-1.5'>
-                  <dt className='text-muted-foreground shrink-0'>
-                    {t('Groups')}
-                  </dt>
-                  <dd className='flex min-w-0 items-baseline gap-1'>
-                    <span className='truncate' title={groups.join(', ')}>
-                      {groups[0]}
+        {!pricingPending && (groups.length > 0 || endpoints.length > 0) && (
+          <dl
+            className={cn(
+              'grid min-w-0 grid-cols-2 gap-3 text-xs',
+              (groups.length === 0 || endpoints.length === 0) && 'grid-cols-1'
+            )}
+          >
+            {groups.length > 0 && (
+              <div className='flex min-w-0 items-baseline gap-1.5'>
+                <dt className='text-muted-foreground shrink-0'>
+                  {t('Groups')}
+                </dt>
+                <dd className='flex min-w-0 items-baseline gap-1'>
+                  <span className='truncate' title={groups.join(', ')}>
+                    {groups[0]}
+                  </span>
+                  {groups.length > 1 && (
+                    <span
+                      className='text-muted-foreground shrink-0'
+                      title={groups.slice(1).join(', ')}
+                    >
+                      +{groups.length - 1}
                     </span>
-                    {groups.length > 1 && (
-                      <span
-                        className='text-muted-foreground shrink-0'
-                        title={groups.slice(1).join(', ')}
-                      >
-                        +{groups.length - 1}
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              )}
-              {endpoints.length > 0 && (
-                <div className='flex min-w-0 items-baseline gap-1.5'>
-                  <dt className='text-muted-foreground shrink-0'>
-                    {t('Endpoints')}
-                  </dt>
-                  <dd className='flex min-w-0 items-baseline gap-1'>
-                    <span className='truncate' title={endpoints.join(', ')}>
-                      {endpoints.slice(0, 2).join(', ')}
+                  )}
+                </dd>
+              </div>
+            )}
+            {endpoints.length > 0 && (
+              <div className='flex min-w-0 items-baseline gap-1.5'>
+                <dt className='text-muted-foreground shrink-0'>
+                  {t('Endpoints')}
+                </dt>
+                <dd className='flex min-w-0 items-baseline gap-1'>
+                  <span className='truncate' title={endpoints.join(', ')}>
+                    {endpoints.slice(0, 2).join(', ')}
+                  </span>
+                  {endpoints.length > 2 && (
+                    <span
+                      className='text-muted-foreground shrink-0'
+                      title={endpoints.slice(2).join(', ')}
+                    >
+                      +{endpoints.length - 2}
                     </span>
-                    {endpoints.length > 2 && (
-                      <span
-                        className='text-muted-foreground shrink-0'
-                        title={endpoints.slice(2).join(', ')}
-                      >
-                        +{endpoints.length - 2}
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          )}
+                  )}
+                </dd>
+              </div>
+            )}
+          </dl>
+        )}
       </CardContent>
       <CardFooter className='mt-auto border-0 bg-transparent pt-0'>
-        {props.model.pricing_status === 'pending' ? (
+        {pricingPending ? (
           <div className='border-border flex w-full items-center justify-between gap-2 border-t pt-2'>
-            <span className='text-muted-foreground text-xs'>
-              {t('Catalog preview')}
-            </span>
+            {comingSoon ? (
+              <Badge variant='secondary'>{t('Coming soon')}</Badge>
+            ) : (
+              <span className='text-muted-foreground text-xs'>
+                {t('Catalog preview')}
+              </span>
+            )}
             <Button variant='ghost' size='sm' onClick={props.onClick}>
               {t('Details')}
               <ChevronRight aria-hidden className='size-3.5' />

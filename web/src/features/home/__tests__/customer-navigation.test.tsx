@@ -30,7 +30,6 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 
 import { LlmHero } from '../components/sections/llm-hero'
-import { LlmIntegration } from '../components/sections/llm-integration'
 
 beforeEach(() => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
@@ -49,13 +48,12 @@ async function renderLandingSection(component: RouteComponent) {
     path: '/',
     component,
   })
-  const destinations = ['/playground', '/pricing', '/keys', '/docs'].map(
-    (path) =>
-      createRoute({
-        getParentRoute: () => rootRoute,
-        path,
-        component: () => <h1>{path}</h1>,
-      })
+  const destinations = ['/playground', '/pricing'].map((path) =>
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path,
+      component: () => <h1>{path}</h1>,
+    })
   )
   const router = createRouter({
     routeTree: rootRoute.addChildren([homeRoute, ...destinations]),
@@ -94,19 +92,5 @@ test('the hero explains that each model–GPU pair has a specialized inference e
   )
   expect(
     screen.getByRole('heading', { name: 'Personalized Engine' })
-  ).toBeVisible()
-})
-
-test.each([
-  ['Read the docs', '/docs'],
-  ['Get API Key', '/keys'],
-])('the %s integration action navigates to %s', async (action, destination) => {
-  const user = userEvent.setup()
-  await renderLandingSection(LlmIntegration)
-
-  await user.click(screen.getByRole('link', { name: action }))
-
-  expect(
-    await screen.findByRole('heading', { name: destination })
   ).toBeVisible()
 })

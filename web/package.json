@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "rsbuild dev",
     "dev:preview": "bun scripts/dev-preview.mjs",
+    "dev:backend": "bun scripts/dev-backend.mjs",
     "test:preview": "node --test scripts/__tests__/*.test.mjs",
     "build": "rsbuild build",
     "build:check": "tsgo -b && rsbuild build",

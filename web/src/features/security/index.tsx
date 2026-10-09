@@ -141,6 +141,11 @@ export function Security() {
       <SectionPageLayout.Title>
         {t('Security & Access')}
       </SectionPageLayout.Title>
+      <SectionPageLayout.Description>
+        {t(
+          'Manage your sign-in methods, active sessions, and account security.'
+        )}
+      </SectionPageLayout.Description>
       <SectionPageLayout.Content>
         <div className='mx-auto w-full max-w-7xl'>{content}</div>
       </SectionPageLayout.Content>

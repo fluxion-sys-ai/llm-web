@@ -24,6 +24,8 @@ import { SearchProvider } from '@/context/search-provider'
 import { getCookie } from '@/lib/cookies'
 import { cn } from '@/lib/utils'
 
+import '@/styles/console.css'
+
 import { AppHeader } from './app-header'
 import { AppSidebar } from './app-sidebar'
 
@@ -37,7 +39,10 @@ export function AuthenticatedLayout(props: AuthenticatedLayoutProps) {
   return (
     <LayoutProvider>
       <SearchProvider>
-        <SidebarProvider defaultOpen={defaultOpen} className='flex-col'>
+        <SidebarProvider
+          defaultOpen={defaultOpen}
+          className='llm-console flex-col'
+        >
           <SkipToMain />
           <AppHeader showSearch={false} />
           <div className='flex min-h-0 w-full flex-1'>

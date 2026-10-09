@@ -1,0 +1,152 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+.llm-policy-content {
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.llm-policy-content :is(p, ul, ol) {
+  margin: 0 0 1.1em;
+}
+
+.llm-policy-content :is(ul, ol) {
+  padding-left: 1.5em;
+}
+
+.llm-policy-content ul {
+  list-style-type: disc;
+}
+
+.llm-policy-content ol {
+  list-style-type: decimal;
+}
+
+.llm-policy-content li {
+  margin: 0.3em 0;
+}
+
+.llm-policy-content :is(h2, h3) {
+  margin: 2em 0 0.6em;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.llm-policy-content h2 {
+  font-size: 1.25rem;
+}
+
+.llm-policy-content h3 {
+  font-size: 1.1rem;
+}
+
+.llm-policy-content [id] {
+  scroll-margin-top: 6rem;
+}
+
+.llm-policy-content a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.llm-policy-content a:hover {
+  opacity: 0.7;
+}
+
+.llm-policy-content .meta {
+  color: var(--muted-foreground);
+  margin-bottom: 1.75rem;
+  font-size: 0.875rem;
+}
+
+.llm-policy-content .toc {
+  margin: 1.75rem 0;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  background: var(--muted);
+  font-size: 0.875rem;
+}
+
+.llm-policy-content .toc h2 {
+  margin: 0 0 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.llm-policy-content .toc ol {
+  display: grid;
+  gap: 0.25rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.llm-policy-content .toc li {
+  margin: 0;
+}
+
+.llm-policy-content .toc a {
+  text-decoration: none;
+}
+
+.llm-policy-content .table-wrap {
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.llm-policy-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.llm-policy-content :is(th, td) {
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.llm-policy-content th {
+  width: 38%;
+  font-weight: 600;
+}
+
+.llm-policy-content thead {
+  background: var(--muted);
+}
+
+.llm-policy-content tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+@media (min-width: 640px) {
+  .llm-policy-content .toc ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

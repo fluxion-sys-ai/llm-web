@@ -16,7 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { MessageSquarePlusIcon } from 'lucide-react'
+import {
+  BookOpenIcon,
+  Code2Icon,
+  Columns2Icon,
+  MailIcon,
+  MessageSquarePlusIcon,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/empty-state'
@@ -31,24 +37,28 @@ export function PlaygroundEmptyState(props: PlaygroundEmptyStateProps) {
   const starterPrompts = [
     {
       label: t('Explain a concept'),
+      icon: BookOpenIcon,
       prompt: t(
         'Explain the difference between an API and an SDK with a simple example.'
       ),
     },
     {
       label: t('Draft an email'),
+      icon: MailIcon,
       prompt: t(
         'Draft a short, friendly email asking a teammate for feedback on a project proposal.'
       ),
     },
     {
       label: t('Write code'),
+      icon: Code2Icon,
       prompt: t(
         'Write a Python function that removes duplicates from a list while preserving order. Include an example.'
       ),
     },
     {
       label: t('Compare options'),
+      icon: Columns2Icon,
       prompt: t(
         'Compare REST and GraphQL in a table, including a practical use case for each.'
       ),
@@ -57,21 +67,22 @@ export function PlaygroundEmptyState(props: PlaygroundEmptyStateProps) {
 
   return (
     <EmptyState
-      className='min-h-[min(520px,calc(100svh-18rem))] px-1 py-8 md:py-12'
+      className='min-h-[min(520px,calc(100svh-20rem))] gap-7 px-1 py-8 sm:py-12 [&_[data-slot=empty-title]]:text-2xl [&_[data-slot=empty-title]]:font-medium [&_[data-slot=empty-title]]:tracking-tight'
       icon={MessageSquarePlusIcon}
-      title={t('Start a playground chat')}
+      title={t('Start a conversation')}
       description={t(
-        'Choose a model below, then try an example or write your own message.'
+        'Choose a model, then try an example or write your own message.'
       )}
       action={
         <div className='grid w-full gap-2 sm:grid-cols-2'>
           {starterPrompts.map((starter) => (
             <Button
-              className='h-auto min-h-11 justify-start px-3 py-2.5 whitespace-normal'
+              className='text-muted-foreground hover:text-foreground h-auto min-h-12 justify-start gap-3 rounded-xl px-4 py-3 font-normal whitespace-normal'
               key={starter.label}
               onClick={() => props.onSelectPrompt(starter.prompt)}
-              variant='outline'
+              variant='secondary'
             >
+              <starter.icon aria-hidden='true' className='size-4' />
               {starter.label}
             </Button>
           ))}

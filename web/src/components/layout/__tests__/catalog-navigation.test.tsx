@@ -35,12 +35,10 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { gpuCatalog } from '@/features/gpu/data'
-import { usePricingData } from '@/features/pricing/hooks/use-pricing-data'
+import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
+import { useTopNavLinks } from '@/hooks/use-top-nav-links'
 
-import { GpuNavMenu } from '../components/gpu-nav-menu'
 import { ModelsNavMenu } from '../components/models-nav-menu'
-import { ResourcesNavMenu } from '../components/resources-nav-menu'
 import { TopNav } from '../components/top-nav'
 
 const site = vi.hoisted(() => ({ status: {} as Record<string, unknown> }))
@@ -52,6 +50,7 @@ const pricing = vi.hoisted(() => ({
       display_name: 'Catalog test model',
       vendor_name: 'Test vendor',
       featured: true,
+      availability: undefined as 'coming_soon' | undefined,
     },
   ],
   isLoading: false,
@@ -59,8 +58,8 @@ const pricing = vi.hoisted(() => ({
   refetch: vi.fn(),
 }))
 
-vi.mock('@/features/pricing/hooks/use-pricing-data', () => ({
-  usePricingData: vi.fn(() => pricing),
+vi.mock('@/features/pricing/hooks/use-llm-catalog', () => ({
+  useLlmCatalog: vi.fn(() => pricing),
 }))
 vi.mock('@/lib/lobe-icon', () => ({ getLobeIcon: () => null }))
 vi.mock('@/hooks/use-status', () => ({
@@ -71,6 +70,7 @@ beforeEach(() => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   pricing.isLoading = false
   pricing.error = null
+  pricing.models[0].availability = undefined
   site.status = {}
 })
 
@@ -104,7 +104,13 @@ async function renderNavigation(menu: ReactNode, initialPath = '/') {
     path: '/pricing/$modelId',
     component: () => <h1>Model destination</h1>,
   })
-  const additionalRoutes = ['/pricing/overview', '/blog', '/docs'].map((path) =>
+  const additionalRoutes = [
+    '/pricing/overview',
+    '/blog',
+    '/docs',
+    '/blog/release',
+    '/docs/quickstart',
+  ].map((path) =>
     createRoute({
       getParentRoute: () => root,
       path,
@@ -126,71 +132,71 @@ async function renderNavigation(menu: ReactNode, initialPath = '/') {
   return router
 }
 
+function ConfiguredTopNav() {
+  return <TopNav links={useTopNavLinks()} />
+}
+
 describe('catalog navigation menus', () => {
-  it('opens the GPU catalog and navigates to a selected GPU without retaining the dropdown', async () => {
+  it('opens the GPU catalog directly from the desktop GPU tab without a dropdown', async () => {
     const user = userEvent.setup()
-    const router = await renderNavigation(<GpuNavMenu />)
-    const trigger = screen.getByRole('button', { name: 'GPU' })
-
-    await user.click(trigger)
-
-    expect(screen.getByRole('link', { name: 'All GPUs' })).toHaveAttribute(
-      'href',
-      '/gpu'
-    )
-    for (const gpu of gpuCatalog) {
-      expect(
-        screen.getByRole('link', {
-          name: (name) =>
-            name.startsWith(gpu.name) &&
-            name.includes(`${gpu.vendor} · ${gpu.vramGb} GB`),
-        })
-      ).toHaveAttribute('href', `/gpu?gpu=${gpu.id}`)
-    }
-    await user.click(
-      screen.getByRole('link', { name: /B300\s*NVIDIA · 288 GB/ })
-    )
-
-    expect(
-      await screen.findByRole('heading', { name: 'GPU destination' })
-    ).toBeVisible()
-    expect(router.state.location.search).toEqual({ gpu: 'b300' })
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
-  })
-
-  it('supports keyboard expansion and navigation in the mobile GPU menu', async () => {
-    const user = userEvent.setup()
-    const onNavigate = vi.fn()
     const router = await renderNavigation(
-      <GpuNavMenu mobile onNavigate={onNavigate} />
+      <TopNav links={[{ title: 'GPU', href: '/gpu' }]} />
     )
+    const link = screen.getByRole('link', { name: 'GPU' })
 
-    await user.tab()
-    expect(screen.getByRole('button', { name: 'GPU' })).toHaveFocus()
-    await user.keyboard('{Enter}')
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'All GPUs' })).toHaveFocus()
-    await user.keyboard('{Enter}')
+    expect(link).toHaveAttribute('href', '/gpu')
+    expect(
+      screen.queryByRole('button', { name: 'GPU' })
+    ).not.toBeInTheDocument()
+    await user.click(link)
 
     expect(
       await screen.findByRole('heading', { name: 'GPU destination' })
     ).toBeVisible()
     expect(router.state.location.search).toEqual({ gpu: undefined })
-    expect(onNavigate).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: 'GPU' })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    )
+    expect(link).toHaveAttribute('aria-current', 'page')
   })
+
+  it.each(['mouse', 'keyboard'])(
+    'opens GPU directly and closes the mobile navigation when selected by %s',
+    async (input) => {
+      const user = userEvent.setup()
+      const router = await renderNavigation(
+        <TopNav links={[{ title: 'GPU', href: '/gpu' }]} />
+      )
+      const trigger = screen.getByRole('button', {
+        name: 'Toggle navigation menu',
+      })
+      await user.click(trigger)
+      const navigation = screen.getByRole('navigation', { name: 'Navigation' })
+      const link = within(navigation).getByRole('link', { name: 'GPU' })
+      expect(
+        within(navigation).queryByRole('button', { name: 'GPU' })
+      ).not.toBeInTheDocument()
+
+      if (input === 'keyboard') {
+        link.focus()
+        await user.keyboard('{Enter}')
+      } else {
+        await user.click(link)
+      }
+
+      expect(
+        await screen.findByRole('heading', { name: 'GPU destination' })
+      ).toBeVisible()
+      expect(router.state.location.search).toEqual({ gpu: undefined })
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    }
+  )
 
   it('retains lazy model loading and existing model detail links through the shared shell', async () => {
     const user = userEvent.setup()
     await renderNavigation(<ModelsNavMenu />)
-    expect(usePricingData).toHaveBeenLastCalledWith(false)
+    expect(useLlmCatalog).toHaveBeenLastCalledWith(false)
 
     await user.click(screen.getByRole('button', { name: 'Models' }))
 
-    expect(usePricingData).toHaveBeenLastCalledWith(true)
+    expect(useLlmCatalog).toHaveBeenLastCalledWith(true)
     expect(
       screen.getByRole('link', { name: /All Models\s*Models & Pricing/ })
     ).toHaveAttribute('href', '/pricing')
@@ -200,7 +206,7 @@ describe('catalog navigation menus', () => {
     expect(
       await screen.findByRole('heading', { name: 'Model destination' })
     ).toBeVisible()
-    expect(usePricingData).toHaveBeenLastCalledWith(false)
+    expect(useLlmCatalog).toHaveBeenLastCalledWith(false)
   })
 
   it('preserves the model error retry action', async () => {
@@ -212,6 +218,37 @@ describe('catalog navigation menus', () => {
     await user.click(screen.getByRole('button', { name: /retry/i }))
     expect(pricing.refetch).toHaveBeenCalledTimes(1)
   })
+
+  it.each([false, true])(
+    'labels upcoming models while preserving detail navigation when mobile is %s',
+    async (mobile) => {
+      pricing.models[0].availability = 'coming_soon'
+      const user = userEvent.setup()
+      await renderNavigation(<ModelsNavMenu mobile={mobile} />)
+      await user.click(screen.getByRole('button', { name: 'Models' }))
+
+      const modelLink = screen.getByRole('link', {
+        name: /Catalog test model/,
+      })
+      expect(within(modelLink).getByText('Coming soon')).toBeVisible()
+      expect(modelLink).toHaveAttribute('href', '/pricing/catalog-test-model')
+      expect(
+        within(screen.getByRole('link', { name: /All Models/ })).queryByText(
+          'Coming soon'
+        )
+      ).not.toBeInTheDocument()
+
+      await user.click(modelLink)
+
+      expect(
+        await screen.findByRole('heading', { name: 'Model destination' })
+      ).toBeVisible()
+      expect(screen.getByRole('button', { name: 'Models' })).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+    }
+  )
 
   it.each([
     ['authentication required', { requiresAuth: true }],
@@ -264,33 +301,9 @@ describe('catalog navigation menus', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('opens the GPU submenu inside TopNav on mobile and closes the navigation after selection', async () => {
-    const user = userEvent.setup()
-    const router = await renderNavigation(
-      <TopNav links={[{ title: 'GPU', href: '/gpu' }]} />
-    )
-    await user.click(
-      screen.getByRole('button', { name: 'Toggle navigation menu' })
-    )
-    const navigation = screen.getByRole('navigation', { name: 'Navigation' })
-    await user.click(within(navigation).getByRole('button', { name: 'GPU' }))
-    await user.click(
-      within(navigation).getByRole('link', { name: /H100\s*NVIDIA · 80 GB/ })
-    )
-
-    expect(
-      await screen.findByRole('heading', { name: 'GPU destination' })
-    ).toBeVisible()
-    expect(router.state.location.search).toEqual({ gpu: 'h100' })
-    expect(
-      screen.getByRole('button', { name: 'Toggle navigation menu' })
-    ).toHaveAttribute('aria-expanded', 'false')
-  })
-  it('opens Resources with internal Blog and Docs links and ignores the legacy external docs URL', async () => {
+  it('shows Blog and Docs as independent links without opening a Resources menu', async () => {
     site.status = { docs_link: 'https://docs.newapi.ai' }
-    const user = userEvent.setup()
-    await renderNavigation(<ResourcesNavMenu />)
-    await user.click(screen.getByRole('button', { name: 'Resources' }))
+    await renderNavigation(<ConfiguredTopNav />)
 
     expect(screen.getByRole('link', { name: 'Blog' })).toHaveAttribute(
       'href',
@@ -300,84 +313,88 @@ describe('catalog navigation menus', () => {
       'href',
       '/docs'
     )
+    expect(
+      screen.queryByRole('button', { name: 'Resources' })
+    ).not.toBeInTheDocument()
   })
 
-  it('keeps Blog in Resources while a disabled documentation module hides only Docs', async () => {
+  it('keeps Blog while a disabled documentation module hides Docs from desktop and mobile', async () => {
     site.status = { HeaderNavModules: JSON.stringify({ docs: false }) }
     const user = userEvent.setup()
-    await renderNavigation(<ResourcesNavMenu />)
-    await user.click(screen.getByRole('button', { name: 'Resources' }))
+    await renderNavigation(<ConfiguredTopNav />)
 
     expect(screen.getByRole('link', { name: 'Blog' })).toHaveAttribute(
       'href',
       '/blog'
     )
     expect(screen.queryByRole('link', { name: 'Docs' })).not.toBeInTheDocument()
-  })
-
-  it('supports keyboard navigation to Docs and closes the mobile Resources menu', async () => {
-    const user = userEvent.setup()
-    const onNavigate = vi.fn()
-    await renderNavigation(<ResourcesNavMenu mobile onNavigate={onNavigate} />)
-
-    await user.tab()
-    expect(screen.getByRole('button', { name: 'Resources' })).toHaveFocus()
-    await user.keyboard('{Enter}')
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'Blog' })).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('link', { name: 'Docs' })).toHaveFocus()
-    await user.keyboard('{Enter}')
-
-    expect(await screen.findByRole('heading', { name: '/docs' })).toBeVisible()
-    expect(onNavigate).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: 'Resources' })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    )
-  })
-
-  it('closes the mobile TopNav after a Resources link is selected', async () => {
-    const user = userEvent.setup()
-    await renderNavigation(
-      <TopNav links={[{ title: 'Resources', href: '/blog' }]} />
-    )
-    const trigger = screen.getByRole('button', {
-      name: 'Toggle navigation menu',
-    })
-    await user.click(trigger)
-    const navigation = screen.getByRole('navigation', { name: 'Navigation' })
     await user.click(
-      within(navigation).getByRole('button', { name: 'Resources' })
+      screen.getByRole('button', { name: 'Toggle navigation menu' })
     )
-    await user.click(within(navigation).getByRole('link', { name: 'Blog' }))
-
-    expect(await screen.findByRole('heading', { name: '/blog' })).toBeVisible()
-    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    const navigation = screen.getByRole('navigation', { name: 'Navigation' })
+    expect(
+      within(navigation).getByRole('link', { name: 'Blog' })
+    ).toHaveAttribute('href', '/blog')
+    expect(
+      within(navigation).queryByRole('link', { name: 'Docs' })
+    ).not.toBeInTheDocument()
   })
+
+  it.each(['Blog', 'Docs'])(
+    'closes the mobile TopNav after selecting the direct %s link with a keyboard',
+    async (label) => {
+      const user = userEvent.setup()
+      await renderNavigation(
+        <TopNav
+          links={[
+            { title: 'Blog', href: '/blog' },
+            { title: 'Docs', href: '/docs' },
+          ]}
+        />
+      )
+      const trigger = screen.getByRole('button', {
+        name: 'Toggle navigation menu',
+      })
+      await user.click(trigger)
+      const navigation = screen.getByRole('navigation', { name: 'Navigation' })
+      const link = within(navigation).getByRole('link', { name: label })
+      link.focus()
+      await user.keyboard('{Enter}')
+
+      expect(
+        await screen.findByRole('heading', { name: `/${label.toLowerCase()}` })
+      ).toBeVisible()
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    }
+  )
 
   it.each([
     ['/pricing/overview', 'Pricing'],
+    ['/gpu', 'GPU'],
     ['/pricing/catalog-test-model', 'Models'],
-    ['/blog', 'Resources'],
-    ['/docs', 'Resources'],
+    ['/blog', 'Blog'],
+    ['/blog/release', 'Blog'],
+    ['/docs', 'Docs'],
+    ['/docs/quickstart', 'Docs'],
   ])(
     'marks only %s in its current top-level section %s',
     async (path, currentSection) => {
       await renderNavigation(
         <TopNav
           links={[
-            { title: 'Models & Pricing', href: '/pricing' },
+            { title: 'Models', href: '/pricing' },
+            { title: 'GPU', href: '/gpu' },
             { title: 'Pricing', href: '/pricing/overview' },
-            { title: 'Resources', href: '/blog' },
+            { title: 'Blog', href: '/blog' },
+            { title: 'Docs', href: '/docs' },
           ]}
         />,
         path
       )
 
-      for (const section of ['Models', 'Pricing', 'Resources']) {
+      for (const section of ['Models', 'GPU', 'Pricing', 'Blog', 'Docs']) {
         const control = screen.getByRole(
-          section === 'Pricing' ? 'link' : 'button',
+          section === 'Models' ? 'button' : 'link',
           { name: section }
         )
         if (section === currentSection) {

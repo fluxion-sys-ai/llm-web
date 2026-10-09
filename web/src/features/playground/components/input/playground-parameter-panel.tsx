@@ -23,13 +23,9 @@ import { PromptInputButton } from '@/components/ai-elements/prompt-input'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -48,7 +44,6 @@ import {
   getParameterControlValueText,
   normalizeParameterNumberValue,
   PLAYGROUND_PARAMETER_CONTROLS,
-  PLAYGROUND_PARAMETER_PANEL_SCROLL_CLASS,
   type PlaygroundParameterKey,
 } from '../../lib/parameters/playground-parameters'
 import type { ParameterEnabled, PlaygroundConfig } from '../../types'
@@ -67,18 +62,13 @@ type PlaygroundParameterPanelProps = {
   parameterEnabled: ParameterEnabled
 }
 
-type PlaygroundParameterContentProps = PlaygroundParameterPanelProps & {
-  compact?: boolean
-}
-
 function PlaygroundParameterContent({
-  compact = false,
   config,
   disabled,
   onConfigChange,
   onParameterEnabledChange,
   parameterEnabled,
-}: PlaygroundParameterContentProps) {
+}: PlaygroundParameterPanelProps) {
   const { t } = useTranslation()
 
   const updateParameterConfig = (
@@ -94,13 +84,7 @@ function PlaygroundParameterContent({
   }
 
   return (
-    <div
-      className={cn(
-        'grid gap-3',
-        PLAYGROUND_PARAMETER_PANEL_SCROLL_CLASS,
-        compact ? 'px-4 pb-4' : 'p-1'
-      )}
-    >
+    <div className='min-h-0 overflow-y-auto px-5 pb-5'>
       {PLAYGROUND_PARAMETER_CONTROLS.map((control) => {
         const enabled = parameterEnabled[control.key]
         const value = config[control.key]
@@ -108,10 +92,7 @@ function PlaygroundParameterContent({
 
         return (
           <div
-            className={cn(
-              'border-border bg-background grid gap-2 rounded-lg border p-3 transition-opacity',
-              (!enabled || disabled) && 'opacity-55'
-            )}
+            className='border-border/60 grid gap-3 border-b py-5 last:border-b-0'
             key={control.key}
           >
             <div className='flex items-start justify-between gap-3'>
@@ -124,8 +105,8 @@ function PlaygroundParameterContent({
                     {t(control.labelKey)}
                   </label>
                   <Badge
-                    className='h-5 max-w-24 shrink-0 px-1.5 font-mono text-[11px]'
-                    variant='outline'
+                    className='h-5 max-w-24 shrink-0 px-1.5 font-mono text-[11px] font-normal'
+                    variant='secondary'
                   >
                     {t(getParameterControlValueText(control.key, value))}
                   </Badge>
@@ -202,65 +183,53 @@ export function PlaygroundParameterPanel(props: PlaygroundParameterPanelProps) {
     (control) => props.parameterEnabled[control.key]
   ).length
 
-  const trigger = (
-    <PromptInputButton
-      aria-label={t('Parameters')}
-      className='text-muted-foreground hover:text-foreground hover:bg-muted/70 relative font-medium'
-      disabled={props.disabled}
-      variant='ghost'
-    >
-      <SlidersHorizontalIcon size={16} />
-      <span className='bg-primary text-primary-foreground absolute -top-1 -right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[9px] leading-none font-semibold'>
-        {activeCount}
-      </span>
-    </PromptInputButton>
-  )
-
-  if (isMobile) {
-    return (
-      <Sheet>
-        <Tooltip>
-          <TooltipTrigger render={<SheetTrigger render={trigger} />} />
-          <TooltipContent>
-            <p>{t('Parameters')}</p>
-          </TooltipContent>
-        </Tooltip>
-        <SheetContent
-          className='max-h-[85vh] overflow-hidden rounded-t-xl'
-          side='bottom'
-        >
-          <SheetHeader>
-            <SheetTitle>{t('Parameter settings')}</SheetTitle>
-          </SheetHeader>
-          <PlaygroundParameterContent {...props} compact />
-        </SheetContent>
-      </Sheet>
-    )
-  }
-
   return (
-    <Popover>
+    <Sheet>
       <Tooltip>
-        <TooltipTrigger render={<PopoverTrigger render={trigger} />} />
-        <TooltipContent>
-          <p>{t('Parameters')}</p>
-        </TooltipContent>
+        <TooltipTrigger
+          render={
+            <SheetTrigger
+              render={
+                <PromptInputButton
+                  aria-label={t('Parameters')}
+                  className='text-muted-foreground hover:text-foreground h-8 gap-2 px-2'
+                  disabled={props.disabled}
+                  variant='ghost'
+                >
+                  <SlidersHorizontalIcon
+                    aria-hidden='true'
+                    className='size-4'
+                  />
+                  <span className='hidden sm:inline'>{t('Parameters')}</span>
+                  <Badge
+                    aria-hidden='true'
+                    className='h-5 min-w-5 justify-center px-1 text-[10px] font-medium'
+                    variant='secondary'
+                  >
+                    {activeCount}
+                  </Badge>
+                </PromptInputButton>
+              }
+            />
+          }
+        />
+        <TooltipContent>{t('Parameters')}</TooltipContent>
       </Tooltip>
-      <PopoverContent
-        align='start'
-        className='w-[22rem] max-w-[calc(100vw-2rem)] gap-3 p-3'
-        collisionPadding={8}
-        side='top'
-        sideOffset={8}
+      <SheetContent
+        className={cn(
+          'gap-0',
+          isMobile ? 'max-h-[85svh] rounded-t-2xl' : 'w-full sm:max-w-sm'
+        )}
+        side={isMobile ? 'bottom' : 'right'}
       >
-        <div className='space-y-1 px-1'>
-          <div className='text-sm font-semibold'>{t('Parameter settings')}</div>
-          <div className='text-muted-foreground text-xs leading-4'>
+        <SheetHeader className='border-border/60 shrink-0 gap-2 border-b px-5 pt-5 pb-4'>
+          <SheetTitle>{t('Parameter settings')}</SheetTitle>
+          <SheetDescription className='pr-5 text-xs leading-5'>
             {t('Only enabled parameters are sent with the request.')}
-          </div>
-        </div>
+          </SheetDescription>
+        </SheetHeader>
         <PlaygroundParameterContent {...props} />
-      </PopoverContent>
-    </Popover>
+      </SheetContent>
+    </Sheet>
   )
 }

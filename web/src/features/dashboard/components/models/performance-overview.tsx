@@ -21,7 +21,7 @@ import { Gauge, HeartPulse, Timer } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
+import { IconBadge } from '@/components/ui/icon-badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import {
@@ -103,18 +103,18 @@ export function PerformanceOverview() {
 
   if (!loading && !hasData) {
     return (
-      <div className='text-muted-foreground overflow-hidden rounded-lg border px-4 py-3 text-center text-xs'>
+      <div className='text-muted-foreground bg-card overflow-hidden rounded-xl border px-4 py-3 text-center text-xs'>
         {t('No performance data available')}
       </div>
     )
   }
 
   return (
-    <div className='overflow-hidden rounded-lg border'>
+    <div className='bg-card overflow-hidden rounded-xl border'>
       <div className='flex flex-wrap items-center gap-x-5 gap-y-2.5 px-4 py-2.5 sm:px-5 sm:py-3'>
         {/* Title */}
         <div className='flex items-center gap-1.5'>
-          <IconBadge tone='success' size='xs'>
+          <IconBadge tone='neutral' size='xs'>
             <HeartPulse />
           </IconBadge>
           <span className='text-xs font-semibold whitespace-nowrap'>
@@ -142,19 +142,16 @@ export function PerformanceOverview() {
               label={t('Success rate')}
               value={formatUptimePct(summary.successRate)}
               valueClassName={getSuccessRateTextClass(summary.successRate)}
-              tone='success'
             />
             <InlineMetric
               icon={Timer}
               label={t('Average latency')}
               value={formatLatency(summary.avgLatencyMs)}
-              tone='warning'
             />
             <InlineMetric
               icon={Gauge}
               label={t('Throughput')}
               value={formatThroughput(summary.avgTps)}
-              tone='info'
             />
           </div>
         )}
@@ -180,19 +177,18 @@ function InlineMetric(props: {
   label: string
   value: string
   valueClassName?: string
-  tone: IconBadgeTone
 }) {
   const Icon = props.icon
 
   return (
     <div className='flex items-center gap-1.5'>
-      <IconBadge tone={props.tone} size='xs'>
+      <IconBadge tone='neutral' size='xs'>
         <Icon />
       </IconBadge>
       <span className='text-muted-foreground text-[11px]'>{props.label}</span>
       <span
         className={cn(
-          'font-mono text-xs font-semibold tabular-nums',
+          'text-sm font-semibold tabular-nums',
           props.valueClassName
         )}
       >

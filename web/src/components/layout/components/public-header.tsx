@@ -32,13 +32,15 @@ import { useTopNavLinks } from '@/hooks/use-top-nav-links'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { defaultTopNavLinks } from '../config/top-nav.config'
+import {
+  defaultTopNavLinks,
+  desktopTopNavItemClassName,
+} from '../config/top-nav.config'
 import { isTopNavActive } from '../lib/url-utils'
 import type { TopNavLink } from '../types'
-import { GpuNavMenu } from './gpu-nav-menu'
 import { HeaderLogo } from './header-logo'
 import { ModelsNavMenu } from './models-nav-menu'
-import { ResourcesNavMenu } from './resources-nav-menu'
+import { NavLinkItem } from './nav-link-item'
 
 const AUTH_PROMPT_SECONDS = 5
 
@@ -196,7 +198,7 @@ export function PublicHeader(props: PublicHeaderProps) {
             </Link>
 
             {/* Desktop nav */}
-            <div className='hidden items-center gap-0.5 whitespace-nowrap lg:flex'>
+            <div className='hidden items-center gap-0.5 whitespace-nowrap xl:flex'>
               {links.map((link) => {
                 const isActive = isTopNavActive(pathname, link.href)
                 if (
@@ -212,75 +214,25 @@ export function PublicHeader(props: PublicHeaderProps) {
                     />
                   )
                 }
-                if (
-                  link.href === '/gpu' &&
-                  !link.external &&
-                  !link.disabled &&
-                  !link.requiresAuth
-                ) {
-                  return (
-                    <GpuNavMenu
-                      key={`${link.href}:${link.title}`}
-                      active={isActive}
-                    />
-                  )
-                }
-                if (
-                  link.href === '/blog' &&
-                  !link.external &&
-                  !link.disabled &&
-                  !link.requiresAuth
-                ) {
-                  return (
-                    <ResourcesNavMenu
-                      key={`${link.href}:${link.title}`}
-                      active={isActive}
-                    />
-                  )
-                }
-                if (link.external) {
-                  return (
-                    <a
-                      key={`${link.href}:${link.title}`}
-                      href={link.href}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      aria-disabled={link.disabled}
-                      tabIndex={link.disabled ? -1 : undefined}
-                      onClick={(event) => handleNavLinkClick(event, link)}
-                      className={cn(
-                        'text-muted-foreground hover:text-foreground rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200',
-                        link.disabled && 'pointer-events-none opacity-50'
-                      )}
-                    >
-                      {t(link.title)}
-                    </a>
-                  )
-                }
                 return (
-                  <Link
+                  <NavLinkItem
                     key={`${link.href}:${link.title}`}
-                    to={link.href}
-                    aria-current={isActive ? 'page' : undefined}
-                    activeOptions={{ exact: true }}
-                    disabled={link.disabled}
+                    link={{ ...link, title: t(link.title), isActive }}
                     onClick={(event) => handleNavLinkClick(event, link)}
                     className={cn(
-                      'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200',
+                      desktopTopNavItemClassName,
+                      'transition-colors duration-200',
                       isActive
                         ? 'text-foreground'
-                        : 'text-muted-foreground hover:text-foreground',
-                      link.disabled && 'pointer-events-none opacity-50'
+                        : 'text-muted-foreground hover:text-foreground'
                     )}
-                  >
-                    {t(link.title)}
-                  </Link>
+                  />
                 )
               })}
             </div>
 
             {/* Desktop actions */}
-            <div className='ml-auto hidden shrink-0 items-center gap-0.5 lg:flex'>
+            <div className='ml-auto hidden shrink-0 items-center gap-0.5 xl:flex'>
               {showNotifications && (
                 <NotificationPopover
                   open={notifications.popoverOpen}
@@ -320,7 +272,7 @@ export function PublicHeader(props: PublicHeaderProps) {
             </div>
 
             {/* Mobile: compact actions + hamburger */}
-            <div className='ml-auto flex items-center gap-2 lg:hidden'>
+            <div className='ml-auto flex items-center gap-2 xl:hidden'>
               {showAuthButtons && !loading && isAuthenticated && (
                 <ProfileDropdown />
               )}
@@ -331,6 +283,8 @@ export function PublicHeader(props: PublicHeaderProps) {
                 className='size-9'
                 onClick={() => setMobileOpen((v) => !v)}
                 aria-label={t('Toggle navigation menu')}
+                aria-expanded={mobileOpen}
+                aria-controls='public-mobile-navigation'
               >
                 <div className='relative size-4'>
                   <span
@@ -362,14 +316,18 @@ export function PublicHeader(props: PublicHeaderProps) {
       <div
         inert={!mobileOpen}
         className={cn(
-          'bg-background/98 fixed inset-0 z-40 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] lg:pointer-events-none lg:hidden',
+          'bg-background/98 fixed inset-0 z-40 backdrop-blur-2xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] xl:pointer-events-none xl:hidden',
           mobileOpen
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0'
         )}
       >
         <div className='mx-auto flex h-full w-full max-w-(--page-max) flex-col justify-between gap-8 overflow-y-auto px-6 pt-20 pb-10'>
-          <nav className='flex flex-col gap-1'>
+          <nav
+            id='public-mobile-navigation'
+            aria-label={t('Navigation')}
+            className='flex flex-col gap-1'
+          >
             {links.map((link, i) => {
               const isActive = isTopNavActive(pathname, link.href)
               if (
@@ -380,36 +338,6 @@ export function PublicHeader(props: PublicHeaderProps) {
               ) {
                 return mobileOpen ? (
                   <ModelsNavMenu
-                    key={`${link.href}:${link.title}`}
-                    mobile
-                    active={isActive}
-                    onNavigate={() => setMobileOpen(false)}
-                  />
-                ) : null
-              }
-              if (
-                link.href === '/gpu' &&
-                !link.external &&
-                !link.disabled &&
-                !link.requiresAuth
-              ) {
-                return mobileOpen ? (
-                  <GpuNavMenu
-                    key={`${link.href}:${link.title}`}
-                    mobile
-                    active={isActive}
-                    onNavigate={() => setMobileOpen(false)}
-                  />
-                ) : null
-              }
-              if (
-                link.href === '/blog' &&
-                !link.external &&
-                !link.disabled &&
-                !link.requiresAuth
-              ) {
-                return mobileOpen ? (
-                  <ResourcesNavMenu
                     key={`${link.href}:${link.title}`}
                     mobile
                     active={isActive}
@@ -428,36 +356,14 @@ export function PublicHeader(props: PublicHeaderProps) {
               const transitionStyle = {
                 transitionDelay: mobileOpen ? `${100 + i * 50}ms` : '0ms',
               }
-              if (link.external) {
-                return (
-                  <a
-                    key={`${link.href}:${link.title}`}
-                    href={link.href}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    aria-disabled={link.disabled}
-                    tabIndex={link.disabled ? -1 : undefined}
-                    onClick={(event) => handleNavLinkClick(event, link, true)}
-                    className={linkClassName}
-                    style={transitionStyle}
-                  >
-                    {t(link.title)}
-                  </a>
-                )
-              }
               return (
-                <Link
+                <NavLinkItem
                   key={`${link.href}:${link.title}`}
-                  to={link.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  activeOptions={{ exact: true }}
-                  disabled={link.disabled}
+                  link={{ ...link, title: t(link.title), isActive }}
                   onClick={(event) => handleNavLinkClick(event, link, true)}
                   className={linkClassName}
                   style={transitionStyle}
-                >
-                  {t(link.title)}
-                </Link>
+                />
               )
             })}
           </nav>

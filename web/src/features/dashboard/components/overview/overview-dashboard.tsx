@@ -47,12 +47,14 @@ import {
   CardStaggerItem,
 } from '@/components/page-transition'
 import { Button } from '@/components/ui/button'
-import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
+import { IconBadge } from '@/components/ui/icon-badge'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
+import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getUserModels } from '@/lib/api'
 import { MOTION_TRANSITION } from '@/lib/motion'
+import { getPublicApiServerAddress } from '@/lib/public-api-address'
 import { ROLE } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -98,6 +100,7 @@ interface QuickAction {
 interface RequestExample {
   endpoint: string
   model: string
+  modelStatus: string
   keyName: string
   keyId?: number
   displayKey: string
@@ -108,7 +111,6 @@ interface HeroSignal {
   label: string
   value: string
   icon: LucideIcon
-  tone: IconBadgeTone
 }
 
 function getSavedSetupGuideExpanded(): boolean | null {
@@ -213,7 +215,7 @@ function StartStepItem(props: {
               </span>
               <span className='truncate'>{props.step.title}</span>
             </span>
-            <span className='text-muted-foreground line-clamp-1 text-xs'>
+            <span className='text-muted-foreground line-clamp-2 text-xs leading-relaxed'>
               {props.step.description}
             </span>
           </span>
@@ -235,14 +237,15 @@ function RequestPreview(props: {
   const shouldReduceMotion = useReducedMotion()
   const [isCopying, setIsCopying] = useState(false)
   const { copyToClipboard } = useCopyToClipboard({ notify: false })
-  const previewCurl = buildCurlCommand({
-    endpoint: props.example.endpoint,
-    apiKey: props.example.displayKey,
-    model: props.example.model,
-  })
-  const previewLines = previewCurl.split('\n')
+  const previewLines = props.example.model
+    ? buildCurlCommand({
+        endpoint: props.example.endpoint,
+        apiKey: props.example.displayKey,
+        model: props.example.model,
+      }).split('\n')
+    : []
   const handleCopyRequest = async () => {
-    if (!props.example.keyId || isCopying) return
+    if (!props.example.ready || !props.example.keyId || isCopying) return
 
     setIsCopying(true)
     try {
@@ -274,11 +277,11 @@ function RequestPreview(props: {
       initial={shouldReduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
       animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
       transition={MOTION_TRANSITION.slow}
-      className='bg-background relative overflow-hidden rounded-xl border p-3'
+      className='bg-muted/20 relative min-w-0 overflow-hidden rounded-xl border p-4'
     >
       <div className='flex items-center justify-between gap-3 border-b pb-3'>
         <div className='flex min-w-0 items-center gap-2'>
-          <IconBadge tone='info'>
+          <IconBadge tone='neutral'>
             <TerminalSquare />
           </IconBadge>
           <div className='min-w-0'>
@@ -286,18 +289,18 @@ function RequestPreview(props: {
               {t('First API request')}
             </div>
             <div className='text-muted-foreground truncate text-xs'>
-              {props.example.ready
+              {props.example.keyId
                 ? props.example.keyName
                 : t('Create an API key to unlock the real request')}
             </div>
           </div>
         </div>
-        {props.example.ready ? (
+        {props.example.keyId ? (
           <Button
             variant='outline'
             size='sm'
             className='h-7 gap-1.5 px-2 text-xs'
-            disabled={isCopying}
+            disabled={!props.example.ready || isCopying}
             onClick={handleCopyRequest}
             aria-label={t('Copy ready-to-run curl')}
           >
@@ -312,12 +315,12 @@ function RequestPreview(props: {
       </div>
 
       <div className='bg-muted/50 my-3 rounded-lg p-3 font-mono text-xs'>
-        <div className='mb-2 flex items-center gap-1.5'>
-          <span className='bg-destructive size-2 rounded-full' />
-          <span className='bg-warning size-2 rounded-full' />
-          <span className='bg-success size-2 rounded-full' />
-        </div>
         <div className='flex flex-col gap-1 overflow-hidden'>
+          {!props.example.model && (
+            <p className='text-muted-foreground font-sans'>
+              {props.example.modelStatus}
+            </p>
+          )}
           {previewLines.map((line) => (
             <code
               key={line}
@@ -337,17 +340,17 @@ function RequestPreview(props: {
           return (
             <div
               key={signal.label}
-              className='bg-muted/40 flex items-center justify-between gap-3 rounded-lg px-3 py-2'
+              className='flex min-w-0 flex-wrap items-center justify-between gap-2 border-t py-2'
             >
               <span className='flex min-w-0 items-center gap-2'>
-                <IconBadge tone={signal.tone} size='xs'>
+                <IconBadge tone='neutral' size='xs'>
                   <Icon />
                 </IconBadge>
                 <span className='truncate text-xs font-medium'>
                   {signal.label}
                 </span>
               </span>
-              <span className='text-muted-foreground shrink-0 text-xs'>
+              <span className='text-muted-foreground max-w-full text-xs break-words'>
                 {signal.value}
               </span>
             </div>
@@ -364,7 +367,7 @@ function QuickActionItem(props: { action: QuickAction }) {
   return (
     <Button
       variant='outline'
-      className='h-auto justify-start rounded-lg px-3 py-3 text-left'
+      className='h-auto justify-start gap-3 rounded-lg p-3 text-left whitespace-normal'
       render={<Link to={props.action.to} />}
     >
       <span className='bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg'>
@@ -404,6 +407,7 @@ export function OverviewDashboard() {
   const setupGuideToggleRef = useRef<HTMLButtonElement>(null)
   const user = useAuthStore((state) => state.auth.user)
   const { items: apiInfoItems } = useApiInfo()
+  const llmCatalog = useLlmCatalog()
   const {
     apiInfo: showApiInfoPanel,
     announcements: showAnnouncementsPanel,
@@ -436,6 +440,22 @@ export function OverviewDashboard() {
     },
     staleTime: 5 * 60 * 1000,
   })
+
+  const selectedModel = useMemo(() => {
+    if (modelsQuery.error || llmCatalog.error) return undefined
+    const catalogIds = new Set(
+      llmCatalog.models
+        .filter((model) => model.availability !== 'coming_soon')
+        .map((model) => model.model_name)
+    )
+    return modelsQuery.data?.find((model) => catalogIds.has(model))
+  }, [llmCatalog.error, llmCatalog.models, modelsQuery.data, modelsQuery.error])
+  let modelStatus = t('No available models')
+  if (modelsQuery.error || llmCatalog.error) {
+    modelStatus = t('Unable to load models')
+  } else if (modelsQuery.isLoading || llmCatalog.isLoading) {
+    modelStatus = t('Loading')
+  }
 
   const preferredKey = useMemo(
     () => getPreferredKey(apiKeysQuery.data ?? []),
@@ -511,33 +531,33 @@ export function OverviewDashboard() {
         label: t('Route active'),
         value: apiInfoItems.length > 0 ? t('Online') : t('Current domain'),
         icon: RadioTower,
-        tone: 'info',
       },
       {
         label: t('Auth configured'),
         value: preferredKey ? t('Secured') : t('Needs API key'),
         icon: ShieldCheck,
-        tone: 'success',
       },
       {
         label: t('Model selected'),
-        value: modelsQuery.data?.[0] ?? t('Loading'),
+        value: selectedModel ?? modelStatus,
         icon: Timer,
-        tone: 'chart-4',
       },
     ],
-    [apiInfoItems.length, modelsQuery.data, preferredKey, t]
+    [apiInfoItems.length, modelStatus, preferredKey, selectedModel, t]
   )
 
   const requestExample = useMemo<RequestExample>(() => {
-    const endpoint = normalizeEndpoint(apiInfoItems[0]?.url)
-    const model = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
+    const endpoint = normalizeEndpoint(
+      getPublicApiServerAddress(apiInfoItems[0]?.url ?? getCurrentOrigin())
+    )
+    const model = selectedModel ?? ''
     const keyName = preferredKey?.name ?? t('No API key yet')
     const ready = Boolean(preferredKey?.id && model)
 
     return {
       endpoint,
       model,
+      modelStatus,
       keyName,
       keyId: preferredKey?.id,
       displayKey: preferredKey
@@ -545,7 +565,7 @@ export function OverviewDashboard() {
         : 'sk-...',
       ready,
     }
-  }, [apiInfoItems, modelsQuery.data, preferredKey, t])
+  }, [apiInfoItems, modelStatus, preferredKey, selectedModel, t])
 
   const completedStepCount = startSteps.filter((step) => step.completed).length
   const setupComplete = completedStepCount === startSteps.length
@@ -584,24 +604,26 @@ export function OverviewDashboard() {
         )}
       </SectionPageLayout.Actions>
       <SectionPageLayout.Content>
-        <div className='flex flex-col gap-4'>
+        <div className='flex flex-col gap-6'>
+          <SummaryCards />
+
           <div id={setupGuideId} hidden={!setupGuideExpanded}>
             {setupGuideExpanded && (
-              <CardStaggerContainer className='grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
+              <CardStaggerContainer className='grid items-stretch gap-4'>
                 <CardStaggerItem className='bg-card h-full overflow-hidden rounded-xl border'>
-                  <div className='relative h-full overflow-hidden p-4 sm:p-5'>
-                    <div className='relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]'>
+                  <div className='relative h-full overflow-hidden p-5 sm:p-6'>
+                    <div className='relative grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]'>
                       <div className='flex min-w-0 flex-col gap-5'>
                         <div className='flex flex-wrap items-start justify-between gap-3'>
                           <div className='flex max-w-2xl flex-col gap-1'>
-                            <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wider uppercase'>
+                            <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium'>
                               <ListChecks
                                 className='size-3.5'
                                 aria-hidden='true'
                               />
                               {t('Get started')}
                             </div>
-                            <h3 className='text-xl font-semibold tracking-tight sm:text-2xl'>
+                            <h3 className='text-xl font-semibold tracking-tight'>
                               {t('Build on your API gateway in minutes')}
                             </h3>
                             <p className='text-muted-foreground max-w-xl text-sm leading-relaxed'>
@@ -628,7 +650,7 @@ export function OverviewDashboard() {
                           </div>
                         </div>
 
-                        <ol className='bg-muted/30 rounded-xl border p-2'>
+                        <ol className='flex flex-col gap-1'>
                           {startSteps.map((step, index) => (
                             <StartStepItem
                               key={step.title}
@@ -651,14 +673,19 @@ export function OverviewDashboard() {
                 <CardStaggerItem className='bg-card h-full rounded-xl border p-4 sm:p-5'>
                   <div className='flex h-full flex-col gap-4'>
                     <div className='flex flex-col gap-1'>
-                      <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                      <div className='text-muted-foreground text-xs font-medium'>
                         {t('Recommended actions')}
                       </div>
                       <h3 className='text-lg font-semibold tracking-tight'>
                         {t('Keep the platform ready')}
                       </h3>
                     </div>
-                    <div className='grid gap-2'>
+                    <div
+                      className={cn(
+                        'grid gap-3 sm:grid-cols-2',
+                        isAdmin ? 'xl:grid-cols-4' : 'xl:grid-cols-3'
+                      )}
+                    >
                       {visibleQuickActions.map((action) => (
                         <QuickActionItem key={action.title} action={action} />
                       ))}
@@ -692,7 +719,7 @@ export function OverviewDashboard() {
                             })}
                           </span>
                         </div>
-                        <p className='text-muted-foreground line-clamp-1 text-xs'>
+                        <p className='text-muted-foreground line-clamp-2 text-xs leading-relaxed'>
                           {t('Setup guide is collapsed. Expand it anytime.')}
                         </p>
                       </div>
@@ -722,8 +749,6 @@ export function OverviewDashboard() {
               </CardStaggerItem>
             </CardStaggerContainer>
           )}
-
-          <SummaryCards />
 
           {showContentPanels && (
             <CardStaggerContainer

@@ -138,13 +138,12 @@ export function LogStatCards(props: LogStatCardsProps) {
       fullValue: formatted.fullValue,
       desc: config.description,
       icon: config.icon,
-      iconTone: config.iconTone,
     }
   })
 
   return (
     <div className='bg-card overflow-hidden rounded-xl border'>
-      <div className='divide-border grid min-w-0 grid-cols-2 divide-x sm:grid-cols-3 lg:grid-cols-5'>
+      <div className='bg-border grid min-w-0 grid-cols-2 gap-px sm:grid-cols-3 xl:grid-cols-5'>
         {items.map((it, idx) => {
           const Icon = it.icon
           let valueContent
@@ -158,7 +157,7 @@ export function LogStatCards(props: LogStatCardsProps) {
           } else if (error) {
             valueContent = (
               <>
-                <div className='text-muted-foreground mt-1 font-mono text-base leading-tight font-medium tracking-tight tabular-nums sm:mt-2 sm:text-2xl sm:leading-normal'>
+                <div className='text-muted-foreground mt-1 text-2xl leading-tight font-semibold tracking-tight tabular-nums sm:mt-2 sm:text-2xl sm:leading-normal'>
                   --
                 </div>
                 <div className='text-muted-foreground mt-1 hidden text-xs md:block'>
@@ -170,7 +169,7 @@ export function LogStatCards(props: LogStatCardsProps) {
             valueContent = (
               <>
                 <div
-                  className='text-foreground mt-1 max-w-full truncate font-mono text-base leading-tight font-medium tracking-tight tabular-nums sm:mt-2 sm:text-2xl sm:leading-normal'
+                  className='text-foreground mt-1 max-w-full truncate text-2xl leading-tight font-semibold tracking-tight tabular-nums sm:mt-2 sm:text-2xl sm:leading-normal'
                   title={it.fullValue}
                 >
                   {it.value}
@@ -186,7 +185,7 @@ export function LogStatCards(props: LogStatCardsProps) {
             <div
               key={it.title}
               className={cn(
-                'min-w-0 px-2.5 py-1.5 sm:px-5 sm:py-4',
+                'bg-card min-w-0 p-4 sm:p-5',
                 idx === items.length - 1 &&
                   items.length % 2 !== 0 &&
                   'col-span-2 sm:col-span-1'
@@ -194,13 +193,13 @@ export function LogStatCards(props: LogStatCardsProps) {
             >
               <div className='flex min-w-0 items-center gap-1.5 sm:gap-2'>
                 <IconBadge
-                  tone={it.iconTone}
+                  tone='neutral'
                   size='stat'
-                  className='size-4 rounded-sm sm:size-7 sm:rounded-md [&>svg]:size-2.5 sm:[&>svg]:size-3.5'
+                  className='size-7 rounded-lg [&>svg]:size-3.5'
                 >
                   <Icon />
                 </IconBadge>
-                <div className='text-muted-foreground truncate text-[11px] leading-4 font-medium tracking-wide uppercase sm:text-xs sm:tracking-wider'>
+                <div className='text-muted-foreground truncate text-xs leading-5 font-medium'>
                   {it.title}
                 </div>
               </div>

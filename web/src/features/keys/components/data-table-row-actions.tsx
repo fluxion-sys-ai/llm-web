@@ -52,6 +52,7 @@ import { resolveChatUrl, type ChatPreset } from '@/features/chat/lib/chat-links'
 import { sendToFluent } from '@/features/chat/lib/send-to-fluent'
 import { encodeChannelConnectionInfo } from '@/lib/channel-connection-info'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
+import { getPublicApiServerAddress } from '@/lib/public-api-address'
 
 import { updateApiKeyStatus } from '../api'
 import { API_KEY_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
@@ -63,12 +64,14 @@ function getServerAddress(): string {
     const raw = localStorage.getItem('status')
     if (raw) {
       const status = JSON.parse(raw)
-      if (status.server_address) return status.server_address as string
+      if (status.server_address) {
+        return getPublicApiServerAddress(status.server_address as string)
+      }
     }
   } catch {
     /* empty */
   }
-  return window.location.origin
+  return getPublicApiServerAddress(window.location.origin)
 }
 
 type DataTableRowActionsProps<TData> = {

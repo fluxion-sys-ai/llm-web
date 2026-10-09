@@ -25,13 +25,13 @@ import { ErrorState } from '@/components/error-state'
 import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
 import { ModelCard } from '@/features/pricing/components/model-card'
-import { usePricingData } from '@/features/pricing/hooks/use-pricing-data'
+import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 
 export function LlmFeaturedModels() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { models, isLoading, error, refetch, priceRate, usdExchangeRate } =
-    usePricingData()
+    useLlmCatalog()
   const featuredModels = [...models]
     .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
     .slice(0, 3)

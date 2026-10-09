@@ -170,4 +170,30 @@ describe('catalog browsing', () => {
       screen.queryByRole('columnheader', { name: 'Groups' })
     ).not.toBeInTheDocument()
   })
+
+  it('marks coming-soon table rows without changing a real model price or detail navigation', async () => {
+    const user = userEvent.setup()
+    const onModelClick = vi.fn()
+    render(
+      <PricingTable
+        models={[
+          { ...glm, availability: 'coming_soon', enable_groups: [] },
+          { ...qwen, pricing_status: undefined, model_ratio: 1 },
+        ]}
+        onModelClick={onModelClick}
+      />
+    )
+
+    const comingSoon = screen.getByRole('row', { name: /GLM 5.3/ })
+    expect(within(comingSoon).getByText('Coming soon')).toBeVisible()
+    expect(
+      within(comingSoon).getByText('Pricing will be announced')
+    ).toBeVisible()
+    expect(within(comingSoon).queryByText(/[$¥€]/)).not.toBeInTheDocument()
+    const available = screen.getByRole('row', { name: /Qwen3.8 Flash/ })
+    expect(within(available).queryByText('Coming soon')).not.toBeInTheDocument()
+    expect(within(available).getByText('USD / 1M tokens')).toBeVisible()
+    await user.click(comingSoon)
+    expect(onModelClick).toHaveBeenCalledWith('glm-5.3')
+  })
 })

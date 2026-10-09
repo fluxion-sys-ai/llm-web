@@ -39,6 +39,7 @@ import { sideDrawerContentClassName } from '@/components/drawer-layout'
 import { EmptyState } from '@/components/empty-state'
 import { GroupBadge } from '@/components/group-badge'
 import { PublicLayout } from '@/components/layout'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -62,7 +63,7 @@ import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
-import { usePricingData } from '../hooks/use-pricing-data'
+import { useLlmCatalog } from '../hooks/use-llm-catalog'
 import type { ParsedTaskTier } from '../lib/billing-expr'
 import {
   formatTaskUsageUnitPrice,
@@ -584,9 +585,10 @@ function ModelBackendDetailsSection(props: { model: PricingModel }) {
     <>
       <ModelBackendQuickStats model={props.model} />
       <ModelBackendSignalsSection model={props.model} />
-      {props.model.pricing_status !== 'pending' && (
-        <ModelBackendProviderSection model={props.model} />
-      )}
+      {props.model.availability !== 'coming_soon' &&
+        props.model.pricing_status !== 'pending' && (
+          <ModelBackendProviderSection model={props.model} />
+        )}
     </>
   )
 }
@@ -641,7 +643,11 @@ function ModelHeader(props: { model: PricingModel }) {
           <span className='text-muted-foreground'>{model.vendor_name}</span>
         )}
         <span className='text-muted-foreground/30'>·</span>
-        <ModelBillingModeBadge model={model} />
+        {model.availability === 'coming_soon' ? (
+          <Badge variant='secondary'>{t('Coming soon')}</Badge>
+        ) : (
+          <ModelBillingModeBadge model={model} />
+        )}
       </div>
       {description && (
         <p className='text-muted-foreground mt-4 max-w-3xl text-sm leading-relaxed'>
@@ -1353,7 +1359,8 @@ export interface ModelDetailsContentProps {
 export function ModelDetailsContent(props: ModelDetailsContentProps) {
   const { t } = useTranslation()
   const showRechargePrice = props.showRechargePrice ?? false
-  const pricingPending = props.model.pricing_status === 'pending'
+  const comingSoon = props.model.availability === 'coming_soon'
+  const pricingPending = comingSoon || props.model.pricing_status === 'pending'
 
   const isDynamic =
     props.model.billing_mode === 'tiered_expr' &&
@@ -1372,6 +1379,15 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
   return (
     <div className='@container/details space-y-6'>
       <ModelHeader model={props.model} />
+      {comingSoon && (
+        <Alert>
+          <AlertDescription>
+            {t(
+              'This model is coming soon and is not available for inference yet.'
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue='overview' className='gap-6'>
         <TabsList className='border-border bg-muted grid w-full grid-cols-3 gap-1 rounded-lg border p-1 group-data-horizontal/tabs:h-auto'>
@@ -1514,7 +1530,7 @@ export function ModelDetails() {
     isLoading,
     priceRate,
     usdExchangeRate,
-  } = usePricingData()
+  } = useLlmCatalog()
 
   const tokenUnit: TokenUnit =
     search.tokenUnit === 'K' ? 'K' : DEFAULT_TOKEN_UNIT
@@ -1530,7 +1546,7 @@ export function ModelDetails() {
 
   if (isLoading) {
     return (
-      <PublicLayout showMainContainer={false}>
+      <PublicLayout showMainContainer={false} showFooter>
         <main className='mx-auto w-full max-w-[1440px] px-6 pt-28 pb-16'>
           <Skeleton className='mb-4 h-5 w-16' />
           <div className='space-y-2'>
@@ -1555,7 +1571,7 @@ export function ModelDetails() {
 
   if (!model) {
     return (
-      <PublicLayout showMainContainer={false}>
+      <PublicLayout showMainContainer={false} showFooter>
         <main className='mx-auto max-w-2xl px-6 pt-28 pb-16 text-center'>
           <h2 className='mb-1 text-base font-semibold'>
             {t('Model not found')}
@@ -1572,7 +1588,7 @@ export function ModelDetails() {
   }
 
   return (
-    <PublicLayout showMainContainer={false}>
+    <PublicLayout showMainContainer={false} showFooter>
       <main className='mx-auto w-full max-w-[1440px] px-6 pt-28 pb-16'>
         <Button
           variant='ghost'

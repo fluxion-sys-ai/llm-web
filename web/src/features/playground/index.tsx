@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { PlaygroundChat } from './components/chat/playground-chat'
 import { PlaygroundInput } from './components/input/playground-input'
+import { PlaygroundHeader } from './components/playground-header'
 import {
   useChatHandler,
   usePlaygroundConversation,
@@ -75,7 +76,19 @@ export function Playground() {
   })
 
   return (
-    <div className='relative flex size-full min-h-0 flex-col overflow-hidden'>
+    <div className='bg-background relative flex size-full min-h-0 flex-col overflow-hidden'>
+      <PlaygroundHeader
+        config={config}
+        disabled={isGenerating}
+        groups={groups}
+        hasMessages={messages.length > 0}
+        isModelLoading={isLoadingModels}
+        models={models}
+        onClearMessages={handleClearMessages}
+        onConfigChange={updateConfig}
+        onParameterEnabledChange={updateParameterEnabled}
+        parameterEnabled={parameterEnabled}
+      />
       {/* Full-width scroll container: scrolling works even over side whitespace */}
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <PlaygroundChat
@@ -94,25 +107,15 @@ export function Playground() {
       </div>
 
       {/* Input area: center content and constrain to the same container width */}
-      <div className='mx-auto w-full max-w-4xl'>
+      <div className='mx-auto w-full max-w-[52rem]'>
         <PlaygroundInput
-          config={config}
           disabled={isGenerating}
           groups={groups}
-          groupValue={config.group}
           isGenerating={isGenerating}
           isModelLoading={isLoadingModels}
-          modelValue={config.model}
           models={models}
-          onGroupChange={(value) => updateConfig('group', value)}
-          onConfigChange={updateConfig}
-          onClearMessages={handleClearMessages}
-          onModelChange={(value) => updateConfig('model', value)}
-          onParameterEnabledChange={updateParameterEnabled}
           onStop={stopGeneration}
           onSubmit={handleSendMessage}
-          parameterEnabled={parameterEnabled}
-          hasMessages={messages.length > 0}
         />
       </div>
     </div>

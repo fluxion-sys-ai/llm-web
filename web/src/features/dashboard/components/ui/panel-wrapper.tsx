@@ -42,17 +42,19 @@ function PanelHeader(props: {
 }) {
   const heading = (
     <div className='flex flex-col gap-1'>
-      <div className='text-sm font-semibold'>{props.title}</div>
+      <h3 className='text-sm font-semibold'>{props.title}</h3>
       {props.description != null && (
-        <div className='text-muted-foreground text-xs'>{props.description}</div>
+        <div className='text-muted-foreground text-sm leading-relaxed'>
+          {props.description}
+        </div>
       )}
     </div>
   )
 
   return (
-    <div className='border-b px-4 py-3 sm:px-5'>
+    <div className='border-b p-4 sm:px-5'>
       {props.actions != null ? (
-        <div className='flex items-start justify-between gap-2'>
+        <div className='flex flex-wrap items-start justify-between gap-3'>
           {heading}
           {props.actions}
         </div>

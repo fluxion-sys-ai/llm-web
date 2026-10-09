@@ -27,59 +27,27 @@ import {
 } from '@/components/ai-elements/prompt-input'
 
 import { getSubmittableInputText } from '../../lib'
-import type {
-  ModelOption,
-  GroupOption,
-  ParameterEnabled,
-  PlaygroundConfig,
-} from '../../types'
+import type { GroupOption, ModelOption } from '../../types'
 import { PlaygroundInputControls } from './playground-input-controls'
-import { PlaygroundInputTools } from './playground-input-tools'
 
 interface PlaygroundInputProps {
-  config: PlaygroundConfig
   onSubmit: (text: string) => void
   onStop?: () => void
   disabled?: boolean
   isGenerating?: boolean
   models: ModelOption[]
-  modelValue: string
-  onModelChange: (value: string) => void
   isModelLoading?: boolean
   groups: GroupOption[]
-  groupValue: string
-  onGroupChange: (value: string) => void
-  hasMessages?: boolean
-  onConfigChange: <K extends keyof PlaygroundConfig>(
-    key: K,
-    value: PlaygroundConfig[K]
-  ) => void
-  onClearMessages?: () => void
-  onParameterEnabledChange: (
-    key: keyof ParameterEnabled,
-    value: boolean
-  ) => void
-  parameterEnabled: ParameterEnabled
 }
 
 export function PlaygroundInput({
-  config,
   onSubmit,
   onStop,
   disabled,
   isGenerating,
   models,
-  modelValue,
-  onModelChange,
   isModelLoading = false,
   groups,
-  groupValue,
-  onGroupChange,
-  hasMessages = false,
-  onConfigChange,
-  onClearMessages,
-  onParameterEnabledChange,
-  parameterEnabled,
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
@@ -93,10 +61,9 @@ export function PlaygroundInput({
   }
 
   return (
-    <div className='grid shrink-0 gap-4 px-3 pb-3 sm:px-5 md:pb-5'>
+    <div className='shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6'>
       <PromptInput
-        className='relative'
-        groupClassName='bg-background border-border overflow-hidden rounded-xl shadow-none transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/20'
+        groupClassName='bg-background border-border overflow-hidden rounded-2xl shadow-sm transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/15'
         onSubmit={handleSubmit}
       >
         <PromptInputTextarea
@@ -104,37 +71,22 @@ export function PlaygroundInput({
           autoCorrect='off'
           autoCapitalize='off'
           spellCheck={false}
-          className='min-h-20 px-5 pt-4 pb-3 leading-7 md:min-h-24 md:text-base'
+          className='min-h-20 px-4 pt-4 pb-2 text-base leading-7 sm:px-5'
           disabled={disabled}
           onChange={(event) => setText(event.target.value)}
           placeholder={t('Ask anything')}
           value={text}
         />
 
-        <PromptInputFooter className='border-border bg-muted/40 border-t px-3 py-2.5'>
+        <PromptInputFooter className='justify-end px-3 pt-0 pb-3'>
           <PlaygroundInputControls
             disabled={disabled}
             groups={groups}
-            groupValue={groupValue}
             isGenerating={isGenerating}
             isModelLoading={isModelLoading}
             models={models}
-            modelValue={modelValue}
-            onGroupChange={onGroupChange}
-            onModelChange={onModelChange}
             onStop={onStop}
             text={text}
-            tools={
-              <PlaygroundInputTools
-                config={config}
-                disabled={disabled}
-                hasMessages={hasMessages}
-                onConfigChange={onConfigChange}
-                onClearMessages={onClearMessages}
-                onParameterEnabledChange={onParameterEnabledChange}
-                parameterEnabled={parameterEnabled}
-              />
-            }
           />
         </PromptInputFooter>
       </PromptInput>

@@ -55,18 +55,22 @@ const catalogModel: PricingModel = {
 
 afterEach(async () => {
   cleanup()
+  vi.unstubAllEnvs()
   clients.forEach((client) => client.clear())
   clients.length = 0
   i18next.removeResourceBundle('zh', 'translation')
   await i18next.changeLanguage('en')
 })
 
-function renderDetails(model: PricingModel = catalogModel) {
+function renderDetails(
+  model: PricingModel = catalogModel,
+  status: Record<string, unknown> = {}
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   clients.push(client)
-  client.setQueryData(['status'], {})
+  client.setQueryData(['status'], status)
   render(
     <QueryClientProvider client={client}>
       <ModelDetailsContent
@@ -96,6 +100,57 @@ test('a catalog model displays its readable name and copies the canonical model 
   expect(screen.queryByText('Catalog source')).not.toBeInTheDocument()
   expect(screen.queryByText('OpenRouter')).not.toBeInTheDocument()
   expect(screen.queryByText('Checked on 2026-10-08')).not.toBeInTheDocument()
+})
+
+test('coming-soon details disclose availability and unpublished prices without requesting performance', async () => {
+  const request = vi
+    .spyOn(api, 'get')
+    .mockResolvedValue({ data: { data: { groups: [] } } })
+  const user = userEvent.setup()
+  renderDetails({
+    ...catalogModel,
+    availability: 'coming_soon',
+    enable_groups: [],
+  })
+
+  expect(screen.getByText('Coming soon')).toBeVisible()
+  expect(
+    screen.getByText(
+      'This model is coming soon and is not available for inference yet.'
+    )
+  ).toBeVisible()
+  const pricing = screen.getByRole('region', { name: 'Pricing' })
+  expect(within(pricing).getByText('Pricing will be announced')).toBeVisible()
+  expect(within(pricing).queryByText(/[$¥€]/)).not.toBeInTheDocument()
+  expect(screen.queryByText('To be configured')).not.toBeInTheDocument()
+  await user.click(screen.getByRole('tab', { name: 'Performance' }))
+  expect(screen.getByText('No performance data yet')).toBeVisible()
+  expect(request).not.toHaveBeenCalled()
+})
+
+test('coming-soon API details explain unavailability instead of offering callable examples', async () => {
+  const user = userEvent.setup()
+  renderDetails({
+    ...catalogModel,
+    availability: 'coming_soon',
+    enable_groups: [],
+  })
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+
+  const panel = screen.getByRole('tabpanel', { name: 'API' })
+  expect(panel).toHaveTextContent(
+    'This model is coming soon and is not available for inference yet.'
+  )
+  expect(
+    within(panel).queryByRole('heading', { name: 'Code samples' })
+  ).not.toBeInTheDocument()
+  expect(
+    within(panel).queryByRole('heading', { name: 'Authentication' })
+  ).not.toBeInTheDocument()
+  expect(
+    within(panel).queryByRole('button', { name: /copy/i })
+  ).not.toBeInTheDocument()
+  expect(panel).not.toHaveTextContent('/v1/chat/completions')
 })
 
 test('pending pricing cannot show calculated amounts or group prices, and makes no performance request', async () => {
@@ -168,4 +223,33 @@ test('pending API documentation shows examples without inferred parameter or rat
   expect(
     screen.queryByRole('heading', { name: 'Rate limits' })
   ).not.toBeInTheDocument()
+})
+
+test('configured API documentation does not publish generated rate limits or unverified parameter lists', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: { data: { groups: [] } } })
+  const user = userEvent.setup()
+  renderDetails({ ...catalogModel, pricing_status: undefined })
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+
+  expect(screen.getByRole('heading', { name: 'Code samples' })).toBeVisible()
+  expect(
+    screen.queryByRole('heading', { name: 'Supported parameters' })
+  ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('heading', { name: 'Rate limits' })
+  ).not.toBeInTheDocument()
+})
+
+test('a configured public API base overrides the shared backend address in model examples', async () => {
+  vi.stubEnv('VITE_LLM_API_BASE_URL', 'https://llm.fluxion-sys.ai/v1')
+  const user = userEvent.setup()
+  renderDetails(catalogModel, { server_address: 'https://video.example.com' })
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+
+  const panel = screen.getByRole('tabpanel', { name: 'API' })
+  expect(panel).toHaveTextContent(
+    'curl https://llm.fluxion-sys.ai/v1/chat/completions'
+  )
+  expect(panel).not.toHaveTextContent('https://video.example.com')
+  expect(panel).not.toHaveTextContent('/v1/v1/')
 })

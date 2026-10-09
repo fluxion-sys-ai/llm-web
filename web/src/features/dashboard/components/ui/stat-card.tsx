@@ -64,15 +64,9 @@ const TONE_CLASSES: Record<StatCardTone, string> = {
 }
 
 const LINE_TONE_CLASSES: Record<StatCardTone, string> = {
-  'accent-1': 'text-overview-accent-1',
-  'accent-2': 'text-overview-accent-2',
-  'accent-3': 'text-overview-accent-3',
-}
-
-const ICON_TONE_BY_STAT_TONE: Record<StatCardTone, IconBadgeTone> = {
-  'accent-1': 'chart-1',
-  'accent-2': 'chart-2',
-  'accent-3': 'chart-3',
+  'accent-1': 'text-brand',
+  'accent-2': 'text-brand/70',
+  'accent-3': 'text-muted-foreground',
 }
 
 const DETAIL_TONE_CLASSES: Record<StatCardDetailTone, string> = {
@@ -234,16 +228,13 @@ function StatCardDetails(props: { details: StatCardDetail[] }) {
 export function StatCard(props: StatCardProps) {
   const Icon = props.icon
   const tone = props.tone ?? 'accent-3'
-  const iconTone = props.iconTone ?? ICON_TONE_BY_STAT_TONE[tone]
+  const iconTone = props.iconTone ?? 'neutral'
   const sparklineVariant = props.sparklineVariant ?? 'bars'
   let valueContent: ReactNode
   if (props.loading) {
     valueContent = (
       <div
-        className={cn(
-          'flex flex-col',
-          props.compactMobile ? 'gap-1' : 'gap-1.5'
-        )}
+        className={cn('flex flex-col', props.compactMobile ? 'gap-2' : 'gap-3')}
       >
         <Skeleton className='h-5 w-16 sm:h-7 sm:w-24' />
         <Skeleton
@@ -257,12 +248,12 @@ export function StatCard(props: StatCardProps) {
   } else if (props.error) {
     valueContent = (
       <div className='flex flex-col gap-1'>
-        <div className='text-muted-foreground mt-0.5 font-mono text-base font-medium tracking-tight break-all tabular-nums sm:text-2xl'>
+        <div className='text-muted-foreground mt-0.5 text-xl font-medium tracking-tight break-all tabular-nums sm:text-2xl'>
           --
         </div>
         <p
           className={cn(
-            'text-muted-foreground/60 line-clamp-1 text-[11px] sm:text-xs',
+            'text-muted-foreground line-clamp-2 text-xs sm:text-xs',
             props.compactMobile && 'hidden sm:block'
           )}
         >
@@ -273,12 +264,12 @@ export function StatCard(props: StatCardProps) {
   } else {
     valueContent = (
       <div className='flex flex-col gap-1'>
-        <div className='text-foreground font-mono text-base font-semibold tracking-tight break-all tabular-nums sm:text-2xl'>
+        <div className='text-foreground text-xl font-semibold tracking-tight break-all tabular-nums sm:text-2xl'>
           {props.value}
         </div>
         <p
           className={cn(
-            'text-muted-foreground/60 line-clamp-1 text-[11px] leading-relaxed sm:text-xs',
+            'text-muted-foreground line-clamp-2 text-xs leading-relaxed sm:text-xs',
             props.compactMobile && 'hidden sm:block'
           )}
         >
@@ -300,18 +291,18 @@ export function StatCard(props: StatCardProps) {
   return (
     <div
       className={cn(
-        'group flex flex-col justify-between sm:min-h-32 sm:gap-3',
-        props.compactMobile ? 'gap-1' : 'gap-1.5'
+        'group flex min-w-0 flex-col justify-between sm:min-h-36 sm:gap-4',
+        props.compactMobile ? 'gap-2' : 'gap-3'
       )}
     >
       <div className='flex items-start justify-between gap-1'>
-        <div className='text-muted-foreground flex items-center gap-1 text-[11px] font-medium sm:gap-2 sm:text-xs'>
+        <div className='text-muted-foreground flex min-w-0 items-center gap-2 text-xs font-medium sm:text-sm'>
           <IconBadge
             tone={iconTone}
             size='stat'
             className={cn(
               props.compactMobile &&
-                'size-4 rounded-sm [&>svg]:size-2.5 sm:size-7 sm:rounded-md sm:[&>svg]:size-3.5'
+                'size-6 rounded-md [&>svg]:size-3 sm:size-8 sm:rounded-lg sm:[&>svg]:size-4'
             )}
           >
             <Icon />

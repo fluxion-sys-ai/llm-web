@@ -1,0 +1,159 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+import { ENDPOINT_TYPES } from '../constants'
+import type { PricingData, PricingModel, PricingVendor } from '../types'
+
+type DisplayMetadata = Pick<
+  PricingModel,
+  | 'display_name'
+  | 'description'
+  | 'icon'
+  | 'vendor_name'
+  | 'vendor_icon'
+  | 'featured'
+>
+
+// Presentation metadata for live models and explicitly unavailable announcements.
+// Enabled groups, live API IDs, pricing and capabilities come from the backend.
+const displayMetadata: Record<string, DisplayMetadata> = {
+  'glm-5.3': {
+    display_name: 'GLM 5.3',
+    description:
+      'A long-context reasoning model for complex coding and multi-step agent tasks.',
+    icon: 'ZAI',
+    vendor_name: 'Z.ai',
+    vendor_icon: 'ZAI',
+    featured: true,
+  },
+  'deepseek-v4.1-flash': {
+    display_name: 'DeepSeek V4.1 Flash',
+    description:
+      'Native image understanding and long-context reasoning for coding and tool-driven workflows.',
+    icon: 'DeepSeek.Color',
+    vendor_name: 'DeepSeek',
+    vendor_icon: 'DeepSeek.Color',
+    featured: true,
+  },
+  'kimi-k3': {
+    display_name: 'Kimi K3',
+    description:
+      'This model is coming soon and is not available for inference yet.',
+    icon: 'Kimi.Avatar',
+    vendor_name: 'Moonshot AI',
+    vendor_icon: 'Kimi.Avatar',
+    featured: true,
+  },
+}
+
+const announcedModelNames = ['GLM-5.3', 'DeepSeek-V4.1-Flash', 'Kimi-K3']
+
+const chatEndpoints = new Set<string>([
+  ENDPOINT_TYPES.OPENAI,
+  ENDPOINT_TYPES.OPENAI_RESPONSE,
+  ENDPOINT_TYPES.ANTHROPIC,
+  ENDPOINT_TYPES.GEMINI,
+])
+
+export function isLlmCatalogModel(model: PricingModel): boolean {
+  // A chat-compatible transport alone does not make a video generator an LLM.
+  if (
+    model.output_modalities?.length &&
+    !model.output_modalities.includes('text')
+  ) {
+    return false
+  }
+  const endpoints = model.supported_endpoint_types ?? []
+  if (
+    endpoints.length > 0 &&
+    !endpoints.some((endpoint) => chatEndpoints.has(endpoint))
+  ) {
+    return false
+  }
+  // Legacy responses also label video generators as OpenAI token models. An
+  // absent output modality requires a verified LLM identity, not a price or path.
+  return (
+    model.output_modalities?.includes('text') === true ||
+    Object.hasOwn(displayMetadata, model.model_name.toLowerCase())
+  )
+}
+
+export function buildLlmCatalog(data?: PricingData): {
+  models: PricingModel[]
+  vendors: PricingVendor[]
+} {
+  if (!data?.success || !Array.isArray(data.data)) {
+    return { models: [], vendors: [] }
+  }
+  const backendVendors = new Map(
+    (data.vendors ?? []).map((vendor) => [vendor.id, vendor])
+  )
+  const seenModelNames = new Set<string>()
+  const models: PricingModel[] = []
+  for (const model of data.data) {
+    const normalizedName = model.model_name.toLowerCase()
+    if (!isLlmCatalogModel(model) || seenModelNames.has(normalizedName)) {
+      continue
+    }
+    seenModelNames.add(normalizedName)
+    const metadata = displayMetadata[model.model_name.toLowerCase()]
+    const vendor = model.vendor_id
+      ? backendVendors.get(model.vendor_id)
+      : undefined
+    models.push({
+      ...model,
+      key: model.model_name,
+      display_name: model.display_name || metadata?.display_name,
+      description: model.description || metadata?.description,
+      icon: model.icon || metadata?.icon,
+      featured: model.featured ?? metadata?.featured,
+      vendor_name: model.vendor_name || vendor?.name || metadata?.vendor_name,
+      vendor_icon: model.vendor_icon || vendor?.icon || metadata?.vendor_icon,
+      vendor_description: model.vendor_description || vendor?.description,
+      group_ratio: data.group_ratio,
+    })
+  }
+  for (const [index, modelName] of announcedModelNames.entries()) {
+    const normalizedName = modelName.toLowerCase()
+    if (seenModelNames.has(normalizedName)) continue
+    models.push({
+      ...displayMetadata[normalizedName],
+      id: -(index + 1),
+      key: modelName,
+      model_name: modelName,
+      availability: 'coming_soon',
+      pricing_status: 'pending',
+      enable_groups: [],
+      // Required legacy fields are placeholders, never published prices.
+      quota_type: 0,
+      model_ratio: 0,
+      completion_ratio: 0,
+    })
+  }
+  const vendors = new Map<string, PricingVendor>()
+  for (const model of models) {
+    if (!model.vendor_name || vendors.has(model.vendor_name)) continue
+    vendors.set(model.vendor_name, {
+      id: model.vendor_id ?? -(vendors.size + 1),
+      name: model.vendor_name,
+      icon: model.vendor_icon,
+      description: model.vendor_description,
+    })
+  }
+  return { models, vendors: [...vendors.values()] }
+}

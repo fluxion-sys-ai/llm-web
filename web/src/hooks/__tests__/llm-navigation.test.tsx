@@ -77,7 +77,6 @@ describe('LLM navigation', () => {
     expect(urls).toEqual(
       expect.arrayContaining([
         '/playground',
-        '/pricing',
         '/dashboard/overview',
         '/dashboard/models',
         '/keys',
@@ -89,11 +88,12 @@ describe('LLM navigation', () => {
       ])
     )
     expect(urls).not.toContain('/usage-logs/task')
+    expect(urls).not.toContain('/pricing')
     expect(urls).not.toContain('/usage-logs/drawing')
     expect(items.some((item) => item.type === 'chat-presets')).toBe(false)
   })
 
-  it('orders the main navigation as Home, Console, Models, GPU, Pricing, and Resources', () => {
+  it('orders the main navigation as Home, Console, Models, GPU, Pricing, Blog, and Docs', () => {
     const { result } = renderNavigation()
 
     expect(result.current.topNav.map((link) => link.href)).toEqual([
@@ -103,6 +103,7 @@ describe('LLM navigation', () => {
       '/gpu',
       '/pricing/overview',
       '/blog',
+      '/docs',
     ])
   })
 
@@ -118,11 +119,11 @@ describe('LLM navigation', () => {
 
     expect(result.current.topNav).toEqual([
       { title: 'GPU', href: '/gpu' },
-      { title: 'Resources', href: '/blog' },
+      { title: 'Blog', href: '/blog' },
     ])
   })
 
-  it('a disabled pricing module removes the model catalog from both navigation surfaces', () => {
+  it('a disabled pricing module hides public model links while the console omits them', () => {
     const { result } = renderNavigation({
       HeaderNavModules: JSON.stringify({ pricing: { enabled: false } }),
     })
@@ -153,32 +154,38 @@ describe('LLM navigation', () => {
     )
     expect(
       result.current.topNav.find((link) => link.href === '/pricing')
-    ).toMatchObject({ title: 'Models & Pricing', requiresAuth: true })
+    ).toMatchObject({ title: 'Models', requiresAuth: true })
     expect(
       result.current.topNav.find((link) => link.href === '/pricing/overview')
     ).toMatchObject({ title: 'Pricing', requiresAuth: true })
   })
 
-  it('places documentation under Resources instead of adding an external or top-level Docs link', () => {
+  it('exposes Blog and internal Docs as separate links despite a legacy external docs URL', () => {
     const { result } = renderNavigation({ docs_link: 'https://docs.newapi.ai' })
 
-    expect(
-      result.current.topNav.find((link) => link.title === 'Resources')
-    ).toEqual({ title: 'Resources', href: '/blog' })
-    expect(result.current.topNav.some((link) => link.href === '/docs')).toBe(
-      false
+    expect(result.current.topNav).toEqual(
+      expect.arrayContaining([
+        { title: 'Blog', href: '/blog' },
+        { title: 'Docs', href: '/docs' },
+      ])
     )
+    expect(
+      result.current.topNav.some((link) => link.title === 'Resources')
+    ).toBe(false)
     expect(result.current.topNav.some((link) => link.external)).toBe(false)
   })
 
-  it('keeps Resources available when documentation is disabled', () => {
+  it('keeps Blog available while a disabled documentation module hides Docs', () => {
     const { result } = renderNavigation({
       HeaderNavModules: JSON.stringify({ docs: false }),
     })
 
-    expect(
-      result.current.topNav.find((link) => link.title === 'Resources')
-    ).toEqual({ title: 'Resources', href: '/blog' })
+    expect(result.current.topNav.find((link) => link.title === 'Blog')).toEqual(
+      { title: 'Blog', href: '/blog' }
+    )
+    expect(result.current.topNav.some((link) => link.href === '/docs')).toBe(
+      false
+    )
   })
 
   it('existing sidebar configuration can still hide Playground and both dashboard entries', () => {
@@ -196,7 +203,7 @@ describe('LLM navigation', () => {
     expect(urls).not.toContain('/dashboard/overview')
     expect(urls).not.toContain('/dashboard/models')
     expect(urls).toContain('/keys')
-    expect(urls).toContain('/pricing')
+    expect(urls).not.toContain('/pricing')
   })
 
   it('existing administrator destinations remain available with their role requirements', () => {

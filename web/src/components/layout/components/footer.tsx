@@ -21,7 +21,6 @@ import { Fragment, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { FluxionWordmark } from '@/components/fluxion-wordmark'
-import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { DEFAULT_LOGO, DEFAULT_SYSTEM_NAME } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -34,6 +33,7 @@ interface FooterLink {
 interface FooterColumnProps {
   title: string
   links: FooterLink[]
+  twoColumns?: boolean
 }
 
 interface FooterProps {
@@ -78,34 +78,21 @@ function FooterLinkItem(props: { link: FooterLink }) {
   )
 }
 
-// Renders User Agreement / Privacy Policy links inline with the parent's
-// copyright row when either is configured in System Settings → Site. Emits
-// fragmented siblings so the parent flex container's gap controls spacing.
+const policyLinks: FooterLink[] = [
+  { text: 'Terms of Service', href: '/terms' },
+  { text: 'Privacy Policy', href: '/privacy' },
+  { text: 'Data Policy', href: '/data-policy' },
+  { text: 'DPA', href: '/dpa' },
+  { text: 'Refund Policy', href: '/refunds' },
+]
+
+// Keep the LLM policies reachable when an administrator supplies a custom footer.
 function LegalLinks(props: { leadingSeparator?: boolean }) {
   const { t } = useTranslation()
-  const { status } = useStatus()
-  const items: { key: string; label: string; href: string }[] = []
-  if (status?.user_agreement_enabled) {
-    items.push({
-      key: 'user-agreement',
-      label: t('User Agreement'),
-      href: '/user-agreement',
-    })
-  }
-  if (status?.privacy_policy_enabled) {
-    items.push({
-      key: 'privacy-policy',
-      label: t('Privacy Policy'),
-      href: '/privacy-policy',
-    })
-  }
-  if (items.length === 0) {
-    return null
-  }
   return (
     <>
-      {items.map((item, index) => (
-        <Fragment key={item.key}>
+      {policyLinks.map((item, index) => (
+        <Fragment key={item.href}>
           {(props.leadingSeparator || index > 0) && (
             <span aria-hidden='true' className='text-muted-foreground/30'>
               ·
@@ -115,7 +102,7 @@ function LegalLinks(props: { leadingSeparator?: boolean }) {
             to={item.href}
             className='hover:text-foreground transition-colors duration-200'
           >
-            {item.label}
+            {t(item.text)}
           </Link>
         </Fragment>
       ))}
@@ -166,18 +153,21 @@ export function Footer(props: FooterProps) {
         links: [
           { text: t('Models'), href: '/pricing' },
           { text: t('GPU'), href: '/gpu' },
-          { text: t('Pricing'), href: '/pricing/overview' },
           { text: t('Playground'), href: '/playground' },
-          { text: t('API Keys'), href: '/keys' },
         ],
       },
       {
-        title: t('Resources'),
+        title: t('Account'),
         links: [
-          { text: t('Blog'), href: '/blog' },
-          { text: t('Docs'), href: '/docs' },
-          { text: t('Usage'), href: '/dashboard' },
+          { text: t('Dashboard'), href: '/dashboard' },
+          { text: t('API Keys'), href: '/keys' },
+          { text: t('Usage'), href: '/usage-logs/common' },
         ],
+      },
+      {
+        title: t('Company'),
+        links: [{ text: t('Blog'), href: '/blog' }, ...policyLinks],
+        twoColumns: true,
       },
     ],
     [t]
@@ -213,9 +203,9 @@ export function Footer(props: FooterProps) {
     <footer
       className={cn('border-border relative z-10 border-t', props.className)}
     >
-      <div className='mx-auto flex w-full max-w-(--page-max) flex-col justify-between gap-10 px-6 py-12 md:flex-row md:gap-16'>
+      <div className='mx-auto grid w-full max-w-(--page-max) grid-cols-2 gap-x-8 gap-y-10 px-6 py-12 md:grid-cols-[1.4fr_1fr_1fr_2fr]'>
         {/* Brand column */}
-        <div className='shrink-0'>
+        <div className='col-span-full min-w-0 md:col-span-1'>
           <Link to='/' className='group flex items-center gap-2.5'>
             <img
               src={displayLogo}
@@ -225,27 +215,37 @@ export function Footer(props: FooterProps) {
             <FluxionWordmark name={displayName} className='text-lg' />
           </Link>
           <p className='text-muted-foreground mt-4 max-w-xs text-sm leading-relaxed'>
-            {t('Powerful API Management Platform')}
+            {t('Specialized inference engines for every model–GPU pair.')}
           </p>
         </div>
 
         {/* Links columns */}
-        <div className='grid grid-cols-2 gap-8 md:gap-16'>
-          {displayColumns.map((column) => (
-            <div key={column.title}>
-              <p className='text-foreground mb-3 text-sm font-medium'>
-                {t(column.title)}
-              </p>
-              <ul className='space-y-2'>
-                {column.links.map((link) => (
-                  <li key={link.href}>
-                    <FooterLinkItem link={link} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        {displayColumns.map((column) => (
+          <div
+            key={column.title}
+            className={cn(
+              'min-w-0',
+              column.twoColumns && 'col-span-full md:col-span-1'
+            )}
+          >
+            <p className='text-foreground mb-3 text-sm font-medium'>
+              {t(column.title)}
+            </p>
+            <ul
+              className={
+                column.twoColumns
+                  ? 'grid grid-flow-col grid-cols-2 grid-rows-3 gap-x-6 gap-y-2'
+                  : 'space-y-2'
+              }
+            >
+              {column.links.map((link) => (
+                <li key={link.href}>
+                  <FooterLinkItem link={link} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
 
       {/* Copyright + optional legal links inline on the left, project
@@ -257,9 +257,19 @@ export function Footer(props: FooterProps) {
               &copy; {currentYear} {displayName}.{' '}
               {props.copyright ?? t('footer.defaultCopyright')}
             </span>
-            <LegalLinks leadingSeparator />
+            {props.columns && <LegalLinks leadingSeparator />}
           </div>
-          <ProjectAttribution currentYear={currentYear} />
+          <div className='flex flex-col items-center gap-2 sm:items-end'>
+            <a
+              href='https://fluxion-sys.ai'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-muted-foreground hover:text-foreground text-xs transition-colors'
+            >
+              fluxion-sys.ai
+            </a>
+            <ProjectAttribution currentYear={currentYear} />
+          </div>
         </div>
       </div>
     </footer>

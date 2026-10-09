@@ -71,7 +71,7 @@ export function PlaygroundInputTools({
 
   return (
     <>
-      <PromptInputTools className='bg-background border-border rounded-lg border p-1'>
+      <PromptInputTools className='shrink-0 gap-1'>
         <PlaygroundParameterPanel
           config={config}
           disabled={disabled}
@@ -85,12 +85,12 @@ export function PlaygroundInputTools({
             render={
               <PromptInputButton
                 aria-label={t('Clear chat history')}
-                className='text-muted-foreground hover:text-destructive hover:bg-destructive/10 font-medium'
+                className='text-muted-foreground hover:text-foreground size-8'
                 disabled={disabled || !hasMessages || !onClearMessages}
                 onClick={() => setClearConfirmOpen(true)}
                 variant='ghost'
               >
-                <Trash2Icon size={16} />
+                <Trash2Icon aria-hidden='true' className='size-4' />
               </PromptInputButton>
             }
           />

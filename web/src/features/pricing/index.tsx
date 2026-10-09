@@ -34,7 +34,7 @@ import {
 } from './components'
 import { EXCLUDED_GROUPS, VIEW_MODES } from './constants'
 import { useFilters } from './hooks/use-filters'
-import { usePricingData } from './hooks/use-pricing-data'
+import { useLlmCatalog } from './hooks/use-llm-catalog'
 
 export function Pricing() {
   const { t } = useTranslation()
@@ -52,7 +52,7 @@ export function Pricing() {
     isLoading,
     priceRate,
     usdExchangeRate,
-  } = usePricingData()
+  } = useLlmCatalog()
 
   const {
     searchInput,
@@ -150,7 +150,7 @@ export function Pricing() {
 
   if (isLoading) {
     return (
-      <PublicLayout showMainContainer={false}>
+      <PublicLayout showMainContainer={false} showFooter>
         <div className='mx-auto w-full max-w-[1440px] px-6 pt-28 pb-16'>
           <LoadingSkeleton viewMode={viewMode} />
         </div>
@@ -159,7 +159,7 @@ export function Pricing() {
   }
 
   return (
-    <PublicLayout showMainContainer={false}>
+    <PublicLayout showMainContainer={false} showFooter>
       <div className='relative'>
         <PageTransition className='relative mx-auto w-full max-w-[1440px] px-6 pt-28 pb-16'>
           <header className='mx-auto mb-10 max-w-3xl text-center'>

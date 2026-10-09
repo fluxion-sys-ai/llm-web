@@ -73,7 +73,7 @@ export function useTopNavLinks(): TopNavLink[] {
   const pricing = modules?.pricing
   if (pricing && typeof pricing === 'object' && pricing.enabled) {
     const requiresAuth = pricing.requireAuth && !isAuthed
-    links.push({ title: t('Models & Pricing'), href: '/pricing', requiresAuth })
+    links.push({ title: t('Models'), href: '/pricing', requiresAuth })
   }
 
   links.push({ title: t('GPU'), href: '/gpu' })
@@ -83,7 +83,10 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Pricing'), href: '/pricing/overview', requiresAuth })
   }
 
-  links.push({ title: t('Resources'), href: '/blog' })
+  links.push({ title: t('Blog'), href: '/blog' })
+  if (modules.docs) {
+    links.push({ title: t('Docs'), href: '/docs' })
+  }
 
   return links
 }

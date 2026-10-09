@@ -25,7 +25,16 @@ import {
 } from '@tanstack/react-router'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth-store'
@@ -36,6 +45,33 @@ import { OverviewDashboard } from '../overview-dashboard'
 const storageKey = 'dashboard_overview_setup_guide_expanded'
 let client: QueryClient
 let keyLookupError: Error | null
+let userModels: string[]
+let catalogLookupError: Error | null
+let catalogGate: Promise<void> | null
+let comingSoonModels: string[]
+const originalGetAnimations = Object.getOwnPropertyDescriptor(
+  Element.prototype,
+  'getAnimations'
+)
+
+beforeAll(() => {
+  Object.defineProperty(Element.prototype, 'getAnimations', {
+    configurable: true,
+    value: () => [],
+  })
+})
+
+afterAll(() => {
+  if (originalGetAnimations) {
+    Object.defineProperty(
+      Element.prototype,
+      'getAnimations',
+      originalGetAnimations
+    )
+  } else {
+    Reflect.deleteProperty(Element.prototype, 'getAnimations')
+  }
+})
 
 beforeEach(() => {
   window.localStorage.clear()
@@ -52,6 +88,10 @@ beforeEach(() => {
     defaultOptions: { queries: { retry: false } },
   })
   keyLookupError = null
+  catalogLookupError = null
+  catalogGate = null
+  comingSoonModels = []
+  userModels = ['DeepSeek-V4.1-Flash']
   vi.spyOn(api, 'get').mockImplementation(async (url) => {
     switch (url) {
       case '/api/token/?p=1&size=10':
@@ -76,7 +116,24 @@ beforeEach(() => {
           },
         }
       case '/api/user/models':
-        return { data: { success: true, data: ['gpt-4o-mini'] } }
+        return { data: { success: true, data: userModels } }
+      case '/api/pricing':
+        if (catalogGate) await catalogGate
+        if (catalogLookupError) throw catalogLookupError
+        return {
+          data: {
+            success: true,
+            data: ['GLM-5.3', 'Seedance-2.0-Mini', 'DeepSeek-V4.1-Flash'].map(
+              (model_name) => ({
+                model_name,
+                availability: comingSoonModels.includes(model_name)
+                  ? 'coming_soon'
+                  : undefined,
+                supported_endpoint_types: ['openai'],
+              })
+            ),
+          },
+        }
       case '/api/data/self':
         return { data: { success: true, data: [] } }
       default:
@@ -87,6 +144,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  vi.unstubAllEnvs()
   client.clear()
   useAuthStore.setState(useAuthStore.getInitialState(), true)
   useSystemConfigStore.setState(useSystemConfigStore.getInitialState(), true)
@@ -107,6 +165,106 @@ async function renderOverview() {
 }
 
 describe('overview setup guide', () => {
+  it('uses an authorized exact LLM ID when video models appear first in the shared backend', async () => {
+    userModels = ['Seedance-2.0-Mini', 'DeepSeek-V4.1-Flash']
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    expect(
+      await screen.findByText(/"model":"DeepSeek-V4\.1-Flash"/)
+    ).toBeVisible()
+    expect(screen.getByText('DeepSeek-V4.1-Flash')).toBeVisible()
+    expect(screen.queryByText(/Seedance/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/"model":"GLM-5\.3"/)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Copy ready-to-run curl' })
+    ).toBeEnabled()
+  })
+
+  it('does not offer a runnable request when no authorized model exactly matches the LLM catalog', async () => {
+    userModels = ['Seedance-2.0-Mini', 'deepseek-v4.1-flash']
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    expect((await screen.findAllByText('No available models'))[0]).toBeVisible()
+    expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Copy ready-to-run curl' })
+    ).toBeDisabled()
+  })
+
+  it('does not offer a runnable request for coming-soon models despite authorized matching IDs', async () => {
+    comingSoonModels = ['DeepSeek-V4.1-Flash']
+    userModels = ['DeepSeek-V4.1-Flash', 'Kimi-K3']
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    expect((await screen.findAllByText('No available models'))[0]).toBeVisible()
+    expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Copy ready-to-run curl' })
+    ).toBeDisabled()
+  })
+
+  it('does not invent a fallback model when the LLM catalog fails to load', async () => {
+    catalogLookupError = new Error('Catalog unavailable')
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    expect(
+      (await screen.findAllByText('Unable to load models'))[0]
+    ).toBeVisible()
+    expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Copy ready-to-run curl' })
+    ).toBeDisabled()
+  })
+
+  it('waits for the LLM catalog before offering an authorized request example', async () => {
+    let releaseCatalog = () => {}
+    catalogGate = new Promise<void>((resolve) => {
+      releaseCatalog = resolve
+    })
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    try {
+      expect(
+        await screen.findByRole('button', { name: 'Copy ready-to-run curl' })
+      ).toBeDisabled()
+      expect(screen.getAllByText('Loading')[0]).toBeVisible()
+      expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
+    } finally {
+      await act(async () => releaseCatalog())
+    }
+
+    expect(
+      await screen.findByText(/"model":"DeepSeek-V4\.1-Flash"/)
+    ).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Copy ready-to-run curl' })
+    ).toBeEnabled()
+  })
+
+  it('uses the configured public API base instead of shared API info in its curl example', async () => {
+    vi.stubEnv('VITE_LLM_API_BASE_URL', 'https://llm.fluxion-sys.ai/v1')
+    client.setQueryData(['status'], {
+      api_info_enabled: true,
+      api_info: [{ url: 'https://video.example.com/v1' }],
+    })
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    expect(
+      await screen.findByText(
+        /curl https:\/\/llm\.fluxion-sys\.ai\/v1\/chat\/completions/
+      )
+    ).toBeVisible()
+    expect(
+      screen.queryByText(/curl https:\/\/video\.example\.com/)
+    ).not.toBeInTheDocument()
+  })
+
   it('shows usage first and only a header entry when setup is complete', async () => {
     await renderOverview()
 

@@ -21,7 +21,7 @@ import { Gauge, HeartPulse, Timer } from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { IconBadge, type IconBadgeTone } from '@/components/ui/icon-badge'
+import { IconBadge } from '@/components/ui/icon-badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import {
@@ -93,8 +93,8 @@ export function PerformanceHealthPanel() {
 
   return (
     <section className='bg-card h-full overflow-hidden rounded-xl border'>
-      <div className='flex items-center gap-2 border-b px-4 py-3 sm:px-5'>
-        <IconBadge tone='success' size='sm'>
+      <div className='flex flex-wrap items-center gap-2 border-b p-4 sm:px-5'>
+        <IconBadge tone='neutral' size='sm'>
           <HeartPulse />
         </IconBadge>
         <h3 className='text-sm font-semibold'>{t('Performance health')}</h3>
@@ -103,7 +103,7 @@ export function PerformanceHealthPanel() {
         </span>
       </div>
 
-      <div className='space-y-3 p-4 sm:p-5'>
+      <div className='flex flex-col gap-4 p-4 sm:p-5'>
         <div className='grid grid-cols-3 gap-2'>
           <MetricCell
             icon={HeartPulse}
@@ -111,26 +111,23 @@ export function PerformanceHealthPanel() {
             value={formatUptimePct(summary.successRate)}
             loading={loading}
             valueClassName={getSuccessRateTextClass(summary.successRate)}
-            tone='success'
           />
           <MetricCell
             icon={Timer}
             label={t('Average latency')}
             value={formatLatency(summary.avgLatencyMs)}
             loading={loading}
-            tone='warning'
           />
           <MetricCell
             icon={Gauge}
             label={t('Throughput')}
             value={formatThroughput(summary.avgTps)}
             loading={loading}
-            tone='info'
           />
         </div>
 
         {loading ? (
-          <div className='space-y-1'>
+          <div className='flex flex-col gap-1'>
             {['success', 'latency', 'throughput'].map((key) => (
               <Skeleton key={key} className='h-5 w-full rounded' />
             ))}
@@ -184,13 +181,12 @@ function MetricCell(props: {
   value: string
   loading: boolean
   valueClassName?: string
-  tone: IconBadgeTone
 }) {
   const Icon = props.icon
   return (
     <div className='bg-muted/40 rounded-xl px-3 py-2.5'>
       <div className='text-muted-foreground flex items-center gap-1.5 text-[11px] font-medium'>
-        <IconBadge tone={props.tone} size='xs'>
+        <IconBadge tone='neutral' size='xs'>
           <Icon />
         </IconBadge>
         <span className='truncate'>{props.label}</span>
@@ -200,7 +196,7 @@ function MetricCell(props: {
       ) : (
         <div
           className={cn(
-            'mt-1.5 font-mono text-sm font-medium tabular-nums',
+            'mt-1.5 text-lg font-semibold tabular-nums',
             props.valueClassName
           )}
         >

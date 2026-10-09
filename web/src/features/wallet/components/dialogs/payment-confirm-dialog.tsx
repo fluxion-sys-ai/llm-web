@@ -33,7 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatLocalCurrencyAmount } from '@/lib/currency'
 
 import { DEFAULT_DISCOUNT_RATE } from '../../constants'
-import { formatCurrency, getPaymentIcon } from '../../lib'
+import { getPaymentIcon } from '../../lib'
 import type { PaymentMethod } from '../../types'
 
 interface PaymentConfirmDialogProps {
@@ -101,11 +101,15 @@ export function PaymentConfirmDialog({
             ) : (
               <div className='flex items-baseline gap-2'>
                 <span className='text-2xl font-semibold'>
-                  {formatCurrency(paymentAmount)}
+                  {formatLocalCurrencyAmount(paymentAmount, {
+                    abbreviate: false,
+                  })}
                 </span>
                 {hasDiscount && (
                   <span className='text-muted-foreground text-sm line-through'>
-                    {formatCurrency(originalAmount)}
+                    {formatLocalCurrencyAmount(originalAmount, {
+                      abbreviate: false,
+                    })}
                   </span>
                 )}
               </div>
@@ -116,8 +120,10 @@ export function PaymentConfirmDialog({
             <div className='bg-muted/50 rounded-lg p-3'>
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>{t('You save')}</span>
-                <span className='font-semibold text-green-600'>
-                  {formatCurrency(discountAmount)}
+                <span className='font-semibold'>
+                  {formatLocalCurrencyAmount(discountAmount, {
+                    abbreviate: false,
+                  })}
                 </span>
               </div>
             </div>
@@ -145,7 +151,18 @@ export function PaymentConfirmDialog({
           <AlertDialogCancel disabled={processing}>
             {t('Cancel')}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={processing}>
+          <AlertDialogAction
+            onClick={(event) => {
+              event.preventDefault()
+              onConfirm()
+            }}
+            disabled={
+              processing ||
+              calculating ||
+              !Number.isFinite(paymentAmount) ||
+              paymentAmount <= 0
+            }
+          >
             {processing && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
             {t('Confirm Payment')}
           </AlertDialogAction>

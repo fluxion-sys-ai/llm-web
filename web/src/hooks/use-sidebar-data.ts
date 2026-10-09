@@ -38,10 +38,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import type { SidebarData } from '@/components/layout/types'
-import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
 import { ROLE } from '@/lib/roles'
-
-import { useStatus } from './use-status'
 
 /**
  * Root navigation groups for the application sidebar.
@@ -51,10 +48,6 @@ import { useStatus } from './use-status'
  */
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
-  const { status } = useStatus()
-  const pricingEnabled = parseHeaderNavModulesFromStatus(
-    status as Record<string, unknown> | null
-  ).pricing.enabled
 
   return {
     navGroups: [
@@ -67,9 +60,6 @@ export function useSidebarData(): SidebarData {
             url: '/playground',
             icon: FlaskConical,
           },
-          ...(pricingEnabled
-            ? [{ title: t('Models & Pricing'), url: '/pricing', icon: Box }]
-            : []),
         ],
       },
       {

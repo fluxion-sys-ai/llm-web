@@ -20,6 +20,7 @@ import { useMemo } from 'react'
 
 import type { SystemStatus } from '@/features/auth/types'
 import { useStatus } from '@/hooks/use-status'
+import { getPublicApiServerAddress } from '@/lib/public-api-address'
 
 import {
   type ChatPreset,
@@ -70,7 +71,10 @@ export function useChatPresets(): {
 } {
   const { status } = useStatus()
 
-  const serverAddress = useMemo(() => extractServerAddress(status), [status])
+  const serverAddress = useMemo(
+    () => getPublicApiServerAddress(extractServerAddress(status)),
+    [status]
+  )
 
   const chatPresets = useMemo(() => {
     const raw = extractChats(status)
