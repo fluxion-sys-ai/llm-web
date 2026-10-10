@@ -6166,6 +6166,16 @@
     "Continue with Stripe": "Продолжить со Stripe",
     "Stripe payments are currently unavailable.": "Платежи через Stripe сейчас недоступны.",
     "Unable to load payment options": "Не удалось загрузить способы оплаты",
-    "Unable to calculate payment amount. Please try again.": "Не удалось рассчитать сумму платежа. Попробуйте ещё раз."
+    "Unable to calculate payment amount. Please try again.": "Не удалось рассчитать сумму платежа. Попробуйте ещё раз.",
+    "Ultra-fast, efficient inference for AI,": "Сверхбыстрый и эффективный инференс для ИИ,",
+    "built by AI.": "созданный ИИ.",
+    "Any model, any chip, lowest cost.": "Любая модель, любой чип, минимальная стоимость.",
+    "Engines built by AI": "Движки, созданные ИИ",
+    "Any model": "Любая модель",
+    "Any chip": "Любой чип",
+    "Lowest cost": "Минимальная стоимость",
+    "Building {{model}} × {{chip}}": "Сборка {{model}} × {{chip}}",
+    "Every pair has its own engine": "У каждой пары свой движок",
+    "An inference engine is built for every model and chip pairing. This illustration cycles through example pairings and does not show live availability.": "Для каждой пары модель–чип создаётся движок инференса. Иллюстрация циклически показывает примеры пар и не отражает реальную доступность."
   }
 }

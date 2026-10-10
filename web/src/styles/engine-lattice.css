@@ -1,0 +1,315 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+.engine-lattice {
+  --el-cell: 54px;
+  --el-gap: 9px;
+  width: 100%;
+  max-width: 720px;
+  margin: 44px auto 0;
+  font-family: var(--font-sans);
+  color-scheme: light;
+  text-align: left;
+}
+.engine-lattice figure {
+  margin: 0;
+}
+.engine-lattice .el-panel {
+  position: relative;
+  border: 1px solid #d9e2ee;
+  border-radius: 20px;
+  padding: 18px 24px 18px;
+  background: linear-gradient(160deg, #ffffff 30%, #f7faff);
+  box-shadow:
+    0 24px 48px -32px #5c7fb38c,
+    inset 0 0 0 1px #ffffffb3;
+}
+.engine-lattice .el-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #5c6e87;
+  margin-bottom: 16px;
+}
+.engine-lattice .el-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+  color: #2a3647;
+}
+.engine-lattice .el-title svg {
+  width: 14px;
+  height: 14px;
+  color: #4f46e5;
+}
+.engine-lattice .el-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 300ms;
+}
+.engine-lattice .el-panel[data-stage='ready'] .el-status {
+  color: #3f5a85;
+}
+.engine-lattice .el-matrix {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
+}
+.engine-lattice .el-axis {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8794a8;
+}
+.engine-lattice .el-axis-model {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: center;
+  padding-top: 20px;
+}
+.engine-lattice .el-grid {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto repeat(var(--el-cols), var(--el-cell));
+  column-gap: var(--el-gap);
+  row-gap: var(--el-gap);
+  align-items: center;
+}
+.engine-lattice .el-axis-chip {
+  grid-column: 2 / -1;
+  text-align: center;
+  margin-bottom: -2px;
+}
+.engine-lattice .el-chip {
+  align-self: end;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: #5c6e87;
+  text-align: center;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.engine-lattice .el-model {
+  font-size: 13px;
+  color: #3e5068;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 8px;
+}
+.engine-lattice .el-cell {
+  width: var(--el-cell);
+  height: var(--el-cell);
+  display: grid;
+  place-items: center;
+  border: 1px solid #e3eaf4;
+  border-radius: 12px;
+  background: #f8fafd;
+  transition:
+    background 420ms ease,
+    border-color 420ms ease,
+    box-shadow 420ms ease,
+    transform 420ms ease;
+}
+.engine-lattice .el-cell.el-building {
+  border-color: #9fbbe4;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px #dbe8fb,
+    0 8px 18px -10px #6b8fc4;
+  transform: translateY(-1px);
+  transition-duration: 120ms;
+}
+.engine-lattice .el-cell.el-ready {
+  border-color: #c9d9ee;
+  background: linear-gradient(145deg, #ffffff, #eef4fd);
+  box-shadow: 0 6px 14px -12px #7b9dc6;
+}
+.engine-lattice .el-tiles {
+  width: 56%;
+  height: 56%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+.engine-lattice .el-tile {
+  border-radius: 2px;
+  background: #eef2f8;
+  transition: background 140ms ease;
+}
+.engine-lattice .el-ready .el-tile {
+  background: #e1e9f4;
+  transition-duration: 420ms;
+}
+.engine-lattice .el-tile.el-on {
+  background: #86abdd;
+}
+.engine-lattice .el-tile.el-accent {
+  background: #4f46e5;
+}
+.engine-lattice .el-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed #e1e8f2;
+}
+.engine-lattice .el-equation {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #5c6e87;
+}
+.engine-lattice .el-times,
+.engine-lattice .el-arrow {
+  color: #a3b0c4;
+}
+.engine-lattice .el-result {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border: 1px solid #dbe3ee;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8794a8;
+  background: #ffffff;
+  transition:
+    color 400ms,
+    background 400ms,
+    border-color 400ms,
+    box-shadow 400ms;
+}
+.engine-lattice .el-panel[data-stage='ready'] .el-result {
+  color: #3730a3;
+  background: #eef0fd;
+  border-color: #c7cdf8;
+  box-shadow: 0 0 0 3px #eef0fd80;
+}
+.engine-lattice .el-controls {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  min-height: 34px;
+}
+.engine-lattice .el-pause {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #dce5f0;
+  background: #ffffff91;
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: #5c6e87;
+  font-size: 11px;
+  font-weight: 400;
+}
+.engine-lattice .el-pause svg {
+  width: 12px;
+  height: 12px;
+}
+@media (max-width: 760px) {
+  .engine-lattice {
+    --el-cell: 46px;
+    --el-gap: 7px;
+  }
+  .engine-lattice .el-panel {
+    padding: 16px 18px;
+  }
+  .engine-lattice .el-model {
+    font-size: 12px;
+    max-width: 120px;
+  }
+}
+@media (max-width: 560px) {
+  .engine-lattice {
+    --el-cell: 34px;
+    --el-gap: 5px;
+    margin-top: 40px;
+  }
+  .engine-lattice .el-panel {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+  .engine-lattice .el-head {
+    margin-bottom: 12px;
+  }
+  .engine-lattice .el-status {
+    display: none;
+  }
+  .engine-lattice .el-matrix {
+    gap: 6px;
+  }
+  .engine-lattice .el-axis-model {
+    display: none;
+  }
+  .engine-lattice .el-model {
+    font-size: 11px;
+    max-width: 82px;
+    padding-right: 2px;
+  }
+  .engine-lattice .el-chip {
+    font-size: 9px;
+  }
+  .engine-lattice .el-cell {
+    border-radius: 9px;
+  }
+  .engine-lattice .el-cell.el-building {
+    box-shadow:
+      0 0 0 2px #dbe8fb,
+      0 6px 12px -8px #6b8fc4;
+  }
+  .engine-lattice .el-tiles {
+    gap: 1.5px;
+  }
+  .engine-lattice .el-tile {
+    border-radius: 1.5px;
+  }
+  .engine-lattice .el-foot {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  .engine-lattice .el-equation {
+    font-size: 11px;
+    gap: 6px;
+  }
+  .engine-lattice .el-pause {
+    min-height: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .engine-lattice *,
+  .engine-lattice *::after {
+    transition: none;
+  }
+}

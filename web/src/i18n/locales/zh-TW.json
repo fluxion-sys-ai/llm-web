@@ -6166,6 +6166,16 @@
     "Continue with Stripe": "繼續使用 Stripe",
     "Stripe payments are currently unavailable.": "Stripe 付款目前無法使用。",
     "Unable to load payment options": "無法載入付款選項",
-    "Unable to calculate payment amount. Please try again.": "無法計算付款金額，請再試一次。"
+    "Unable to calculate payment amount. Please try again.": "無法計算付款金額，請再試一次。",
+    "Ultra-fast, efficient inference for AI,": "超快、高效的 AI 推理，",
+    "built by AI.": "由 AI 打造。",
+    "Any model, any chip, lowest cost.": "任意模型，任意晶片，最低成本。",
+    "Engines built by AI": "AI 打造的推理引擎",
+    "Any model": "任意模型",
+    "Any chip": "任意晶片",
+    "Lowest cost": "最低成本",
+    "Building {{model}} × {{chip}}": "正在建構 {{model}} × {{chip}}",
+    "Every pair has its own engine": "每個組合都有專屬引擎",
+    "An inference engine is built for every model and chip pairing. This illustration cycles through example pairings and does not show live availability.": "每一種模型與晶片的組合都會建構一個推理引擎。此插圖循環展示範例組合，不代表實際可用性。"
   }
 }

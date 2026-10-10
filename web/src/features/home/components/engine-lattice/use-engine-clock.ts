@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 
-import { ENGINE_STATIC_SECONDS } from './timeline'
+import { LATTICE_STATIC_SECONDS } from './timeline'
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
@@ -27,7 +27,7 @@ export function useEngineClock(target: RefObject<HTMLElement | null>) {
     () => !window.matchMedia(REDUCED_MOTION_QUERY).matches
   )
   const [elapsed, setElapsed] = useState(() =>
-    window.matchMedia(REDUCED_MOTION_QUERY).matches ? ENGINE_STATIC_SECONDS : 0
+    window.matchMedia(REDUCED_MOTION_QUERY).matches ? LATTICE_STATIC_SECONDS : 0
   )
   const elapsedRef = useRef(elapsed)
   const [inView, setInView] = useState(
@@ -39,8 +39,8 @@ export function useEngineClock(target: RefObject<HTMLElement | null>) {
     const media = window.matchMedia(REDUCED_MOTION_QUERY)
     const onMotionPreference = (event: MediaQueryListEvent) => {
       if (!event.matches) return
-      elapsedRef.current = ENGINE_STATIC_SECONDS
-      setElapsed(ENGINE_STATIC_SECONDS)
+      elapsedRef.current = LATTICE_STATIC_SECONDS
+      setElapsed(LATTICE_STATIC_SECONDS)
       setPlaying(false)
     }
     const onVisibility = () => setTabVisible(!document.hidden)

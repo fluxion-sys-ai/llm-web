@@ -20,7 +20,11 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { EngineAnimation } from '..'
+import { EngineLattice } from '..'
+
+const FIRST_PAIR = 'Building GLM 5.3 × A100 PCIe'
+const SECOND_PAIR = 'Building GLM 5.3 × A100'
+const SETTLED = 'Every pair has its own engine'
 
 let reducedMotion = false
 let tabHidden = false
@@ -31,7 +35,6 @@ let motionEvents: EventTarget
 let media: MediaQueryList
 const frames = new Map<number, FrameRequestCallback>()
 const intersectionDisconnect = vi.fn()
-const resizeDisconnect = vi.fn()
 
 beforeEach(() => {
   reducedMotion = false
@@ -72,13 +75,6 @@ beforeEach(() => {
       disconnect = intersectionDisconnect
     }
   )
-  vi.stubGlobal(
-    'ResizeObserver',
-    class {
-      observe() {}
-      disconnect = resizeDisconnect
-    }
-  )
 })
 
 afterEach(() => {
@@ -115,34 +111,32 @@ function changeMotionPreference(reduced: boolean): void {
   )
 }
 
-test('autoplay locks GPU then LLM, merges, holds the result, and starts the next pair', () => {
-  render(<EngineAnimation />)
+test('autoplay builds pair by pair, settles with every engine ready, then starts over', () => {
+  render(<EngineLattice />)
   enterViewport()
-  expect(screen.getByText('Matching GPU')).toBeInTheDocument()
+  expect(screen.getByText(FIRST_PAIR)).toBeInTheDocument()
+  expect(screen.getByRole('figure')).toContainElement(
+    document.querySelector('[data-stage="building"]')
+  )
 
-  advanceAnimation(2320)
-  expect(screen.getByText('Matching LLM')).toBeInTheDocument()
-  expect(screen.getAllByText('Locked')).toHaveLength(1)
-  advanceAnimation(1520)
-  expect(screen.getByText('Pair locked')).toBeInTheDocument()
-  expect(screen.getAllByText('Locked')).toHaveLength(2)
-  advanceAnimation(480)
-  expect(screen.getByText('Creating personalized engine')).toBeInTheDocument()
-  advanceAnimation(1520)
-  expect(screen.getByText('Personalized engine')).toBeInTheDocument()
-  expect(screen.getByText('× NVIDIA H200')).toBeInTheDocument()
-  advanceAnimation(4000)
-  expect(screen.getByText('× NVIDIA H200')).toBeInTheDocument()
-  advanceAnimation(600)
-  expect(screen.getByText('Matching GPU')).toBeInTheDocument()
-  expect(screen.queryByText('× NVIDIA H200')).not.toBeInTheDocument()
+  advanceAnimation(400)
+  expect(screen.getByText(SECOND_PAIR)).toBeInTheDocument()
+  advanceAnimation(2800)
+  expect(screen.getByText(SETTLED)).toBeInTheDocument()
+  expect(document.querySelector('[data-stage="ready"]')).not.toBeNull()
+  expect(document.querySelectorAll('.el-cell.el-ready')).toHaveLength(30)
+  advanceAnimation(4600)
+  expect(screen.getByText(SETTLED)).toBeInTheDocument()
+  expect(document.querySelectorAll('.el-cell.el-idle')).toHaveLength(30)
+  advanceAnimation(800)
+  expect(screen.getByText(FIRST_PAIR)).toBeInTheDocument()
 })
 
-test('keyboard pause freezes the current stage and play resumes without a time jump', async () => {
+test('keyboard pause freezes the current pair and play resumes without a time jump', async () => {
   const user = userEvent.setup()
-  render(<EngineAnimation />)
+  render(<EngineLattice />)
   enterViewport()
-  advanceAnimation(1000)
+  advanceAnimation(120)
 
   await user.tab()
   expect(screen.getByRole('button', { name: 'Pause animation' })).toHaveFocus()
@@ -150,37 +144,38 @@ test('keyboard pause freezes the current stage and play resumes without a time j
   expect(screen.getByRole('button', { name: 'Play animation' })).toHaveFocus()
   expect(frames.size).toBe(0)
   advanceAnimation(12000)
-  expect(screen.getByText('Matching GPU')).toBeInTheDocument()
+  expect(screen.getByText(FIRST_PAIR)).toBeInTheDocument()
 
   await user.keyboard('{Enter}')
-  advanceAnimation(1600)
-  expect(screen.getByText('Matching LLM')).toBeInTheDocument()
+  advanceAnimation(320)
+  expect(screen.getByText(SECOND_PAIR)).toBeInTheDocument()
 })
 
-test('reduced motion starts settled and paused, but allows an explicit play choice', async () => {
+test('reduced motion starts with the finished lattice and paused, but allows an explicit play choice', async () => {
   reducedMotion = true
   const user = userEvent.setup()
-  render(<EngineAnimation />)
+  render(<EngineLattice />)
   enterViewport()
 
-  expect(screen.getByText('× NVIDIA H200')).toBeInTheDocument()
+  expect(screen.getByText(SETTLED)).toBeInTheDocument()
+  expect(document.querySelectorAll('.el-cell.el-ready')).toHaveLength(30)
   expect(frames.size).toBe(0)
   await user.click(screen.getByRole('button', { name: 'Play animation' }))
-  advanceAnimation(4200)
-  expect(screen.getByText('Matching GPU')).toBeInTheDocument()
+  advanceAnimation(3600)
+  expect(screen.getByText(FIRST_PAIR)).toBeInTheDocument()
   expect(
     screen.getByRole('button', { name: 'Pause animation' })
   ).toBeInTheDocument()
 })
 
 test('enabling reduced motion during playback settles and pauses the illustration', () => {
-  render(<EngineAnimation />)
+  render(<EngineLattice />)
   enterViewport()
-  advanceAnimation(1000)
+  advanceAnimation(400)
 
   changeMotionPreference(true)
 
-  expect(screen.getByText('× NVIDIA H200')).toBeInTheDocument()
+  expect(screen.getByText(SETTLED)).toBeInTheDocument()
   expect(
     screen.getByRole('button', { name: 'Play animation' })
   ).toBeInTheDocument()
@@ -194,9 +189,9 @@ test('enabling reduced motion during playback settles and pauses the illustratio
 test.each(['outside the viewport', 'in a hidden tab'])(
   'animation %s stops scheduling frames and resumes at its previous position',
   (reason) => {
-    render(<EngineAnimation />)
+    render(<EngineLattice />)
     enterViewport()
-    advanceAnimation(1000)
+    advanceAnimation(120)
     const setSuspended = (suspended: boolean) => {
       if (reason === 'outside the viewport') enterViewport(!suspended)
       else {
@@ -208,19 +203,16 @@ test.each(['outside the viewport', 'in a hidden tab'])(
     setSuspended(true)
     expect(frames.size).toBe(0)
     advanceAnimation(12000)
-    expect(screen.getByText('Matching GPU')).toBeInTheDocument()
+    expect(screen.getByText(FIRST_PAIR)).toBeInTheDocument()
     setSuspended(false)
-    advanceAnimation(1600)
-    expect(screen.getByText('Matching LLM')).toBeInTheDocument()
+    advanceAnimation(320)
+    expect(screen.getByText(SECOND_PAIR)).toBeInTheDocument()
   }
 )
 
-test('unmount removes the observers, preference listeners, and pending animation frame', () => {
-  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-    new DOMRect(0, 0, 780, 261)
-  )
+test('unmount removes the observer, preference listeners, and pending animation frame', () => {
   const removeVisibilityListener = vi.spyOn(document, 'removeEventListener')
-  const view = render(<EngineAnimation />)
+  const view = render(<EngineLattice />)
   enterViewport()
   expect(frames.size).toBe(1)
 
@@ -228,7 +220,6 @@ test('unmount removes the observers, preference listeners, and pending animation
 
   expect(frames.size).toBe(0)
   expect(intersectionDisconnect).toHaveBeenCalledOnce()
-  expect(resizeDisconnect).toHaveBeenCalledOnce()
   expect(media.removeEventListener).toHaveBeenCalledWith(
     'change',
     expect.any(Function)
@@ -239,19 +230,20 @@ test('unmount removes the observers, preference listeners, and pending animation
   )
 })
 
-test('the illustration exposes a stable description without announcing decorative reel changes', () => {
-  const view = render(<EngineAnimation />)
+test('the illustration exposes a stable description without announcing decorative cell changes', () => {
+  const view = render(<EngineLattice />)
   const figure = screen.getByRole('figure', {
-    name: /GPU and LLM options lock into a pair/,
+    name: /An inference engine is built for every model and chip pairing/,
   })
-  expect(
-    screen.getByRole('heading', { name: 'Personalized Engine' })
-  ).toBeInTheDocument()
-  expect(figure.querySelectorAll('.ea-input[aria-hidden="true"]')).toHaveLength(
-    2
+  expect(figure.querySelector('.el-matrix')).toHaveAttribute(
+    'aria-hidden',
+    'true'
   )
   expect(view.container.querySelector('[aria-live]')).toBeNull()
+  expect(screen.queryByRole('heading')).toBeNull()
   enterViewport()
-  advanceAnimation(5800)
-  expect(figure).toHaveAccessibleName(/GPU and LLM options lock into a pair/)
+  advanceAnimation(3400)
+  expect(figure).toHaveAccessibleName(
+    /An inference engine is built for every model and chip pairing/
+  )
 })

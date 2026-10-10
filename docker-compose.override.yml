@@ -1,0 +1,8 @@
+# Local fix: this host runs Docker 20.10.7 / runc 1.0.0-rc95, whose seccomp
+# profile breaks glibc-based postgres/redis images ("Operation not permitted").
+# Alpine (musl) variants avoid it. Remove once Docker is upgraded to >= 20.10.10.
+services:
+  redis:
+    image: redis:7-alpine
+  postgres:
+    image: postgres:15-alpine
