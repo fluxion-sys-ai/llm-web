@@ -6167,15 +6167,15 @@
     "Stripe payments are currently unavailable.": "Thanh toán qua Stripe hiện không khả dụng.",
     "Unable to load payment options": "Không thể tải các tùy chọn thanh toán",
     "Unable to calculate payment amount. Please try again.": "Không thể tính số tiền thanh toán. Vui lòng thử lại.",
-    "Ultra-fast, efficient inference for AI,": "Suy luận AI siêu nhanh và hiệu quả,",
+    "Ultra-fast, efficient": "Suy luận AI",
+    "inference for AI,": "siêu nhanh và hiệu quả,",
     "built by AI.": "do AI xây dựng.",
     "Any model, any chip, lowest cost.": "Mọi mô hình, mọi chip, chi phí thấp nhất.",
-    "Engines built by AI": "Engine do AI xây dựng",
-    "Any model": "Mọi mô hình",
-    "Any chip": "Mọi chip",
-    "Lowest cost": "Chi phí thấp nhất",
-    "Building {{model}} × {{chip}}": "Đang xây dựng {{model}} × {{chip}}",
-    "Every pair has its own engine": "Mỗi cặp đều có engine riêng",
-    "An inference engine is built for every model and chip pairing. This illustration cycles through example pairings and does not show live availability.": "Một engine suy luận được xây dựng cho mỗi cặp mô hình–chip. Minh họa này lặp qua các cặp ví dụ và không thể hiện tình trạng khả dụng thực tế."
+    "AI optimizer": "Bộ tối ưu AI",
+    "Inference engine": "Engine suy luận",
+    "Build": "Xây dựng",
+    "Benchmark": "Đo hiệu năng",
+    "Optimize": "Tối ưu",
+    "An AI optimizer builds, benchmarks and optimizes an inference engine while a stream of tokens runs through it. The drawing is an illustration.": "Bộ tối ưu AI xây dựng, đo hiệu năng và tối ưu engine suy luận trong khi dòng token chạy qua nó. Hình vẽ chỉ là minh họa."
   }
 }

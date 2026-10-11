@@ -6167,15 +6167,15 @@
     "Stripe payments are currently unavailable.": "Stripeでの支払いは現在利用できません。",
     "Unable to load payment options": "支払い方法を読み込めません",
     "Unable to calculate payment amount. Please try again.": "支払い金額を計算できません。もう一度お試しください。",
-    "Ultra-fast, efficient inference for AI,": "超高速で効率的な AI 推論を、",
+    "Ultra-fast, efficient": "超高速で効率的な",
+    "inference for AI,": "AI 推論を、",
     "built by AI.": "AI が構築。",
     "Any model, any chip, lowest cost.": "あらゆるモデル、あらゆるチップ、最低コスト。",
-    "Engines built by AI": "AI が構築したエンジン",
-    "Any model": "あらゆるモデル",
-    "Any chip": "あらゆるチップ",
-    "Lowest cost": "最低コスト",
-    "Building {{model}} × {{chip}}": "{{model}} × {{chip}} を構築中",
-    "Every pair has its own engine": "すべての組み合わせに専用エンジン",
-    "An inference engine is built for every model and chip pairing. This illustration cycles through example pairings and does not show live availability.": "モデルとチップの組み合わせごとに推論エンジンを構築します。このイラストは例となる組み合わせを順に表示するもので、実際の提供状況を示すものではありません。"
+    "AI optimizer": "AI オプティマイザー",
+    "Inference engine": "推論エンジン",
+    "Build": "ビルド",
+    "Benchmark": "ベンチマーク",
+    "Optimize": "最適化",
+    "An AI optimizer builds, benchmarks and optimizes an inference engine while a stream of tokens runs through it. The drawing is an illustration.": "AI オプティマイザーが推論エンジンをビルド・ベンチマーク・最適化し、その中をトークンの流れが通り抜けます。この図はイメージです。"
   }
 }

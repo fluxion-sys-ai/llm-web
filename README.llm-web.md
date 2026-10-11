@@ -25,7 +25,7 @@ bun run dev:preview
 | 首页标题、副标题 | `features/home/components/sections/llm-hero.tsx` |
 | 首页区块顺序、底部引导 | `features/home/index.tsx`、`features/home/components/sections/cta.tsx` |
 | 首页推荐模型布局 | `features/home/components/sections/llm-featured-models.tsx` |
-| 首页「模型 × 芯片」引擎动画 | `features/home/components/engine-lattice/`（模型、芯片列表与节奏在 `timeline.ts`）、`styles/engine-lattice.css`；首页背景在 `styles/llm-hero.css` |
+| 首页「AI 优化器 + 推理引擎」插图 | `features/home/components/engine-illustration/`（层叠几何参数在 `geometry.ts`）、`styles/engine-illustration.css`；首页背景在 `styles/llm-hero.css` |
 | 模型介绍、图标、Coming soon 列表 | `features/pricing/lib/catalog.ts` |
 | 模型卡片和详情布局 | `features/pricing/components/` |
 | GPU 型号和参数 | `features/gpu/data.ts`；页面布局在同目录 `index.tsx` |
@@ -44,7 +44,7 @@ bun run dev:preview
 
 - **文案**：组件使用 `t('English text')`；翻译在 `web/src/i18n/locales/`，新增或更改文案时同步维护七种语言。
 - **模型**：`catalog.ts` 提供展示文案和 Coming soon 信息；已接入模型的后端字段优先。添加展示条目不会开通推理，真实可用性和价格由后端控制。`web/scripts/preview-catalog.mjs` 仅供本地模拟预览。
-- **GPU 与动画**：目前是展示内容，动画中的模型与芯片组合不代表真实可用性；GPU 页未连接库存和资源部署接口。
+- **GPU 与插图**：首页插图是示意图，不代表真实架构或可用性；GPU 页未连接库存和资源部署接口。
 - **Blog**：目前是 Coming soon 页面，没有文章管理后台；新增文章需要补充页面内容和路由。
 - **公共页面**：复用 `PublicLayout` 和 `Footer`，保持 header/footer 一致。政策只修改正文，不粘贴独立 HTML 页面的整套导航与样式。
 - **样式**：优先复用 `web/src/components/` 中已有组件，遵循 `web/AGENTS.md`；保留上游 New API 的许可证及署名。

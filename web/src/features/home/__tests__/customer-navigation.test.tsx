@@ -84,7 +84,7 @@ test('the hero offers model pricing as its secondary destination', async () => {
   ).toHaveAttribute('href', '/pricing')
 })
 
-test('the hero states the Fluxion slogan as its headline and subline', async () => {
+test('the hero states the Fluxion slogan beside the engine illustration', async () => {
   await renderLandingSection(LlmHero)
 
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
@@ -93,7 +93,8 @@ test('the hero states the Fluxion slogan as its headline and subline', async () 
   expect(screen.getByText('Any model, any chip, lowest cost.')).toBeVisible()
   expect(
     screen.getByRole('figure', {
-      name: /An inference engine is built for every model and chip pairing/,
+      name: /An AI optimizer builds, benchmarks and optimizes an inference engine/,
     })
   ).toBeInTheDocument()
+  expect(screen.queryByRole('list')).toBeNull()
 })

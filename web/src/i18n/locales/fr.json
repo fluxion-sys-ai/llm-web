@@ -6167,15 +6167,15 @@
     "Stripe payments are currently unavailable.": "Les paiements Stripe sont actuellement indisponibles.",
     "Unable to load payment options": "Impossible de charger les options de paiement",
     "Unable to calculate payment amount. Please try again.": "Impossible de calculer le montant du paiement. Veuillez réessayer.",
-    "Ultra-fast, efficient inference for AI,": "Une inférence IA ultra-rapide et efficace,",
+    "Ultra-fast, efficient": "Une inférence IA",
+    "inference for AI,": "ultra-rapide et efficace,",
     "built by AI.": "construite par l’IA.",
     "Any model, any chip, lowest cost.": "Tous les modèles, toutes les puces, au coût le plus bas.",
-    "Engines built by AI": "Moteurs construits par l’IA",
-    "Any model": "Tous les modèles",
-    "Any chip": "Toutes les puces",
-    "Lowest cost": "Coût le plus bas",
-    "Building {{model}} × {{chip}}": "Construction de {{model}} × {{chip}}",
-    "Every pair has its own engine": "Chaque paire a son propre moteur",
-    "An inference engine is built for every model and chip pairing. This illustration cycles through example pairings and does not show live availability.": "Un moteur d’inférence est construit pour chaque paire modèle–puce. Cette illustration fait défiler des paires d’exemple et ne reflète pas la disponibilité réelle."
+    "AI optimizer": "Optimiseur IA",
+    "Inference engine": "Moteur d’inférence",
+    "Build": "Construire",
+    "Benchmark": "Mesurer",
+    "Optimize": "Optimiser",
+    "An AI optimizer builds, benchmarks and optimizes an inference engine while a stream of tokens runs through it. The drawing is an illustration.": "Un optimiseur IA construit, mesure et optimise un moteur d’inférence pendant qu’un flux de tokens le traverse. Le dessin est une illustration."
   }
 }
