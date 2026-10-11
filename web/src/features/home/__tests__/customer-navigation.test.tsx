@@ -29,6 +29,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 
+import { CTA } from '../components/sections/cta'
 import { LlmHero } from '../components/sections/llm-hero'
 
 beforeEach(() => {
@@ -48,7 +49,7 @@ async function renderLandingSection(component: RouteComponent) {
     path: '/',
     component,
   })
-  const destinations = ['/playground', '/pricing'].map((path) =>
+  const destinations = ['/playground', '/pricing', '/docs'].map((path) =>
     createRoute({
       getParentRoute: () => rootRoute,
       path,
@@ -97,4 +98,26 @@ test('the hero states the Fluxion slogan beside the engine illustration', async 
     })
   ).toBeInTheDocument()
   expect(screen.queryByRole('list')).toBeNull()
+})
+
+test('the closing call to action pitches a dedicated engine per model and links to the Playground and docs', async () => {
+  await renderLandingSection(() => <CTA />)
+
+  expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
+    'Every model deserves its own engine.'
+  )
+  expect(screen.getByRole('link', { name: 'Open Playground' })).toHaveAttribute(
+    'href',
+    '/playground'
+  )
+  expect(screen.getByRole('link', { name: 'Read the docs' })).toHaveAttribute(
+    'href',
+    '/docs'
+  )
+})
+
+test('the closing call to action is hidden from signed-in visitors', async () => {
+  await renderLandingSection(() => <CTA isAuthenticated />)
+
+  expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
 })

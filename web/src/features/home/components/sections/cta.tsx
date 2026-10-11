@@ -22,6 +22,8 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 
+import '@/styles/llm-hero.css'
+
 interface CTAProps {
   className?: string
   isAuthenticated?: boolean
@@ -35,34 +37,40 @@ export function CTA(props: CTAProps) {
   }
 
   return (
-    <section className='border-border bg-muted relative border-t px-6 py-16 sm:py-20'>
-      <div className='mx-auto max-w-2xl text-center'>
-        <h2 className='text-[clamp(28px,4vw,44px)] leading-[1.1] font-semibold tracking-[-0.03em]'>
-          {t('Ready to simplify')}
+    <section className='border-border relative isolate overflow-hidden border-t bg-[#fcfdff] px-6 py-16 sm:py-24'>
+      <div aria-hidden='true' className='llm-hero-backdrop'>
+        <div className='llm-hero-grid' />
+        <div className='llm-cta-glow' />
+      </div>
+      <div className='mx-auto max-w-3xl text-center'>
+        <h2 className='text-[clamp(32px,4.4vw,56px)] leading-[1.05] font-semibold tracking-[-0.04em]'>
+          {t('Every model deserves')}{' '}
           <br />
-          <span>{t('your AI integration?')}</span>
+          <span className='text-[#4f46e5]'>{t('its own engine.')}</span>
         </h2>
-        <p className='text-muted-foreground mx-auto mt-5 max-w-md text-sm leading-relaxed md:text-base'>
+        <p className='mx-auto mt-6 max-w-xl text-base leading-relaxed font-medium text-[#2f3745] sm:text-[17px]'>
           {t(
-            'Start with a conversation in the Playground, then use an API key to bring a model into your application.'
+            'Try any model in the Playground, then point your OpenAI-compatible client at Fluxion with a single API key.'
           )}
         </p>
         <div className='mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center'>
           <Button
             role='link'
-            className='group h-11 gap-2 px-5 text-[15px]'
+            size='lg'
+            className='group h-12 gap-2 rounded-full px-6 text-sm'
             render={<Link to='/playground' />}
           >
             {t('Open Playground')}
             <ArrowRight
               aria-hidden='true'
-              className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5'
+              className='size-4 transition-transform duration-200 group-hover:translate-x-0.5'
             />
           </Button>
           <Button
             role='link'
+            size='lg'
             variant='outline'
-            className='h-11 px-5 text-[15px]'
+            className='h-12 rounded-full px-6 text-sm'
             render={<Link to='/docs' />}
           >
             {t('Read the docs')}
