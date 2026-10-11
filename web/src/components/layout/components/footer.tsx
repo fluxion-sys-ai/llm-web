@@ -215,7 +215,10 @@ export function Footer(props: FooterProps) {
             <FluxionWordmark name={displayName} className='text-lg' />
           </Link>
           <p className='text-muted-foreground mt-4 max-w-xs text-sm leading-relaxed'>
-            {t('Specialized inference engines for every model–GPU pair.')}
+            {t('Ultra-fast, efficient inference for AI, built by AI.')}
+            <span className='block'>
+              {t('Any model, any chip, lowest cost.')}
+            </span>
           </p>
         </div>
 
@@ -234,8 +237,8 @@ export function Footer(props: FooterProps) {
             <ul
               className={
                 column.twoColumns
-                  ? 'grid grid-flow-col grid-cols-2 grid-rows-3 gap-x-6 gap-y-2'
-                  : 'space-y-2'
+                  ? 'grid grid-flow-col grid-cols-2 grid-rows-3 gap-x-6 gap-y-1'
+                  : 'space-y-1'
               }
             >
               {column.links.map((link) => (
@@ -261,12 +264,12 @@ export function Footer(props: FooterProps) {
           </div>
           <div className='flex flex-col items-center gap-2 sm:items-end'>
             <a
-              href='https://fluxion-sys.ai'
+              href='https://llm.fluxion-sys.ai'
               target='_blank'
               rel='noopener noreferrer'
               className='text-muted-foreground hover:text-foreground text-xs transition-colors'
             >
-              fluxion-sys.ai
+              llm.fluxion-sys.ai
             </a>
             <ProjectAttribution currentYear={currentYear} />
           </div>
