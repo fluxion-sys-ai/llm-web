@@ -326,7 +326,7 @@ describe('catalog navigation menus', () => {
     )
     const navigation = screen.getByRole('navigation', { name: 'Navigation' })
     expect(
-      within(navigation).getByRole('link', { name: 'GPU' })
+      within(navigation).getByRole('link', { name: 'GPUs' })
     ).toHaveAttribute('href', '/gpu')
     expect(
       within(navigation).queryByRole('link', { name: 'Docs' })

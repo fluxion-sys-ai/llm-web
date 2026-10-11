@@ -152,7 +152,7 @@ export function Footer(props: FooterProps) {
         title: t('Product'),
         links: [
           { text: t('Models'), href: '/pricing' },
-          { text: t('GPU'), href: '/gpu' },
+          { text: t('GPUs'), href: '/gpu' },
           { text: t('Playground'), href: '/playground' },
         ],
       },

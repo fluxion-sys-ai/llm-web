@@ -64,11 +64,6 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Home'), href: '/' })
   }
 
-  // Console -> /dashboard (new console path)
-  if (modules?.console !== false) {
-    links.push({ title: t('Console'), href: '/dashboard' })
-  }
-
   // Pricing
   const pricing = modules?.pricing
   if (pricing && typeof pricing === 'object' && pricing.enabled) {
@@ -76,11 +71,16 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Models'), href: '/pricing', requiresAuth })
   }
 
-  links.push({ title: t('GPU'), href: '/gpu' })
+  links.push({ title: t('GPUs'), href: '/gpu' })
 
   if (pricing && typeof pricing === 'object' && pricing.enabled) {
     const requiresAuth = pricing.requireAuth && !isAuthed
     links.push({ title: t('Pricing'), href: '/pricing/overview', requiresAuth })
+  }
+
+  // Console -> /dashboard (new console path)
+  if (modules?.console !== false) {
+    links.push({ title: t('Console'), href: '/dashboard' })
   }
 
   if (modules.docs) {

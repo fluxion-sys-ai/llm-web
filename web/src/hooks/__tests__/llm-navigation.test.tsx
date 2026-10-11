@@ -93,15 +93,15 @@ describe('LLM navigation', () => {
     expect(items.some((item) => item.type === 'chat-presets')).toBe(false)
   })
 
-  it('orders the main navigation as Home, Console, Models, GPU, Pricing, and Docs without Blog', () => {
+  it('orders the main navigation as Home, Models, GPUs, Pricing, Console, and Docs without Blog', () => {
     const { result } = renderNavigation()
 
     expect(result.current.topNav.map((link) => link.href)).toEqual([
       '/',
-      '/dashboard',
       '/pricing',
       '/gpu',
       '/pricing/overview',
+      '/dashboard',
       '/docs',
     ])
   })
@@ -116,7 +116,7 @@ describe('LLM navigation', () => {
       }),
     })
 
-    expect(result.current.topNav).toEqual([{ title: 'GPU', href: '/gpu' }])
+    expect(result.current.topNav).toEqual([{ title: 'GPUs', href: '/gpu' }])
   })
 
   it('a disabled pricing module hides public model links while the console omits them', () => {
