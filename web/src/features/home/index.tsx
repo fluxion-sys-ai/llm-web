@@ -24,7 +24,6 @@ import { Footer } from '@/components/layout/components/footer'
 import { RichContent } from '@/components/rich-content'
 import { useTheme } from '@/context/theme-provider'
 import { isLikelyHtml } from '@/lib/content-format'
-import { useAuthStore } from '@/stores/auth-store'
 
 import { CTA, LlmHero } from './components'
 import { LlmFeaturedModels } from './components/sections/llm-featured-models'
@@ -34,8 +33,6 @@ export function Home() {
   const { i18n, t } = useTranslation()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const { resolvedTheme } = useTheme()
-  const { auth } = useAuthStore()
-  const isAuthenticated = !!auth.user
   const { content, isLoaded, isUrl } = useHomePageContent()
 
   const syncIframePreferences = useCallback(() => {
@@ -126,7 +123,7 @@ export function Home() {
       <main>
         <LlmHero />
         <LlmFeaturedModels />
-        <CTA isAuthenticated={isAuthenticated} />
+        <CTA />
       </main>
       <Footer />
     </PublicLayout>

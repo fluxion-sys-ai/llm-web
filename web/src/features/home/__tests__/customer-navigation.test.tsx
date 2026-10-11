@@ -115,9 +115,3 @@ test('the closing call to action pitches a dedicated engine per model and links 
     '/docs'
   )
 })
-
-test('the closing call to action is hidden from signed-in visitors', async () => {
-  await renderLandingSection(() => <CTA isAuthenticated />)
-
-  expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
-})

@@ -24,17 +24,8 @@ import { Button } from '@/components/ui/button'
 
 import '@/styles/llm-hero.css'
 
-interface CTAProps {
-  className?: string
-  isAuthenticated?: boolean
-}
-
-export function CTA(props: CTAProps) {
+export function CTA() {
   const { t } = useTranslation()
-
-  if (props.isAuthenticated) {
-    return null
-  }
 
   return (
     <section className='border-border relative isolate overflow-hidden border-t bg-[#fcfdff] px-6 py-16 sm:py-24'>
