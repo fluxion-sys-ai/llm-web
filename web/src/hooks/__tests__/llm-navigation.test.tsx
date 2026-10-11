@@ -93,7 +93,7 @@ describe('LLM navigation', () => {
     expect(items.some((item) => item.type === 'chat-presets')).toBe(false)
   })
 
-  it('orders the main navigation as Home, Console, Models, GPU, Pricing, Blog, and Docs', () => {
+  it('orders the main navigation as Home, Console, Models, GPU, Pricing, and Docs without Blog', () => {
     const { result } = renderNavigation()
 
     expect(result.current.topNav.map((link) => link.href)).toEqual([
@@ -102,7 +102,6 @@ describe('LLM navigation', () => {
       '/pricing',
       '/gpu',
       '/pricing/overview',
-      '/blog',
       '/docs',
     ])
   })
@@ -117,10 +116,7 @@ describe('LLM navigation', () => {
       }),
     })
 
-    expect(result.current.topNav).toEqual([
-      { title: 'GPU', href: '/gpu' },
-      { title: 'Blog', href: '/blog' },
-    ])
+    expect(result.current.topNav).toEqual([{ title: 'GPU', href: '/gpu' }])
   })
 
   it('a disabled pricing module hides public model links while the console omits them', () => {
@@ -160,14 +156,11 @@ describe('LLM navigation', () => {
     ).toMatchObject({ title: 'Pricing', requiresAuth: true })
   })
 
-  it('exposes Blog and internal Docs as separate links despite a legacy external docs URL', () => {
+  it('exposes internal Docs as a direct link despite a legacy external docs URL', () => {
     const { result } = renderNavigation({ docs_link: 'https://docs.newapi.ai' })
 
     expect(result.current.topNav).toEqual(
-      expect.arrayContaining([
-        { title: 'Blog', href: '/blog' },
-        { title: 'Docs', href: '/docs' },
-      ])
+      expect.arrayContaining([{ title: 'Docs', href: '/docs' }])
     )
     expect(
       result.current.topNav.some((link) => link.title === 'Resources')
@@ -175,14 +168,11 @@ describe('LLM navigation', () => {
     expect(result.current.topNav.some((link) => link.external)).toBe(false)
   })
 
-  it('keeps Blog available while a disabled documentation module hides Docs', () => {
+  it('a disabled documentation module hides Docs from the main navigation', () => {
     const { result } = renderNavigation({
       HeaderNavModules: JSON.stringify({ docs: false }),
     })
 
-    expect(result.current.topNav.find((link) => link.title === 'Blog')).toEqual(
-      { title: 'Blog', href: '/blog' }
-    )
     expect(result.current.topNav.some((link) => link.href === '/docs')).toBe(
       false
     )

@@ -166,7 +166,7 @@ export function Footer(props: FooterProps) {
       },
       {
         title: t('Company'),
-        links: [{ text: t('Blog'), href: '/blog' }, ...policyLinks],
+        links: policyLinks,
         twoColumns: true,
       },
     ],

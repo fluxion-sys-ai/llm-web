@@ -184,7 +184,10 @@ it('the default footer lists each policy once even when shared backend legal fla
   ).toEqual(['Models', 'GPU', 'Playground'])
   const company = within(footer).getByText('Company').parentElement
   if (!company) throw new Error('Company section missing')
-  expect(within(company).getAllByRole('link')).toHaveLength(6)
+  expect(within(company).getAllByRole('link')).toHaveLength(policies.length)
+  expect(
+    within(footer).queryByRole('link', { name: 'Blog' })
+  ).not.toBeInTheDocument()
   for (const policy of policies) {
     const link = within(footer).getByRole('link', {
       name: policy.label,

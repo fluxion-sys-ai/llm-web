@@ -301,14 +301,11 @@ describe('catalog navigation menus', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('shows Blog and Docs as independent links without opening a Resources menu', async () => {
+  it('shows Docs as a direct link without Blog or a Resources menu', async () => {
     site.status = { docs_link: 'https://docs.newapi.ai' }
     await renderNavigation(<ConfiguredTopNav />)
 
-    expect(screen.getByRole('link', { name: 'Blog' })).toHaveAttribute(
-      'href',
-      '/blog'
-    )
+    expect(screen.queryByRole('link', { name: 'Blog' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Docs' })).toHaveAttribute(
       'href',
       '/docs'
@@ -318,23 +315,19 @@ describe('catalog navigation menus', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps Blog while a disabled documentation module hides Docs from desktop and mobile', async () => {
+  it('a disabled documentation module hides Docs from desktop and mobile', async () => {
     site.status = { HeaderNavModules: JSON.stringify({ docs: false }) }
     const user = userEvent.setup()
     await renderNavigation(<ConfiguredTopNav />)
 
-    expect(screen.getByRole('link', { name: 'Blog' })).toHaveAttribute(
-      'href',
-      '/blog'
-    )
     expect(screen.queryByRole('link', { name: 'Docs' })).not.toBeInTheDocument()
     await user.click(
       screen.getByRole('button', { name: 'Toggle navigation menu' })
     )
     const navigation = screen.getByRole('navigation', { name: 'Navigation' })
     expect(
-      within(navigation).getByRole('link', { name: 'Blog' })
-    ).toHaveAttribute('href', '/blog')
+      within(navigation).getByRole('link', { name: 'GPU' })
+    ).toHaveAttribute('href', '/gpu')
     expect(
       within(navigation).queryByRole('link', { name: 'Docs' })
     ).not.toBeInTheDocument()

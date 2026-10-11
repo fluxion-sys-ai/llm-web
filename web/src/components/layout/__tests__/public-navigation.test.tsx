@@ -136,18 +136,18 @@ it('public layout exposes one site footer outside the constrained main when requ
 })
 
 it.each(['header', 'standalone'] as const)(
-  '%s shows direct Blog and Docs links and marks only Docs active for a nested documentation page',
+  '%s shows a direct Docs link without Blog and marks Docs active for a nested documentation page',
   async (surface) => {
     await renderPublicNavigation(surface)
     const navigation =
       surface === 'header'
         ? screen.getByRole('banner')
         : screen.getByRole('navigation')
-    const blog = within(navigation).getByRole('link', { name: 'Blog' })
     const docs = within(navigation).getByRole('link', { name: 'Docs' })
 
-    expect(blog).toHaveAttribute('href', '/blog')
-    expect(blog).not.toHaveAttribute('aria-current')
+    expect(
+      within(navigation).queryByRole('link', { name: 'Blog' })
+    ).not.toBeInTheDocument()
     expect(docs).toHaveAttribute('href', '/docs')
     expect(docs).toHaveAttribute('aria-current', 'page')
     expect(
@@ -157,7 +157,7 @@ it.each(['header', 'standalone'] as const)(
 )
 
 it.each(['header', 'standalone'] as const)(
-  '%s retains Blog while honoring the disabled Docs module',
+  '%s honors the disabled Docs module',
   async (surface) => {
     await renderPublicNavigation(surface, false)
     const navigation =
@@ -166,15 +166,12 @@ it.each(['header', 'standalone'] as const)(
         : screen.getByRole('navigation')
 
     expect(
-      within(navigation).getByRole('link', { name: 'Blog' })
-    ).toHaveAttribute('href', '/blog')
-    expect(
       within(navigation).queryByRole('link', { name: 'Docs' })
     ).not.toBeInTheDocument()
   }
 )
 
-it.each(['Blog', 'Docs'])(
+it.each(['Docs'])(
   'the public mobile menu closes after clicking the direct %s link',
   async (label) => {
     const user = userEvent.setup()
