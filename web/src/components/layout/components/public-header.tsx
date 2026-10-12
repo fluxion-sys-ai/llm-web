@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
 import { FluxionWordmark } from '@/components/fluxion-wordmark'
+import { LanguageSwitcher } from '@/components/language-switcher'
 import { NotificationPopover } from '@/components/notification-popover'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Button } from '@/components/ui/button'
@@ -246,11 +247,11 @@ export function PublicHeader(props: PublicHeaderProps) {
                 />
               )}
 
+              <LanguageSwitcher />
+
               {showAuthButtons && (
                 <>
-                  {showNotifications && (
-                    <div className='bg-border/40 mx-1 h-4 w-px' />
-                  )}
+                  <div className='bg-border/40 mx-1 h-4 w-px' />
                   {loading ? (
                     <Skeleton className='h-8 w-20 rounded-lg' />
                   ) : (
@@ -377,6 +378,7 @@ export function PublicHeader(props: PublicHeaderProps) {
             )}
             style={{ transitionDelay: mobileOpen ? '250ms' : '0ms' }}
           >
+            <LanguageSwitcher variant='field' />
             {showAuthButtons && (
               <Link
                 to={isAuthenticated ? '/dashboard' : '/sign-in'}

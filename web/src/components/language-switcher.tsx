@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Languages, Check } from 'lucide-react'
+import { Check, ChevronDown, Globe, Languages } from 'lucide-react'
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -40,13 +40,16 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
 
 type LanguageSwitcherProps = {
-  variant?: 'button' | 'submenu'
+  variant?: 'button' | 'submenu' | 'field'
 }
 
 export function LanguageSwitcher(props: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation()
   const user = useAuthStore((s) => s.auth.user)
   const currentLanguage = normalizeInterfaceLanguage(i18n.language)
+  const currentLanguageLabel = INTERFACE_LANGUAGE_OPTIONS.find(
+    (lang) => lang.code === currentLanguage
+  )?.label
   const handleChangeLanguage = useCallback(
     async (code: string) => {
       await i18n.changeLanguage(code)
@@ -98,12 +101,38 @@ export function LanguageSwitcher(props: LanguageSwitcherProps) {
     )
   }
 
+  if (props.variant === 'field') {
+    return (
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger
+          aria-label={t('Change language')}
+          render={
+            <Button
+              variant='outline'
+              className='h-10 w-full justify-start gap-2 rounded-lg px-3 text-sm font-medium'
+            />
+          }
+        >
+          <Globe aria-hidden='true' className='text-muted-foreground size-4' />
+          {currentLanguageLabel}
+          <ChevronDown
+            aria-hidden='true'
+            className='text-muted-foreground ms-auto size-4'
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='start' side='top' className='min-w-44'>
+          {languageOptions}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         render={<Button variant='ghost' size='icon' className='h-9 w-9' />}
       >
-        <Languages className='size-[1.2rem]' />
+        <Globe aria-hidden='true' className='size-[1.2rem]' />
         <span className='sr-only'>{t('Change language')}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>{languageOptions}</DropdownMenuContent>

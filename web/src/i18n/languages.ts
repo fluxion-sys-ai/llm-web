@@ -16,14 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+// Only English and Simplified Chinese are offered for now. The fr/ja/ru/vi/zh-TW
+// locale files are still kept in sync so they can be re-enabled here later.
 export const INTERFACE_LANGUAGE_OPTIONS = [
-  { code: 'zhCN', label: '简体中文' },
   { code: 'en', label: 'English' },
-  { code: 'fr', label: 'Français' },
-  { code: 'ru', label: 'Русский' },
-  { code: 'ja', label: '日本語' },
-  { code: 'vi', label: 'Tiếng Việt' },
-  { code: 'zhTW', label: '繁體中文' },
+  { code: 'zhCN', label: '简体中文' },
 ] as const
 
 export type InterfaceLanguageCode =
@@ -60,20 +57,6 @@ export function normalizeInterfaceLanguage(value?: string | null): string {
  * Non-Chinese codes are returned unchanged so i18next's own `supportedLngs`
  * matching still applies (e.g. `fr-FR` -> `fr`, `ja` -> `ja`).
  */
-export function convertDetectedLanguage(value: string): string {
-  const lower = value.trim().replaceAll('_', '-').toLowerCase()
-  if (!lower.startsWith('zh')) return value
-  if (
-    lower === 'zh-tw' ||
-    lower === 'zh-hk' ||
-    lower === 'zh-mo' ||
-    lower.startsWith('zh-hant')
-  ) {
-    return 'zhTW'
-  }
-  return 'zhCN'
-}
-
 /**
  * Convert an interface language code (the values i18next uses, such as `zhCN` /
  * `zhTW`) into a valid BCP-47 locale tag that the `Intl.*` APIs accept.
