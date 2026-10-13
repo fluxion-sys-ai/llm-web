@@ -28,10 +28,9 @@ test('pricing features the requested LLMs first and resolves every vendor', () =
     catalog.data.map((model) => model.display_name),
     [
       'GLM 5.3',
-      'GLM 5.3 Flash',
+      'Kimi K3',
       'DeepSeek V4.1 Flash',
       'Qwen3.8 Flash',
-      'Kimi K3',
       'Qwen3.8 27B',
     ]
   )
@@ -39,7 +38,7 @@ test('pricing features the requested LLMs first and resolves every vendor', () =
     catalog.data
       .filter((model) => model.featured)
       .map((model) => model.model_name),
-    ['glm-5.3', 'glm-5.3-flash', 'deepseek-v4.1-flash']
+    ['glm-5.3', 'kimi-k3', 'deepseek-v4.1-flash']
   )
   for (const model of catalog.data) {
     assert.ok(catalog.vendors.some((vendor) => vendor.id === model.vendor_id))

@@ -46,12 +46,12 @@ export const previewCatalog = [
     },
   },
   {
-    model_name: 'glm-5.3-flash',
-    display_name: 'GLM 5.3 Flash',
-    vendor_id: 1,
+    model_name: 'kimi-k3',
+    display_name: 'Kimi K3',
+    vendor_id: 4,
     featured: true,
     description:
-      'A multimodal model for efficient coding, visual understanding, and long-running agent tasks.',
+      'A multimodal reasoning model for large codebases, knowledge work, and extended tool use.',
     tags: 'Reasoning,Coding,Tools,Vision,Long-context',
     context_length: 1048576,
     max_output_tokens: 1048576,
@@ -60,7 +60,7 @@ export const previewCatalog = [
     capabilities: ['reasoning', 'tools', 'structured_output', 'vision'],
     catalog_source: {
       name: 'OpenRouter',
-      url: 'https://openrouter.ai/z-ai/glm-5.3-flash',
+      url: 'https://openrouter.ai/moonshotai/kimi-k3',
       checked_at: '2026-10-08',
     },
   },
@@ -99,25 +99,6 @@ export const previewCatalog = [
     catalog_source: {
       name: 'OpenRouter',
       url: 'https://openrouter.ai/qwen/qwen3.8-flash',
-      checked_at: '2026-10-08',
-    },
-  },
-  {
-    model_name: 'kimi-k3',
-    display_name: 'Kimi K3',
-    vendor_id: 4,
-    featured: false,
-    description:
-      'A multimodal reasoning model for large codebases, knowledge work, and extended tool use.',
-    tags: 'Reasoning,Coding,Tools,Vision,Long-context',
-    context_length: 1048576,
-    max_output_tokens: 1048576,
-    input_modalities: ['text', 'image', 'video'],
-    output_modalities: ['text'],
-    capabilities: ['reasoning', 'tools', 'structured_output', 'vision'],
-    catalog_source: {
-      name: 'OpenRouter',
-      url: 'https://openrouter.ai/moonshotai/kimi-k3',
       checked_at: '2026-10-08',
     },
   },
