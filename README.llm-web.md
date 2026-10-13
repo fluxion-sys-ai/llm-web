@@ -1,10 +1,12 @@
 # Fluxion LLM 网站修改指南
 
-适用于 `llm-web` 分支。网站基于 New API，前端位于 `web/`，使用 React、TypeScript 和 Tailwind CSS。修改文案、页面和样式通常只需改前端。
+适用于独立仓库 `fluxion-sys-ai/llm-web` 的 `main` 分支。本仓库仅维护基于 New API 的 LLM 前端，源码保留在 `web/`，使用 React、TypeScript 和 Tailwind CSS；线上继续复用现有共享后端。
+
+所有 LLM 网站的前端改动都在本仓库完成并从这里发布，无需再同步到 `new-api` 仓库。日常页面、样式和文案修改也无需改动 `api-gateway`。
 
 ## 1. 本地预览
 
-安装 Bun，在本仓库的 `llm-web` 分支根目录运行：
+安装 Bun，在本仓库的 `main` 分支根目录运行：
 
 ```bash
 cd web
@@ -61,4 +63,4 @@ bun run build
 
 浏览器检查改动页面的桌面和手机布局、链接与按钮。构建结果位于 `web/dist/`。
 
-提交到 `llm-web` 不会自动更新线上网站。发布工具在另一个仓库的 `api-gateway/deploy/build-llm.sh`，具体流程见其 `deploy/README.md`。普通内容更新只发布 LLM 静态前端；线上与视频网站共用后端，不需要重启共用服务。
+修改提交后，在本仓库运行 `git push origin main`；这一步只同步代码，不会自动更新线上网站。发布工具在同级 `api-gateway` 仓库的 `llm-web-integration` 分支中，入口为 `deploy/build-llm.sh`，默认读取本仓库的 `web/`。具体流程见 [LLM 发布指南](https://github.com/fluxion-sys-ai/api-gateway/blob/llm-web-integration/deploy/README.md)。普通内容更新只发布 LLM 静态前端；线上与视频网站共用后端，不需要重启共用服务。
