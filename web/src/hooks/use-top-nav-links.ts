@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { GPU_CATALOG_VISIBLE } from '@/features/gpu/constants'
 import { useStatus } from '@/hooks/use-status'
 import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
 import { useAuthStore } from '@/stores/auth-store'
@@ -71,7 +72,9 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Models'), href: '/pricing', requiresAuth })
   }
 
-  links.push({ title: t('GPUs'), href: '/gpu' })
+  if (GPU_CATALOG_VISIBLE) {
+    links.push({ title: t('GPUs'), href: '/gpu' })
+  }
 
   if (pricing && typeof pricing === 'object' && pricing.enabled) {
     const requiresAuth = pricing.requireAuth && !isAuthed

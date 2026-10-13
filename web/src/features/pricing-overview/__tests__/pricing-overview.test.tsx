@@ -29,6 +29,7 @@ import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
+import { GPU_CATALOG_VISIBLE } from '@/features/gpu/constants'
 import type { PricingData } from '@/features/pricing/types'
 import { useAuthStore } from '@/stores/auth-store'
 import { useSystemConfigStore } from '@/stores/system-config-store'
@@ -120,7 +121,9 @@ async function renderPricingOverview(data = pricing) {
   return router
 }
 
-it('defaults to LLM API and switches visible pricing panels with mouse and keyboard', async () => {
+it.runIf(GPU_CATALOG_VISIBLE)(
+  'defaults to LLM API and switches visible pricing panels with mouse and keyboard',
+  async () => {
   const user = userEvent.setup()
   await renderPricingOverview()
 
@@ -153,11 +156,27 @@ it('defaults to LLM API and switches visible pricing panels with mouse and keybo
     'true'
   )
   expect(screen.getByRole('tabpanel', { name: 'LLM API' })).toBeVisible()
-})
+  }
+)
+
+it.skipIf(GPU_CATALOG_VISIBLE)(
+  'shows only LLM API pricing without category tabs or GPU links while GPU rental is hidden',
+  async () => {
+    await renderPricingOverview()
+    const main = screen.getByRole('main')
+
+    expect(screen.getByRole('region', { name: 'LLM API' })).toBeVisible()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+    expect(within(main).queryByText(/GPU/)).not.toBeInTheDocument()
+    for (const link of within(main).getAllByRole('link')) {
+      expect(link.getAttribute('href')).not.toMatch(/^\/gpu/)
+    }
+  }
+)
 
 it('an upcoming model shows its availability and pricing announcement without an active billing mode or free usage', async () => {
   await renderPricingOverview()
-  const panel = screen.getByRole('tabpanel', { name: 'LLM API' })
+  const panel = screen.getByRole('region', { name: 'LLM API' })
   const row = within(panel).getByRole('row', { name: /Catalog Model/ })
 
   expect(
@@ -186,7 +205,7 @@ it('an available model keeps its configured billing mode without a coming-soon l
       },
     ],
   })
-  const panel = screen.getByRole('tabpanel', { name: 'LLM API' })
+  const panel = screen.getByRole('region', { name: 'LLM API' })
   const row = within(panel).getByRole('row', { name: /Available Model/ })
 
   expect(within(row).getByText('Token-based')).toBeVisible()
@@ -220,7 +239,9 @@ it('model names open the canonical model detail and All Models opens the model c
   ).toBeVisible()
 })
 
-it('GPU pricing lists six supported models with pending hourly prices and links to the chosen configuration', async () => {
+it.runIf(GPU_CATALOG_VISIBLE)(
+  'GPU pricing lists six supported models with pending hourly prices and links to the chosen configuration',
+  async () => {
   const user = userEvent.setup()
   const router = await renderPricingOverview()
   await user.click(screen.getByRole('tab', { name: 'GPU compute' }))
@@ -243,4 +264,5 @@ it('GPU pricing lists six supported models with pending hourly prices and links 
     })
   ).toBeVisible()
   expect(router.state.location.search).toEqual({ gpu: 'b300' })
-})
+  }
+)

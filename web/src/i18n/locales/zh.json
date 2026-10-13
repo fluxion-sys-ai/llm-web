@@ -6289,6 +6289,7 @@
     "Stories from the Fluxion team are coming soon.": "Fluxion 团队的文章即将上线。",
     "We will share engineering notes, research, and product updates here.": "我们将在这里分享工程实践、研究进展与产品更新。",
     "Compare pricing for LLM APIs and GPU compute.": "比较 LLM API 与 GPU 算力的价格。",
+    "Compare per-token pricing for every model we serve.": "比较我们提供的每个模型的按 token 计费价格。",
     "LLM API": "LLM API",
     "Pricing categories": "价格分类",
     "Token prices are shown per 1M tokens. Other billing modes use their configured units.": "Token 价格按每百万 Token 展示；其他计费模式采用对应的配置单位。",

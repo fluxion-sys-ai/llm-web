@@ -21,6 +21,7 @@ import { cleanup, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { GPU_CATALOG_VISIBLE } from '@/features/gpu/constants'
 import { useAuthStore } from '@/stores/auth-store'
 
 import { useSidebarConfig } from '../use-sidebar-config'
@@ -93,20 +94,22 @@ describe('LLM navigation', () => {
     expect(items.some((item) => item.type === 'chat-presets')).toBe(false)
   })
 
-  it('orders the main navigation as Home, Models, GPUs, Pricing, Console, and Docs without Blog', () => {
+  it('orders the main navigation as Home, Models, GPUs when visible, Pricing, Console, and Docs without Blog', () => {
     const { result } = renderNavigation()
 
     expect(result.current.topNav.map((link) => link.href)).toEqual([
       '/',
       '/pricing',
-      '/gpu',
+      ...(GPU_CATALOG_VISIBLE ? ['/gpu'] : []),
       '/pricing/overview',
       '/dashboard',
       '/docs',
     ])
   })
 
-  it('keeps the GPU catalog available when gateway navigation modules are disabled', () => {
+  it.runIf(GPU_CATALOG_VISIBLE)(
+    'keeps the GPU catalog available when gateway navigation modules are disabled',
+    () => {
     const { result } = renderNavigation({
       HeaderNavModules: JSON.stringify({
         home: false,
@@ -117,7 +120,19 @@ describe('LLM navigation', () => {
     })
 
     expect(result.current.topNav).toEqual([{ title: 'GPUs', href: '/gpu' }])
-  })
+    }
+  )
+
+  it.skipIf(GPU_CATALOG_VISIBLE)(
+    'omits the GPU catalog while GPU rental is hidden',
+    () => {
+      const { result } = renderNavigation()
+
+      expect(result.current.topNav.map((link) => link.href)).not.toContain(
+        '/gpu'
+      )
+    }
+  )
 
   it('a disabled pricing module hides public model links while the console omits them', () => {
     const { result } = renderNavigation({

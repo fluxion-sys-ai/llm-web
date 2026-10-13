@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { PublicLayout } from '@/components/layout'
 import { Footer } from '@/components/layout/components/footer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { GPU_CATALOG_VISIBLE } from '@/features/gpu/constants'
 
 import { GpuPricing } from './components/gpu-pricing'
 import { LlmPricing } from './components/llm-pricing'
@@ -37,28 +38,34 @@ export function PricingOverviewPage() {
             {t('Pricing')}
           </h1>
           <p className='text-muted-foreground mt-4 text-base leading-relaxed'>
-            {t('Compare pricing for LLM APIs and GPU compute.')}
+            {GPU_CATALOG_VISIBLE
+              ? t('Compare pricing for LLM APIs and GPU compute.')
+              : t('Compare per-token pricing for every model we serve.')}
           </p>
         </header>
 
-        <Tabs defaultValue='llm' className='gap-8'>
-          <TabsList aria-label={t('Pricing categories')}>
-            <TabsTrigger value='llm' className='gap-2 px-4'>
-              <MessagesSquare aria-hidden='true' className='size-4' />
-              {t('LLM API')}
-            </TabsTrigger>
-            <TabsTrigger value='gpu' className='gap-2 px-4'>
-              <Cpu aria-hidden='true' className='size-4' />
-              {t('GPU compute')}
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value='llm'>
-            <LlmPricing />
-          </TabsContent>
-          <TabsContent value='gpu'>
-            <GpuPricing />
-          </TabsContent>
-        </Tabs>
+        {GPU_CATALOG_VISIBLE ? (
+          <Tabs defaultValue='llm' className='gap-8'>
+            <TabsList aria-label={t('Pricing categories')}>
+              <TabsTrigger value='llm' className='gap-2 px-4'>
+                <MessagesSquare aria-hidden='true' className='size-4' />
+                {t('LLM API')}
+              </TabsTrigger>
+              <TabsTrigger value='gpu' className='gap-2 px-4'>
+                <Cpu aria-hidden='true' className='size-4' />
+                {t('GPU compute')}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value='llm'>
+              <LlmPricing />
+            </TabsContent>
+            <TabsContent value='gpu'>
+              <GpuPricing />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <LlmPricing />
+        )}
       </main>
       <Footer />
     </PublicLayout>

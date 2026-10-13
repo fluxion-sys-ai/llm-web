@@ -6289,6 +6289,7 @@
     "Stories from the Fluxion team are coming soon.": "Stories from the Fluxion team are coming soon.",
     "We will share engineering notes, research, and product updates here.": "We will share engineering notes, research, and product updates here.",
     "Compare pricing for LLM APIs and GPU compute.": "Compare pricing for LLM APIs and GPU compute.",
+    "Compare per-token pricing for every model we serve.": "Compare per-token pricing for every model we serve.",
     "LLM API": "LLM API",
     "Pricing categories": "Pricing categories",
     "Token prices are shown per 1M tokens. Other billing modes use their configured units.": "Token prices are shown per 1M tokens. Other billing modes use their configured units.",

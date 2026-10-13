@@ -35,6 +35,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
+import { GPU_CATALOG_VISIBLE } from '@/features/gpu/constants'
 import {
   DataPolicy,
   DataProcessingAddendum,
@@ -181,7 +182,7 @@ it('the default footer lists each policy once even when shared backend legal fla
     within(product)
       .getAllByRole('link')
       .map((link) => link.textContent)
-  ).toEqual(['Models', 'GPUs', 'Playground'])
+  ).toEqual(['Models', ...(GPU_CATALOG_VISIBLE ? ['GPUs'] : []), 'Playground'])
   const company = within(footer).getByText('Company').parentElement
   if (!company) throw new Error('Company section missing')
   expect(within(company).getAllByRole('link')).toHaveLength(policies.length)
