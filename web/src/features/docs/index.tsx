@@ -141,7 +141,7 @@ export function Docs() {
             )}
           </p>
           <CodeBlock
-            className='border-border rounded-[10px] shadow-none'
+            className='mt-5 rounded-xl border-[#e4ebf5] bg-[#f7f9fe] shadow-none dark:border-white/10 dark:bg-[#101219]'
             code={chatExample}
             language='bash'
             title='cURL'

@@ -127,6 +127,13 @@ For commercial licensing, please contact support@quantumnous.com
   --secondary-foreground: #3f3f46;
   --muted: #fafafa;
   --muted-foreground: #71717a;
+  --code-keyword: #4f46e5;
+  --code-command: #4f46e5;
+  --code-string: #047857;
+  --code-variable: var(--foreground);
+  --code-number: #4f46e5;
+  --code-operator: var(--muted-foreground);
+  --code-deleted: #be123c;
   --accent: #f4f4f5;
   --accent-foreground: #18181b;
   --destructive: oklch(0.577 0.245 27.325);
@@ -204,6 +211,13 @@ For commercial licensing, please contact support@quantumnous.com
   --secondary-foreground: #b8b8c0;
   --muted: #141417;
   --muted-foreground: #8e8e97;
+  --code-keyword: #c678dd;
+  --code-command: #61afef;
+  --code-string: #98c379;
+  --code-variable: #e5c07b;
+  --code-number: #d19a66;
+  --code-operator: #56b6c2;
+  --code-deleted: #e06c75;
   --accent: rgba(129, 140, 248, 0.12);
   --accent-foreground: #a5b4fc;
   --destructive: oklch(0.704 0.191 22.216);

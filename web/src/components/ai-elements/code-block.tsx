@@ -21,7 +21,12 @@ For commercial licensing, please contact support@quantumnous.com
 
 import { javascript } from '@codemirror/lang-javascript'
 import { markdown } from '@codemirror/lang-markdown'
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import {
+  HighlightStyle,
+  StreamLanguage,
+  syntaxHighlighting,
+} from '@codemirror/language'
+import { shell } from '@codemirror/legacy-modes/mode/shell'
 import { EditorState, type Extension } from '@codemirror/state'
 import {
   EditorView,
@@ -133,6 +138,7 @@ const LANGUAGE_ALIASES: Record<string, BundledLanguage> = {
 }
 
 const LANGUAGE_PATTERN = /^[a-z0-9][a-z0-9+#._-]{0,31}$/i
+const shellLanguage = StreamLanguage.define(shell)
 const codeMirrorTheme = EditorView.theme({
   '&': {
     background: 'transparent',
@@ -145,7 +151,7 @@ const codeMirrorTheme = EditorView.theme({
     lineHeight: '1.5rem',
     minHeight: 'var(--code-editor-min-height)',
     minWidth: 'max-content',
-    padding: '1rem 1rem 1rem 0',
+    padding: '1rem',
   },
   '.cm-editor': {
     background: 'transparent',
@@ -161,7 +167,7 @@ const codeMirrorTheme = EditorView.theme({
     fontFamily: 'var(--font-mono)',
     fontSize: '13px',
     lineHeight: '1.5rem',
-    padding: '1rem 1rem 1rem 0',
+    padding: '1rem 0',
   },
   '.cm-gutters:empty': {
     display: 'none',
@@ -186,25 +192,52 @@ const codeMirrorTheme = EditorView.theme({
   },
 })
 
+// Token colours come from theme.css so code stays legible on light and dark surfaces.
 const codeMirrorHighlightStyle = syntaxHighlighting(
   HighlightStyle.define([
-    { tag: highlightTags.heading, color: '#e06c75', fontWeight: '600' },
-    { tag: [highlightTags.strong, highlightTags.emphasis], color: '#d19a66' },
-    { tag: [highlightTags.link, highlightTags.url], color: '#61afef' },
+    {
+      tag: highlightTags.heading,
+      color: 'var(--code-deleted)',
+      fontWeight: '600',
+    },
+    {
+      tag: [highlightTags.strong, highlightTags.emphasis],
+      color: 'var(--code-variable)',
+    },
+    {
+      tag: [highlightTags.link, highlightTags.url],
+      color: 'var(--code-command)',
+    },
     {
       tag: [highlightTags.monospace, highlightTags.contentSeparator],
-      color: '#98c379',
+      color: 'var(--code-string)',
     },
     {
       tag: [highlightTags.keyword, highlightTags.processingInstruction],
-      color: '#c678dd',
+      color: 'var(--code-keyword)',
     },
     {
       tag: [highlightTags.atom, highlightTags.bool, highlightTags.number],
-      color: '#d19a66',
+      color: 'var(--code-number)',
     },
-    { tag: [highlightTags.string, highlightTags.inserted], color: '#98c379' },
-    { tag: [highlightTags.deleted, highlightTags.invalid], color: '#e06c75' },
+    {
+      tag: [highlightTags.string, highlightTags.inserted],
+      color: 'var(--code-string)',
+    },
+    {
+      tag: [highlightTags.deleted, highlightTags.invalid],
+      color: 'var(--code-deleted)',
+    },
+    {
+      tag: highlightTags.definition(highlightTags.variableName),
+      color: 'var(--code-variable)',
+    },
+    {
+      tag: highlightTags.standard(highlightTags.variableName),
+      color: 'var(--code-command)',
+    },
+    { tag: highlightTags.attributeName, color: 'var(--code-number)' },
+    { tag: highlightTags.operator, color: 'var(--code-operator)' },
     {
       tag: [highlightTags.meta, highlightTags.comment],
       color: 'var(--muted-foreground)',
@@ -229,6 +262,10 @@ function getCodeMirrorLanguageExtension(language: BundledLanguage | string) {
     requestedLanguage === 'mdx'
   ) {
     return markdown()
+  }
+
+  if (requestedLanguage === 'bash' || requestedLanguage === 'sh') {
+    return shellLanguage
   }
 
   if (requestedLanguage === 'javascript' || requestedLanguage === 'jsx') {
@@ -440,7 +477,7 @@ export const CodeBlockFrame = ({
   >
     {showToolbar && (
       <div className='bg-muted/35 border-border/70 flex min-h-10 items-center gap-2 border-b px-2 py-1.5'>
-        <div className='min-w-0 flex-1'>
+        <div className='min-w-0 flex-1 pl-2'>
           <div className='text-muted-foreground truncate font-mono text-[11px] font-medium tracking-wide uppercase'>
             {title}
           </div>
