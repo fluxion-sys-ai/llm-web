@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { Gift, Loader2, Receipt, WalletCards } from 'lucide-react'
+import { Loader2, Receipt, WalletCards } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -44,10 +44,6 @@ interface RechargeFormCardProps {
   calculating: boolean
   onPaymentMethodSelect: (method: PaymentMethod) => void
   paymentLoading: string | null
-  redemptionCode: string
-  onRedemptionCodeChange: (code: string) => void
-  onRedeem: () => void
-  redeeming: boolean
   loading?: boolean
   error?: Error | null
   onRetry?: () => void
@@ -66,10 +62,6 @@ export function RechargeFormCard({
   calculating,
   onPaymentMethodSelect,
   paymentLoading,
-  redemptionCode,
-  onRedemptionCodeChange,
-  onRedeem,
-  redeeming,
   loading,
   error,
   onRetry,
@@ -87,7 +79,6 @@ export function RechargeFormCard({
   const stripeMethod = getStripePaymentMethod(topupInfo)
   const minTopup = stripeMethod?.min_topup || 1
   const validAmount = Number.isFinite(topupAmount) && topupAmount >= minTopup
-  const redemptionEnabled = !!topupInfo && topupInfo.enable_redemption !== false
 
   return (
     <TitledCard
@@ -102,14 +93,16 @@ export function RechargeFormCard({
             variant='outline'
             size='sm'
             onClick={onOpenBilling}
-            className='gap-2'
+            className='w-full gap-2 sm:w-auto'
           >
             <Receipt className='h-4 w-4' />
             {t('Order History')}
           </Button>
         ) : null
       }
-      contentClassName='space-y-5'
+      headerClassName='p-5 !pb-5 sm:px-6 sm:py-5 sm:!pb-5'
+      descriptionClassName='mt-1 leading-relaxed'
+      contentClassName='@container/recharge space-y-6 p-5 sm:p-6'
     >
       {loading && (
         <div className='space-y-4' aria-busy='true'>
@@ -130,104 +123,110 @@ export function RechargeFormCard({
         />
       )}
       {!loading && !error && stripeMethod && (
-        <div className='space-y-5'>
-          {presetAmounts.length > 0 && (
-            <div className='space-y-2.5'>
-              <Label className='text-sm'>{t('Amount')}</Label>
-              <div className='grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4'>
-                {presetAmounts.map((preset) => {
-                  const discount =
-                    preset.discount || topupInfo?.discount?.[preset.value] || 1
-                  const displayValue = preset.value * usdExchangeRate
-                  const hasDiscount = discount > 0 && discount < 1
-                  return (
-                    <Button
-                      key={preset.value}
-                      variant='outline'
-                      className={cn(
-                        'h-auto min-h-20 flex-col items-start gap-1 rounded-xl px-3 py-3 text-left whitespace-normal',
-                        selectedPreset === preset.value &&
-                          'border-foreground bg-muted'
-                      )}
-                      disabled={preset.value < minTopup || !!paymentLoading}
-                      onClick={() => onSelectPreset(preset)}
-                    >
-                      <span className='flex w-full items-center justify-between gap-2'>
-                        <span className='text-base font-semibold tabular-nums'>
-                          {formatLocalCurrencyAmount(displayValue, {
-                            abbreviate: false,
-                          })}
-                        </span>
-                        {hasDiscount && (
-                          <span className='text-muted-foreground text-xs'>
-                            {getDiscountLabel(discount)}
-                          </span>
+        <div className='grid items-start gap-6 @3xl/recharge:grid-cols-[minmax(0,1fr)_260px]'>
+          <div className='min-w-0 space-y-6'>
+            {presetAmounts.length > 0 && (
+              <div className='space-y-2.5'>
+                <Label className='text-sm'>{t('Amount')}</Label>
+                <div className='grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4'>
+                  {presetAmounts.map((preset) => {
+                    const discount =
+                      preset.discount ||
+                      topupInfo?.discount?.[preset.value] ||
+                      1
+                    const displayValue = preset.value * usdExchangeRate
+                    const hasDiscount = discount > 0 && discount < 1
+                    return (
+                      <Button
+                        key={preset.value}
+                        variant='outline'
+                        className={cn(
+                          'h-auto min-h-[88px] flex-col items-start gap-2 rounded-xl px-4 py-3.5 text-left whitespace-normal shadow-none',
+                          selectedPreset === preset.value &&
+                            'border-foreground bg-muted/50'
                         )}
-                      </span>
-                      <span className='text-muted-foreground text-xs'>
-                        {t('Topup Amount')}
-                      </span>
-                    </Button>
-                  )
-                })}
+                        disabled={preset.value < minTopup || !!paymentLoading}
+                        onClick={() => onSelectPreset(preset)}
+                      >
+                        <span className='flex w-full items-center justify-between gap-2'>
+                          <span className='font-sans text-xl font-semibold tracking-tight break-all tabular-nums'>
+                            {formatLocalCurrencyAmount(displayValue, {
+                              abbreviate: false,
+                            })}
+                          </span>
+                          {hasDiscount && (
+                            <span className='text-muted-foreground text-xs'>
+                              {getDiscountLabel(discount)}
+                            </span>
+                          )}
+                        </span>
+                        <span className='text-muted-foreground text-[11px] font-normal'>
+                          {t('Topup Amount')}
+                        </span>
+                      </Button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-          <div className='space-y-2.5'>
-            <div className='flex items-center justify-between gap-3'>
-              <Label htmlFor='topup-amount'>{t('Custom Amount')}</Label>
-              <span className='text-muted-foreground text-sm tabular-nums'>
-                {formatLocalCurrencyAmount(topupAmount * usdExchangeRate, {
-                  abbreviate: false,
-                })}
-              </span>
-            </div>
-            <Input
-              id='topup-amount'
-              type='number'
-              min={minTopup}
-              step={1}
-              value={localAmount}
-              disabled={!!paymentLoading}
-              onChange={(event) => {
-                const value = event.target.value
-                setLocalAmount(value)
-                const amount = Number.parseInt(value) || 0
-                onTopupAmountChange(Math.max(0, amount))
-              }}
-              className='h-10'
-            />
-            <p className='text-muted-foreground text-xs'>
-              {t('Minimum topup amount: {{amount}}', { amount: minTopup })}
-            </p>
-          </div>
-          <div className='bg-muted/40 flex items-center justify-between rounded-xl border px-4 py-3'>
-            <span className='text-muted-foreground text-sm'>
-              {t('Amount to pay:')}
-            </span>
-            {calculating ? (
-              <Skeleton className='h-5 w-16' />
-            ) : (
-              <output
-                aria-label={t('Amount to pay:')}
-                className='text-base font-semibold tabular-nums'
-              >
-                {validAmount && paymentAmount > 0
-                  ? formatLocalCurrencyAmount(paymentAmount, {
-                      abbreviate: false,
-                    })
-                  : '—'}
-              </output>
             )}
+            <div className='space-y-2.5'>
+              <div className='flex items-center justify-between gap-3'>
+                <Label htmlFor='topup-amount'>{t('Custom Amount')}</Label>
+                <span className='text-muted-foreground text-sm tabular-nums'>
+                  {formatLocalCurrencyAmount(topupAmount * usdExchangeRate, {
+                    abbreviate: false,
+                  })}
+                </span>
+              </div>
+              <Input
+                id='topup-amount'
+                type='number'
+                min={minTopup}
+                step={1}
+                value={localAmount}
+                disabled={!!paymentLoading}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setLocalAmount(value)
+                  const amount = Number.parseInt(value) || 0
+                  onTopupAmountChange(Math.max(0, amount))
+                }}
+                className='bg-background h-11 rounded-lg font-sans text-base tabular-nums'
+              />
+              <p className='text-muted-foreground text-xs'>
+                {t('Minimum topup amount: {{amount}}', { amount: minTopup })}
+              </p>
+            </div>
           </div>
-          <Button
-            className='h-10 w-full'
-            disabled={!validAmount || calculating || !!paymentLoading}
-            onClick={() => onPaymentMethodSelect(stripeMethod)}
-          >
-            {paymentLoading && <Loader2 className='size-4 animate-spin' />}
-            {t('Continue with Stripe')}
-          </Button>
+          <div className='bg-muted/30 flex min-w-0 flex-col rounded-xl border p-5'>
+            <div className='flex items-center justify-between gap-4 @3xl/recharge:flex-col @3xl/recharge:items-start @3xl/recharge:gap-3'>
+              <span className='text-muted-foreground text-sm'>
+                {t('Amount to pay:')}
+              </span>
+              {calculating ? (
+                <Skeleton className='h-9 w-24' />
+              ) : (
+                <output
+                  aria-label={t('Amount to pay:')}
+                  className='font-sans text-3xl font-semibold tracking-tight break-all tabular-nums'
+                >
+                  {validAmount && paymentAmount > 0
+                    ? formatLocalCurrencyAmount(paymentAmount, {
+                        abbreviate: false,
+                      })
+                    : '—'}
+                </output>
+              )}
+            </div>
+            <Button
+              className='mt-5 h-11 w-full rounded-lg'
+              disabled={!validAmount || calculating || !!paymentLoading}
+              onClick={() => onPaymentMethodSelect(stripeMethod)}
+            >
+              {paymentLoading && <Loader2 className='size-4 animate-spin' />}
+              {t('Continue with Stripe')}
+            </Button>
+          </div>
         </div>
       )}
       {!loading && !error && !stripeMethod && (
@@ -236,33 +235,6 @@ export function RechargeFormCard({
             {t('Stripe payments are currently unavailable.')}
           </AlertDescription>
         </Alert>
-      )}
-
-      {!loading && !error && redemptionEnabled && (
-        <div className='space-y-3 border-t pt-5'>
-          <Label htmlFor='redemption-code' className='flex items-center gap-2'>
-            <Gift className='text-muted-foreground size-4' />
-            {t('Redemption Code')}
-          </Label>
-          <div className='flex gap-2'>
-            <Input
-              id='redemption-code'
-              value={redemptionCode}
-              onChange={(event) => onRedemptionCodeChange(event.target.value)}
-              placeholder={t('Enter redemption code')}
-              disabled={redeeming}
-              className='min-w-0 flex-1'
-            />
-            <Button
-              variant='outline'
-              onClick={onRedeem}
-              disabled={redeeming || !redemptionCode.trim()}
-            >
-              {redeeming && <Loader2 className='size-4 animate-spin' />}
-              {t('Redeem')}
-            </Button>
-          </div>
-        </div>
       )}
     </TitledCard>
   )

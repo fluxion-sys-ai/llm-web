@@ -19,11 +19,17 @@ For commercial licensing, please contact support@quantumnous.com
 
 /* Console-only surfaces keep the public marketing pages unchanged. */
 .llm-console {
-  --console-canvas: #f7f8fa;
-  --sidebar: #ffffff;
-  --sidebar-accent: #f1f2f4;
+  --console-canvas: #ffffff;
+  --console-shadow: 0 2px 8px -4px rgb(24 24 27 / 0.08);
+  --sidebar: #f9f9fb;
+  --sidebar-accent: #ffffff;
   --sidebar-accent-foreground: #18181b;
-  --table-header: #fafafa;
+  --sidebar-border: #e9eaee;
+  --border: #e7e8ec;
+  --input: #dedfe5;
+  --muted: #f6f6f8;
+  --muted-foreground: #6b6b76;
+  --table-header: #f8f9fb;
   background: var(--console-canvas);
 }
 
@@ -32,16 +38,75 @@ For commercial licensing, please contact support@quantumnous.com
   box-shadow: none;
 }
 
-.llm-console [data-slot='card'] {
+.llm-console [data-slot='card'],
+.llm-console [data-table-viewport] {
   border-color: var(--border);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.02);
+  box-shadow: var(--console-shadow);
 }
 
 .llm-console [data-sidebar='menu-button'] {
+  border: 1px solid transparent;
   color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    color 150ms,
+    box-shadow 150ms;
 }
 
-.llm-console [data-sidebar='menu-button'][data-active],
 .llm-console [data-sidebar='menu-button']:hover {
+  background: var(--muted);
   color: var(--foreground);
+}
+
+.llm-console [data-sidebar='menu-button'][data-active] {
+  border-color: var(--border);
+  background: var(--sidebar-accent);
+  color: var(--foreground);
+  box-shadow: var(--console-shadow);
+}
+
+.llm-console [data-sidebar='menu-button'] > svg {
+  stroke-width: 1.6;
+}
+
+.llm-console [data-slot='card-title'] {
+  letter-spacing: -0.025em;
+}
+
+.llm-console [data-slot='table-head'] {
+  height: 2.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.llm-console [data-slot='table-cell'] {
+  font-size: 0.8125rem;
+}
+
+.llm-console [data-table-viewport] [data-slot='empty-icon'] {
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  background: var(--background);
+  color: var(--muted-foreground);
+  box-shadow: var(--console-shadow);
+}
+
+.llm-console [data-table-viewport] [data-slot='empty-title'] {
+  font-size: 0.9375rem;
+}
+
+.llm-console [data-slot='console-page-footer']:not(:empty) {
+  background: var(--background);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .llm-console [data-sidebar='menu-button'] {
+    transition: none;
+  }
 }

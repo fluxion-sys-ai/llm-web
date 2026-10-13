@@ -24,15 +24,13 @@ import { SectionPageLayout } from '@/components/layout'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { getSelf } from '@/lib/api'
 
-import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
-import { TransferDialog } from './components/dialogs/transfer-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
 import { SubscriptionPlansCard } from './components/subscription-plans-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
 import { DEFAULT_DISCOUNT_RATE, PAYMENT_TYPES } from './constants'
-import { useTopupInfo, usePayment, useAffiliate, useRedemption } from './hooks'
+import { useTopupInfo, usePayment } from './hooks'
 import { getStripePaymentMethod } from './lib'
 import type { UserWalletData, PaymentMethod, PresetAmount } from './types'
 
@@ -50,9 +48,7 @@ export function Wallet(props: WalletProps) {
     useState<PaymentMethod>()
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false)
   const [billingDialogOpen, setBillingDialogOpen] = useState(false)
-  const [redemptionCode, setRedemptionCode] = useState('')
   const [showSubscriptionPanel, setShowSubscriptionPanel] = useState(true)
 
   const { currency } = useSystemConfig()
@@ -81,13 +77,6 @@ export function Wallet(props: WalletProps) {
     calculatePaymentAmount,
     processPayment,
   } = usePayment()
-  const {
-    affiliateLink,
-    loading: affiliateLoading,
-    transferQuota,
-    transferring,
-  } = useAffiliate()
-  const { redeeming, redeemCode } = useRedemption()
   // Fetch and refresh user data
   const fetchUser = useCallback(async () => {
     try {
@@ -184,26 +173,6 @@ export function Wallet(props: WalletProps) {
     }
   }
 
-  // Handle redemption
-  const handleRedeem = async () => {
-    if (!redemptionCode) return
-
-    const success = await redeemCode(redemptionCode)
-    if (success) {
-      setRedemptionCode('')
-      await fetchUser()
-    }
-  }
-
-  // Handle transfer
-  const handleTransfer = async (amount: number) => {
-    const success = await transferQuota(amount)
-    if (success) {
-      await fetchUser()
-    }
-    return success
-  }
-
   // Get discount rate for current topup amount
   const getDiscountRate = useCallback(() => {
     return topupInfo?.discount?.[topupAmount] || DEFAULT_DISCOUNT_RATE
@@ -221,14 +190,14 @@ export function Wallet(props: WalletProps) {
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
-          <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
+          <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 sm:gap-6'>
             <WalletStatsCard user={user} loading={userLoading} />
 
             <div
               className={
                 showSubscriptionPanel
-                  ? 'grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:items-start'
-                  : 'grid gap-4'
+                  ? 'grid items-start gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]'
+                  : 'grid gap-5 sm:gap-6'
               }
             >
               <div id='wallet-add-funds' className='scroll-mt-4'>
@@ -243,10 +212,6 @@ export function Wallet(props: WalletProps) {
                   calculating={calculating}
                   onPaymentMethodSelect={handlePaymentMethodSelect}
                   paymentLoading={paymentLoading}
-                  redemptionCode={redemptionCode}
-                  onRedemptionCodeChange={setRedemptionCode}
-                  onRedeem={handleRedeem}
-                  redeeming={redeeming}
                   loading={topupLoading}
                   error={topupError}
                   onRetry={refetchTopupInfo}
@@ -260,16 +225,6 @@ export function Wallet(props: WalletProps) {
                 onAvailabilityChange={handleSubscriptionAvailabilityChange}
               />
             </div>
-
-            <AffiliateRewardsCard
-              user={user}
-              affiliateLink={affiliateLink}
-              onTransfer={() => setTransferDialogOpen(true)}
-              complianceConfirmed={
-                topupInfo?.payment_compliance_confirmed !== false
-              }
-              loading={affiliateLoading}
-            />
           </div>
         </SectionPageLayout.Content>
       </SectionPageLayout>
@@ -285,14 +240,6 @@ export function Wallet(props: WalletProps) {
         processing={processing}
         discountRate={getDiscountRate()}
         usdExchangeRate={effectiveUsdExchangeRate}
-      />
-
-      <TransferDialog
-        open={transferDialogOpen}
-        onOpenChange={setTransferDialogOpen}
-        onConfirm={handleTransfer}
-        availableQuota={user?.aff_quota ?? 0}
-        transferring={transferring}
       />
 
       <BillingHistoryDialog

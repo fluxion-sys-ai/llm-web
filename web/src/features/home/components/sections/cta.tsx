@@ -35,8 +35,7 @@ export function CTA() {
       </div>
       <div className='mx-auto max-w-3xl text-center'>
         <h2 className='text-[clamp(32px,4.4vw,56px)] leading-[1.05] font-semibold tracking-[-0.04em]'>
-          {t('Every model deserves')}{' '}
-          <br />
+          {t('Every model deserves')} <br />
           <span className='text-[#4f46e5]'>{t('its own engine.')}</span>
         </h2>
         <p className='mx-auto mt-6 max-w-xl text-base leading-relaxed font-medium text-[#2f3745] sm:text-[17px]'>

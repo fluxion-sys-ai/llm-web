@@ -17,13 +17,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { Table } from '@tanstack/react-table'
-import { ChevronDown, Loader2, X as Cross2Icon } from 'lucide-react'
+import { ChevronDown, Loader2, Search, X as Cross2Icon } from 'lucide-react'
 import * as React from 'react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '@/components/ui/input-group'
 import { useDebounce } from '@/hooks'
 import { cn } from '@/lib/utils'
 
@@ -244,14 +248,19 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
   }
 
   const searchInput = (
-    <Input
-      placeholder={placeholder}
-      value={searchValue}
-      onChange={handleSearchChange}
-      onCompositionStart={handleSearchCompositionStart}
-      onCompositionEnd={handleSearchCompositionEnd}
-      className='w-full sm:w-[200px] lg:w-[240px]'
-    />
+    <InputGroup className='w-full sm:w-[200px] lg:w-[240px]'>
+      <InputGroupAddon>
+        <Search aria-hidden='true' />
+      </InputGroupAddon>
+      <InputGroupInput
+        aria-label={placeholder}
+        placeholder={placeholder}
+        value={searchValue}
+        onChange={handleSearchChange}
+        onCompositionStart={handleSearchCompositionStart}
+        onCompositionEnd={handleSearchCompositionEnd}
+      />
+    </InputGroup>
   )
 
   const filterChips = React.useMemo(

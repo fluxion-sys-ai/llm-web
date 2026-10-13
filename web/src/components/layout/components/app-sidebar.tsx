@@ -52,7 +52,7 @@ export function AppSidebar() {
     <Sidebar collapsible={collapsible} variant={variant} className='bg-sidebar'>
       {view && <SidebarViewHeader view={view} />}
 
-      <SidebarContent className='gap-3 py-4'>
+      <SidebarContent className='gap-3 py-5'>
         <AnimatePresence mode='wait' initial={false}>
           <motion.div
             key={key}
@@ -62,7 +62,7 @@ export function AppSidebar() {
             animate={MOTION_VARIANTS.sidebarSlide.animate}
             exit={shouldReduce ? undefined : MOTION_VARIANTS.sidebarSlide.exit}
             transition={MOTION_TRANSITION.fast}
-            className='flex flex-col'
+            className='flex flex-col gap-2'
           >
             {navGroups.map((props) => (
               <NavGroup key={props.id || props.title} {...props} />

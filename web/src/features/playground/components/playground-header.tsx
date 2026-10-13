@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { MessageSquareTextIcon } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ModelGroupSelector } from '@/components/model-group-selector'
+import { Separator } from '@/components/ui/separator'
 
 import type { GroupOption, ModelOption } from '../types'
 import { PlaygroundInputTools } from './input/playground-input-tools'
@@ -39,13 +41,22 @@ export function PlaygroundHeader({
   const { t } = useTranslation()
 
   return (
-    <header className='border-border/60 flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 sm:px-6'>
-      <div className='flex min-w-0 items-center gap-4'>
-        <h1 className='sr-only shrink-0 text-sm font-medium sm:not-sr-only'>
+    <header className='border-border/70 bg-muted/15 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 border-b px-4 py-3 sm:flex sm:gap-4 sm:px-6'>
+      <div className='flex shrink-0 items-center gap-2.5'>
+        <span className='border-border bg-background flex size-8 items-center justify-center rounded-lg border'>
+          <MessageSquareTextIcon aria-hidden='true' className='size-4' />
+        </span>
+        <h1 className='text-sm font-semibold tracking-tight'>
           {t('Playground')}
         </h1>
+      </div>
+      <Separator
+        className='hidden h-6 self-center sm:block'
+        orientation='vertical'
+      />
+      <div className='col-span-2 row-start-2 min-w-0 sm:mr-auto'>
         <ModelGroupSelector
-          className='bg-muted/50 hover:bg-muted max-w-full border-transparent sm:max-w-72'
+          className='bg-background h-9 w-full max-w-full sm:w-auto sm:max-w-80'
           disabled={
             toolsProps.disabled || isModelLoading || groups.length === 0
           }
@@ -57,7 +68,9 @@ export function PlaygroundHeader({
           selectedModel={toolsProps.config.model}
         />
       </div>
-      <PlaygroundInputTools {...toolsProps} />
+      <div className='col-start-2 row-start-1'>
+        <PlaygroundInputTools {...toolsProps} />
+      </div>
     </header>
   )
 }

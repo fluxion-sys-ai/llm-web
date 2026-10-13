@@ -26,6 +26,22 @@ const models = [{ label: 'DeepSeek Flash', value: 'DeepSeek-V4.1-Flash' }]
 const groups = [{ label: 'Default', value: 'default', ratio: 1 }]
 
 describe('Playground composer', () => {
+  test('an empty draft disables Send without fading the editable composer', () => {
+    render(
+      <PlaygroundInput groups={groups} models={models} onSubmit={vi.fn()} />
+    )
+    const input = screen.getByRole('textbox', { name: 'Ask anything' })
+    const group = input.closest('[data-slot="input-group"]')
+
+    expect(input).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(group).toHaveClass(
+      'has-disabled:opacity-100',
+      'has-disabled:bg-background'
+    )
+    expect(group).not.toHaveClass('has-disabled:opacity-50')
+  })
+
   test.each(['button', 'keyboard'])(
     '%s sends one message and clears the draft',
     async (method) => {
@@ -49,6 +65,25 @@ describe('Playground composer', () => {
     }
   )
 
+  test('the displayed keyboard shortcut adds a line break without submitting', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(
+      <PlaygroundInput groups={groups} models={models} onSubmit={onSubmit} />
+    )
+    const input = screen.getByRole('textbox', { name: 'Ask anything' })
+
+    expect(input).toHaveAccessibleDescription(
+      'Enter to send, Shift + Enter for a new line'
+    )
+    await user.type(input, 'First line')
+    await user.keyboard('{Shift>}{Enter}{/Shift}')
+    await user.type(input, 'Second line')
+
+    expect(input).toHaveValue('First line\nSecond line')
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
   test('while a response streams the single Stop control cancels without resubmitting', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
@@ -65,6 +100,7 @@ describe('Playground composer', () => {
     )
 
     expect(screen.getByRole('textbox')).toBeDisabled()
+    expect(screen.getByRole('textbox')).toHaveClass('disabled:opacity-50')
     expect(
       screen.queryByRole('button', { name: 'Send' })
     ).not.toBeInTheDocument()

@@ -67,23 +67,37 @@ export function PlaygroundEmptyState(props: PlaygroundEmptyStateProps) {
 
   return (
     <EmptyState
-      className='min-h-[min(520px,calc(100svh-20rem))] gap-7 px-1 py-8 sm:py-12 [&_[data-slot=empty-title]]:text-2xl [&_[data-slot=empty-title]]:font-medium [&_[data-slot=empty-title]]:tracking-tight'
+      className='min-h-0 gap-6 px-0 py-4 sm:py-6 [&_[data-slot=empty-content]]:max-w-lg [&_[data-slot=empty-header]]:max-w-md [&_[data-slot=empty-icon]]:mb-1 [&_[data-slot=empty-title]]:text-2xl [&_[data-slot=empty-title]]:font-medium [&_[data-slot=empty-title]]:tracking-tight'
       icon={MessageSquarePlusIcon}
       title={t('Start a conversation')}
       description={t(
         'Choose a model, then try an example or write your own message.'
       )}
       action={
-        <div className='grid w-full gap-2 sm:grid-cols-2'>
+        <div className='grid w-full grid-cols-2 gap-2 sm:gap-3'>
           {starterPrompts.map((starter) => (
             <Button
-              className='text-muted-foreground hover:text-foreground h-auto min-h-12 justify-start gap-3 rounded-xl px-4 py-3 font-normal whitespace-normal'
+              aria-label={starter.label}
+              className='h-auto min-w-0 items-start justify-start gap-2.5 rounded-xl px-3 py-3.5 text-left whitespace-normal sm:gap-3 sm:px-4'
               key={starter.label}
               onClick={() => props.onSelectPrompt(starter.prompt)}
-              variant='secondary'
+              variant='outline'
             >
-              <starter.icon aria-hidden='true' className='size-4' />
-              {starter.label}
+              <starter.icon
+                aria-hidden='true'
+                className='text-muted-foreground mt-0.5 size-4'
+              />
+              <span className='flex min-w-0 flex-col gap-1'>
+                <span className='text-xs font-medium sm:text-sm'>
+                  {starter.label}
+                </span>
+                <span
+                  aria-hidden='true'
+                  className='text-muted-foreground line-clamp-2 text-xs leading-5 font-normal'
+                >
+                  {starter.prompt}
+                </span>
+              </span>
             </Button>
           ))}
         </div>

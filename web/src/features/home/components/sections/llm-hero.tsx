@@ -45,10 +45,8 @@ export function LlmHero() {
         <div className='grid items-center gap-10 lg:grid-cols-2 lg:gap-8'>
           <div className='min-w-0'>
             <h1 className='text-[clamp(40px,5vw,72px)] leading-[1.02] font-semibold tracking-[-0.045em]'>
-              {t('Ultra-fast, efficient')}{' '}
-              <br />
-              {t('inference for AI,')}{' '}
-              <br />
+              {t('Ultra-fast, efficient')} <br />
+              {t('inference for AI,')} <br />
               <span className='text-[#4f46e5]'>{t('built by AI.')}</span>
             </h1>
             <p className='mt-6 max-w-[520px] text-[17px] leading-relaxed font-medium text-[#2f3745] sm:text-lg'>

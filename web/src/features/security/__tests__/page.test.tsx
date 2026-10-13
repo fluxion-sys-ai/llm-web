@@ -211,7 +211,7 @@ describe('security page migration', () => {
     ).toBeVisible()
   })
 
-  it('built-in and custom bindings share one compact responsive grid', async () => {
+  it('built-in and custom bindings share a grid that fits the available card width', async () => {
     await renderPage()
     const bindings = await screen.findByRole('list', {
       name: 'Account Bindings',
@@ -219,9 +219,8 @@ describe('security page migration', () => {
     expect(within(bindings).getAllByRole('listitem')).toHaveLength(5)
     expect(within(bindings).getByText('Gitea')).toBeVisible()
     expect(bindings).toHaveClass(
-      'grid-cols-1',
-      'sm:grid-cols-2',
-      'lg:grid-cols-3',
+      'grid',
+      'grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))]',
       'gap-2'
     )
     expect(screen.queryByText('Custom OAuth')).not.toBeInTheDocument()

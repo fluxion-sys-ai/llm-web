@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -51,6 +51,7 @@ export function PlaygroundInput({
 }: PlaygroundInputProps) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
+  const hintId = useId()
 
   const handleSubmit = (message: PromptInputMessage) => {
     const submittableText = getSubmittableInputText(message, disabled)
@@ -63,22 +64,30 @@ export function PlaygroundInput({
   return (
     <div className='shrink-0 px-4 pt-2 pb-4 sm:px-6 sm:pb-6'>
       <PromptInput
-        groupClassName='bg-background border-border overflow-hidden rounded-2xl shadow-sm transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/15'
+        groupClassName='bg-background border-border has-disabled:bg-background has-disabled:opacity-100 overflow-hidden rounded-2xl shadow-sm transition-shadow focus-within:border-ring/60 focus-within:ring-2 focus-within:ring-ring/10'
         onSubmit={handleSubmit}
       >
         <PromptInputTextarea
+          aria-describedby={hintId}
+          aria-label={t('Ask anything')}
           autoComplete='off'
           autoCorrect='off'
           autoCapitalize='off'
           spellCheck={false}
-          className='min-h-20 px-4 pt-4 pb-2 text-base leading-7 sm:px-5'
+          className='min-h-20 px-4 pt-4 pb-2 text-base leading-7 sm:px-5 sm:pt-5'
           disabled={disabled}
           onChange={(event) => setText(event.target.value)}
           placeholder={t('Ask anything')}
           value={text}
         />
 
-        <PromptInputFooter className='justify-end px-3 pt-0 pb-3'>
+        <PromptInputFooter className='items-end justify-between gap-3 px-3 pt-0 pb-3 sm:pl-5'>
+          <p
+            className='text-muted-foreground max-w-56 py-1 text-[11px] leading-5 sm:max-w-none'
+            id={hintId}
+          >
+            {t('Enter to send, Shift + Enter for a new line')}
+          </p>
           <PlaygroundInputControls
             disabled={disabled}
             groups={groups}

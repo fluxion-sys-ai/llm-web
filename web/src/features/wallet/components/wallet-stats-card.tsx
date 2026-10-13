@@ -34,11 +34,11 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   const { t } = useTranslation()
   if (props.loading) {
     return (
-      <div className='bg-card grid grid-cols-3 divide-x rounded-xl border'>
+      <div className='bg-card grid grid-cols-3 divide-x overflow-hidden rounded-xl border'>
         {['balance', 'usage', 'requests'].map((key) => (
-          <div key={key} className='min-w-0 px-2.5 py-2.5 sm:px-5 sm:py-4'>
+          <div key={key} className='min-w-0 px-3 py-5 sm:px-6 sm:py-6'>
             <Skeleton className='h-3.5 w-full' />
-            <Skeleton className='mt-2 h-6 w-full sm:h-7' />
+            <Skeleton className='mt-4 h-7 w-full sm:h-9' />
             <Skeleton className='mt-1.5 hidden h-3.5 w-24 md:block' />
           </div>
         ))}
@@ -77,22 +77,22 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   ]
 
   return (
-    <div className='bg-card grid grid-cols-3 divide-x rounded-xl border'>
+    <div className='bg-card grid grid-cols-3 divide-x overflow-hidden rounded-xl border'>
       {stats.map((item) => (
-        <div key={item.label} className='min-w-0 px-2.5 py-2.5 sm:px-5 sm:py-4'>
-          <div className='flex items-center gap-1.5 sm:gap-2.5'>
+        <div key={item.label} className='min-w-0 px-3 py-5 sm:px-6 sm:py-6'>
+          <div className='flex min-h-14 flex-col items-start gap-2 sm:min-h-7 sm:flex-row sm:items-center sm:gap-2.5'>
             <IconBadge tone={item.tone} size='stat'>
               <item.icon />
             </IconBadge>
-            <div className='text-muted-foreground truncate text-[11px] font-medium sm:text-xs'>
+            <div className='text-muted-foreground text-[11px] leading-snug font-medium sm:text-xs'>
               {item.label}
             </div>
           </div>
 
-          <div className='text-foreground mt-1.5 font-sans text-sm font-semibold tracking-tight break-all tabular-nums sm:mt-2.5 sm:text-2xl'>
+          <div className='text-foreground mt-3 font-sans text-xl leading-tight font-semibold tracking-[-0.025em] break-all tabular-nums sm:text-3xl'>
             {item.value}
           </div>
-          <div className='text-muted-foreground/60 mt-1 hidden text-xs md:block'>
+          <div className='text-muted-foreground mt-2 hidden text-xs leading-relaxed md:block'>
             {item.description}
           </div>
         </div>

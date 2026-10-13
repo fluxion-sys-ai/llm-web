@@ -78,12 +78,12 @@ export function PaymentConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className='space-y-3 py-3 sm:space-y-4 sm:py-4'>
-          <div className='flex items-center justify-between'>
+        <div className='bg-muted/20 space-y-5 rounded-xl border p-5'>
+          <div className='flex min-w-0 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
             <span className='text-muted-foreground text-sm'>
               {t('Topup Amount')}
             </span>
-            <span className='text-lg font-semibold'>
+            <span className='max-w-full min-w-0 font-sans text-base font-medium break-all tabular-nums sm:text-right'>
               {formatLocalCurrencyAmount(topupAmount * usdExchangeRate, {
                 digitsLarge: 2,
                 digitsSmall: 2,
@@ -92,21 +92,21 @@ export function PaymentConfirmDialog({
             </span>
           </div>
 
-          <div className='flex items-center justify-between'>
+          <div className='flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
             <span className='text-muted-foreground text-sm'>
               {t('You Pay')}
             </span>
             {calculating ? (
               <Skeleton className='h-6 w-24' />
             ) : (
-              <div className='flex items-baseline gap-2'>
-                <span className='text-2xl font-semibold'>
+              <div className='flex max-w-full min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 sm:justify-end'>
+                <span className='max-w-full min-w-0 font-sans text-3xl font-semibold tracking-tight break-all tabular-nums'>
                   {formatLocalCurrencyAmount(paymentAmount, {
                     abbreviate: false,
                   })}
                 </span>
                 {hasDiscount && (
-                  <span className='text-muted-foreground text-sm line-through'>
+                  <span className='text-muted-foreground max-w-full min-w-0 text-sm break-all line-through'>
                     {formatLocalCurrencyAmount(originalAmount, {
                       abbreviate: false,
                     })}
@@ -118,9 +118,9 @@ export function PaymentConfirmDialog({
 
           {hasDiscount && !calculating && (
             <div className='bg-muted/50 rounded-lg p-3'>
-              <div className='flex items-center justify-between text-sm'>
+              <div className='flex min-w-0 flex-col items-start gap-1.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
                 <span className='text-muted-foreground'>{t('You save')}</span>
-                <span className='font-semibold'>
+                <span className='max-w-full min-w-0 font-semibold break-all tabular-nums sm:text-right'>
                   {formatLocalCurrencyAmount(discountAmount, {
                     abbreviate: false,
                   })}
@@ -130,24 +130,26 @@ export function PaymentConfirmDialog({
           )}
 
           <div className='border-t pt-4'>
-            <div className='flex items-center justify-between'>
+            <div className='flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
               <span className='text-muted-foreground text-sm'>
                 {t('Payment Method')}
               </span>
-              <div className='flex items-center gap-2'>
+              <div className='flex max-w-full min-w-0 items-center gap-2'>
                 {getPaymentIcon(
                   paymentMethod?.type,
-                  'h-4 w-4',
+                  'h-4 w-4 shrink-0',
                   paymentMethod?.icon,
                   paymentMethod?.name
                 )}
-                <span className='font-medium'>{paymentMethod?.name}</span>
+                <span className='min-w-0 font-medium break-all'>
+                  {paymentMethod?.name}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        <AlertDialogFooter className='grid grid-cols-2 gap-2 sm:flex'>
+        <AlertDialogFooter className='gap-3'>
           <AlertDialogCancel disabled={processing}>
             {t('Cancel')}
           </AlertDialogCancel>

@@ -170,7 +170,9 @@ test('mixed backend providers expose only Stripe checkout and use its minimum an
   expect(
     screen.queryByRole('link', { name: 'Get one here' })
   ).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Redeem' })).toBeVisible()
+  expect(
+    screen.queryByRole('button', { name: 'Redeem' })
+  ).not.toBeInTheDocument()
   expect(api.post).toHaveBeenCalledWith(
     '/api/user/stripe/amount',
     { amount: 20 },
@@ -199,8 +201,23 @@ test('mixed backend providers expose only Stripe checkout and use its minimum an
   )
 })
 
+test('backend promotions stay hidden and do not fetch a referral code', async () => {
+  await renderWallet()
+  expect(
+    await screen.findByRole('button', { name: 'Continue with Stripe' })
+  ).toBeVisible()
+  expect(screen.queryByLabelText('Redemption Code')).not.toBeInTheDocument()
+  expect(screen.queryByText('Referral Program')).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: 'Copy referral link' })
+  ).not.toBeInTheDocument()
+  expect(
+    vi.mocked(api.get).mock.calls.some(([url]) => url === '/api/user/aff')
+  ).toBe(false)
+})
+
 test.each(['disabled', 'unconfirmed'])(
-  'unavailable Stripe (%s) does not fall back to other gateways and leaves code redemption available',
+  'unavailable Stripe (%s) does not offer other gateways or code redemption',
   async (reason) => {
     if (reason === 'disabled') topupInfo.enable_stripe_topup = false
     else topupInfo.payment_compliance_confirmed = false
@@ -214,7 +231,9 @@ test.each(['disabled', 'unconfirmed'])(
     expect(
       screen.queryByRole('button', { name: /Alipay|Creem|Waffo/ })
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Redeem' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Redeem' })
+    ).not.toBeInTheDocument()
     expect(api.post).not.toHaveBeenCalled()
   }
 )

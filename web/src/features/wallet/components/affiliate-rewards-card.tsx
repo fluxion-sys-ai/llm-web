@@ -47,8 +47,8 @@ export function AffiliateRewardsCard({
   const { t } = useTranslation()
   if (loading) {
     return (
-      <Card data-card-hover='false' className='bg-muted/20 py-0'>
-        <CardContent className='grid gap-4 p-3 sm:p-4 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,0.72fr)_minmax(320px,1.15fr)] lg:items-center'>
+      <Card data-card-hover='false' className='bg-card gap-0 py-0'>
+        <CardContent className='grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.25fr)] xl:items-center'>
           <div>
             <Skeleton className='h-5 w-32' />
             <Skeleton className='mt-2 h-4 w-48' />
@@ -63,17 +63,17 @@ export function AffiliateRewardsCard({
   const hasRewards = (user?.aff_quota ?? 0) > 0
 
   return (
-    <Card data-card-hover='false' className='bg-muted/20 py-0'>
-      <CardContent className='grid gap-3 p-3 sm:gap-4 sm:p-4 lg:grid-cols-[minmax(200px,1fr)_minmax(180px,0.65fr)_minmax(280px,1fr)] lg:items-center'>
-        <div className='flex min-w-0 items-center gap-2.5'>
-          <IconBadge tone='chart-3'>
+    <Card data-card-hover='false' className='bg-card gap-0 py-0'>
+      <CardContent className='grid gap-5 p-5 sm:gap-6 sm:p-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.25fr)] xl:items-center'>
+        <div className='flex min-w-0 items-start gap-3'>
+          <IconBadge tone='neutral'>
             <Share2 />
           </IconBadge>
           <div className='min-w-0'>
-            <h3 className='truncate text-sm font-semibold'>
+            <h3 className='text-sm font-semibold tracking-tight'>
               {t('Referral Program')}
             </h3>
-            <p className='text-muted-foreground line-clamp-1 text-xs'>
+            <p className='text-muted-foreground mt-1.5 max-w-md text-xs leading-relaxed'>
               {t(
                 'Earn rewards when users join through your referral link. Transfer accumulated rewards to your balance anytime.'
               )}
@@ -81,33 +81,33 @@ export function AffiliateRewardsCard({
           </div>
         </div>
 
-        <div className='grid grid-cols-3 gap-1.5 text-center'>
+        <div className='grid grid-cols-3 gap-3 text-left'>
           {[
             [t('Pending'), formatQuota(user?.aff_quota ?? 0)],
             [t('Total Earned'), formatQuota(user?.aff_history_quota ?? 0)],
             [t('Invites'), String(user?.aff_count ?? 0)],
           ].map(([label, value]) => (
             <div key={label}>
-              <div className='text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase'>
+              <div className='text-muted-foreground text-[11px] leading-relaxed'>
                 {label}
               </div>
-              <div className='mt-0.5 truncate text-sm font-semibold tabular-nums'>
+              <div className='mt-1.5 font-sans text-lg font-semibold tracking-tight break-all tabular-nums'>
                 {value}
               </div>
             </div>
           ))}
         </div>
 
-        <div className='flex items-center gap-2'>
+        <div className='flex min-w-0 flex-wrap items-center gap-2'>
           <Input
             value={affiliateLink}
             readOnly
-            className='border-muted bg-background/70 h-9 min-w-0 flex-1 font-mono text-xs'
+            className='bg-muted/20 h-10 min-w-0 flex-1 rounded-lg font-sans text-xs'
           />
           <CopyButton
             value={affiliateLink}
             variant='outline'
-            className='bg-background size-9 shrink-0'
+            className='bg-background size-10 shrink-0 rounded-lg'
             iconClassName='size-4'
             tooltip={t('Copy referral link')}
             aria-label={t('Copy referral link')}
@@ -116,7 +116,7 @@ export function AffiliateRewardsCard({
             <Button
               onClick={onTransfer}
               disabled={!complianceConfirmed}
-              className='h-9 shrink-0 px-3'
+              className='h-10 w-full rounded-lg px-4'
               size='sm'
             >
               {t('Transfer to Balance')}
@@ -124,7 +124,7 @@ export function AffiliateRewardsCard({
           )}
         </div>
         {!complianceConfirmed ? (
-          <p className='text-muted-foreground text-xs lg:col-span-3'>
+          <p className='text-muted-foreground text-xs leading-relaxed xl:col-span-3'>
             {t(
               'Referral reward transfer is disabled until the administrator confirms compliance terms.'
             )}

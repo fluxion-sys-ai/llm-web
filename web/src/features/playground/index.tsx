@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { cn } from '@/lib/utils'
+
 import { PlaygroundChat } from './components/chat/playground-chat'
 import { PlaygroundInput } from './components/input/playground-input'
 import { PlaygroundHeader } from './components/playground-header'
@@ -75,6 +77,8 @@ export function Playground() {
     updateConfig,
   })
 
+  const isEmptyConversation = messages.length === 0 && !isLoadingMessages
+
   return (
     <div className='bg-background relative flex size-full min-h-0 flex-col overflow-hidden'>
       <PlaygroundHeader
@@ -89,34 +93,44 @@ export function Playground() {
         onParameterEnabledChange={updateParameterEnabled}
         parameterEnabled={parameterEnabled}
       />
-      {/* Full-width scroll container: scrolling works even over side whitespace */}
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-        <PlaygroundChat
-          messages={messages}
-          isLoadingMessages={isLoadingMessages}
-          onRegenerateMessage={handleRegenerateMessage}
-          onEditMessage={handleEditMessage}
-          onDeleteMessage={handleDeleteMessage}
-          onSelectPrompt={handleSendMessage}
-          isGenerating={isGenerating}
-          editingKey={editingMessageKey}
-          onCancelEdit={handleEditOpenChange}
-          onSaveEdit={(newContent) => applyEdit(newContent, false)}
-          onSaveEditAndSubmit={(newContent) => applyEdit(newContent, true)}
-        />
-      </div>
+      <div
+        className={cn(
+          'flex min-h-0 flex-1 flex-col overflow-hidden',
+          isEmptyConversation && 'justify-center'
+        )}
+      >
+        <div
+          className={cn(
+            'flex min-h-0 flex-col overflow-hidden',
+            !isEmptyConversation && 'flex-1'
+          )}
+        >
+          <PlaygroundChat
+            messages={messages}
+            isLoadingMessages={isLoadingMessages}
+            onRegenerateMessage={handleRegenerateMessage}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
+            onSelectPrompt={handleSendMessage}
+            isGenerating={isGenerating}
+            editingKey={editingMessageKey}
+            onCancelEdit={handleEditOpenChange}
+            onSaveEdit={(newContent) => applyEdit(newContent, false)}
+            onSaveEditAndSubmit={(newContent) => applyEdit(newContent, true)}
+          />
+        </div>
 
-      {/* Input area: center content and constrain to the same container width */}
-      <div className='mx-auto w-full max-w-[52rem]'>
-        <PlaygroundInput
-          disabled={isGenerating}
-          groups={groups}
-          isGenerating={isGenerating}
-          isModelLoading={isLoadingModels}
-          models={models}
-          onStop={stopGeneration}
-          onSubmit={handleSendMessage}
-        />
+        <div className='mx-auto w-full max-w-[52rem] shrink-0'>
+          <PlaygroundInput
+            disabled={isGenerating}
+            groups={groups}
+            isGenerating={isGenerating}
+            isModelLoading={isLoadingModels}
+            models={models}
+            onStop={stopGeneration}
+            onSubmit={handleSendMessage}
+          />
+        </div>
       </div>
     </div>
   )

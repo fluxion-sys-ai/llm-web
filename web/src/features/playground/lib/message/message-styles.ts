@@ -28,13 +28,13 @@ export function getMessageContentStyles() {
     'group-[.is-user]:w-fit',
 
     // User bubble: compact surface that stays calm in both light and dark themes.
-    'group-[.is-user]:rounded-xl',
+    'group-[.is-user]:rounded-2xl',
     'group-[.is-user]:rounded-br-md',
     'group-[.is-user]:border',
-    'group-[.is-user]:border-border',
-    'group-[.is-user]:bg-muted/50',
+    'group-[.is-user]:border-border/60',
+    'group-[.is-user]:bg-muted/40',
     'group-[.is-user]:px-4',
-    'group-[.is-user]:py-2.5',
+    'group-[.is-user]:py-3',
     'group-[.is-user]:text-foreground',
 
     // Assistant response: flat reading surface using the active UI font axis.

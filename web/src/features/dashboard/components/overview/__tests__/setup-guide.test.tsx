@@ -170,9 +170,9 @@ describe('overview setup guide', () => {
     window.localStorage.setItem(storageKey, 'expanded')
     await renderOverview()
 
-    expect(
-      await screen.findByText(/"model":"DeepSeek-V4\.1-Flash"/)
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getByText(/"model":"DeepSeek-V4\.1-Flash"/)).toBeVisible()
+    )
     expect(screen.getByText('DeepSeek-V4.1-Flash')).toBeVisible()
     expect(screen.queryByText(/Seedance/)).not.toBeInTheDocument()
     expect(screen.queryByText(/"model":"GLM-5\.3"/)).not.toBeInTheDocument()
@@ -186,7 +186,9 @@ describe('overview setup guide', () => {
     window.localStorage.setItem(storageKey, 'expanded')
     await renderOverview()
 
-    expect((await screen.findAllByText('No available models'))[0]).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getAllByText('No available models')[0]).toBeVisible()
+    )
     expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Copy ready-to-run curl' })
@@ -199,7 +201,9 @@ describe('overview setup guide', () => {
     window.localStorage.setItem(storageKey, 'expanded')
     await renderOverview()
 
-    expect((await screen.findAllByText('No available models'))[0]).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getAllByText('No available models')[0]).toBeVisible()
+    )
     expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Copy ready-to-run curl' })
@@ -211,9 +215,9 @@ describe('overview setup guide', () => {
     window.localStorage.setItem(storageKey, 'expanded')
     await renderOverview()
 
-    expect(
-      (await screen.findAllByText('Unable to load models'))[0]
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getAllByText('Unable to load models')[0]).toBeVisible()
+    )
     expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Copy ready-to-run curl' })
@@ -232,15 +236,17 @@ describe('overview setup guide', () => {
       expect(
         await screen.findByRole('button', { name: 'Copy ready-to-run curl' })
       ).toBeDisabled()
-      expect(screen.getAllByText('Loading')[0]).toBeVisible()
+      await waitFor(() =>
+        expect(screen.getAllByText('Loading')[0]).toBeVisible()
+      )
       expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
     } finally {
       await act(async () => releaseCatalog())
     }
 
-    expect(
-      await screen.findByText(/"model":"DeepSeek-V4\.1-Flash"/)
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getByText(/"model":"DeepSeek-V4\.1-Flash"/)).toBeVisible()
+    )
     expect(
       screen.getByRole('button', { name: 'Copy ready-to-run curl' })
     ).toBeEnabled()
@@ -255,11 +261,13 @@ describe('overview setup guide', () => {
     window.localStorage.setItem(storageKey, 'expanded')
     await renderOverview()
 
-    expect(
-      await screen.findByText(
-        /curl https:\/\/llm\.fluxion-sys\.ai\/v1\/chat\/completions/
-      )
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          /curl https:\/\/llm\.fluxion-sys\.ai\/v1\/chat\/completions/
+        )
+      ).toBeVisible()
+    )
     expect(
       screen.queryByText(/curl https:\/\/video\.example\.com/)
     ).not.toBeInTheDocument()
@@ -299,7 +307,7 @@ describe('overview setup guide', () => {
     ).toBeVisible()
     expect(
       screen.getByRole('heading', {
-        name: 'Build on your API gateway in minutes',
+        name: 'Get started',
       })
     ).toBeVisible()
     await waitFor(() =>

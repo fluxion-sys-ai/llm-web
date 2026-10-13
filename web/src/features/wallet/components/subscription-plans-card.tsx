@@ -246,12 +246,14 @@ export function SubscriptionPlansCard({
         title={t('Subscription Plans')}
         description={t('Subscribe to a plan for model access')}
         icon={<Crown className='h-4 w-4' />}
-        iconTone='warning'
+        iconTone='neutral'
         disableHoverEffect
-        contentClassName='space-y-4 sm:space-y-5'
+        headerClassName='p-5 !pb-5 sm:px-6 sm:py-5 sm:!pb-5'
+        descriptionClassName='mt-1 leading-relaxed'
+        contentClassName='space-y-5 p-5 sm:p-6'
       >
         {/* My subscriptions & billing preference */}
-        <div className='rounded-xl border p-3 sm:p-4'>
+        <div className='bg-muted/20 rounded-xl border p-4'>
           <div className='flex flex-wrap items-center justify-between gap-2.5 sm:gap-3'>
             <div className='flex min-w-0 flex-wrap items-center gap-2'>
               <span className='text-sm font-medium'>
@@ -318,7 +320,7 @@ export function SubscriptionPlansCard({
                 value={billingPreference}
                 onValueChange={(v) => v !== null && handlePreferenceChange(v)}
               >
-                <SelectTrigger className='h-8 flex-1 text-xs sm:w-[140px] sm:flex-none'>
+                <SelectTrigger className='bg-background h-9 flex-1 rounded-lg text-xs sm:w-[156px] sm:flex-none'>
                   <SelectValue>
                     {getBillingPreferenceLabel(billingPreference, t)}
                   </SelectValue>
@@ -351,7 +353,7 @@ export function SubscriptionPlansCard({
               <Button
                 variant='ghost'
                 size='icon'
-                className='h-8 w-8'
+                className='size-9 shrink-0 rounded-lg'
                 onClick={handleRefresh}
                 disabled={refreshing}
               >
@@ -535,12 +537,15 @@ export function SubscriptionPlansCard({
                 <Card
                   key={plan.id}
                   data-card-hover='false'
-                  className={cn(isPopular && 'border-primary/70 shadow-sm')}
+                  className={cn(
+                    'gap-0 rounded-xl py-0 shadow-none',
+                    isPopular && 'border-foreground/35'
+                  )}
                 >
-                  <CardContent className='flex h-full flex-col p-3.5 sm:p-4'>
-                    <div className='mb-2 flex items-start justify-between gap-3'>
+                  <CardContent className='flex h-full flex-col p-5'>
+                    <div className='mb-3 flex items-start justify-between gap-3'>
                       <div className='min-w-0'>
-                        <h4 className='truncate font-semibold'>
+                        <h4 className='truncate text-sm font-semibold tracking-tight'>
                           {plan.title || t('Subscription Plans')}
                         </h4>
                         {plan.subtitle && (
@@ -551,7 +556,7 @@ export function SubscriptionPlansCard({
                       </div>
                       {isPopular && (
                         <StatusBadge
-                          variant='info'
+                          variant='neutral'
                           copyable={false}
                           className='shrink-0'
                         >
@@ -562,18 +567,18 @@ export function SubscriptionPlansCard({
                     </div>
 
                     <div className='py-2'>
-                      <span className='text-primary text-2xl font-bold'>
+                      <span className='text-foreground font-sans text-3xl font-semibold tracking-tight tabular-nums'>
                         ${price}
                       </span>
                     </div>
 
-                    <div className='flex-1 space-y-1.5 pb-3'>
+                    <div className='flex-1 space-y-2.5 pt-2 pb-5'>
                       {benefits.map((label) => (
                         <div
                           key={label}
                           className='text-muted-foreground flex items-center gap-2 text-xs'
                         >
-                          <Check className='text-primary h-3 w-3 shrink-0' />
+                          <Check className='text-muted-foreground size-3.5 shrink-0' />
                           <span>{label}</span>
                         </div>
                       ))}
@@ -584,7 +589,11 @@ export function SubscriptionPlansCard({
                     {reached ? (
                       <Tooltip>
                         <TooltipTrigger render={<div />}>
-                          <Button variant='outline' className='w-full' disabled>
+                          <Button
+                            variant='outline'
+                            className='h-10 w-full rounded-lg'
+                            disabled
+                          >
                             {t('Limit Reached')}
                           </Button>
                         </TooltipTrigger>
@@ -595,7 +604,7 @@ export function SubscriptionPlansCard({
                     ) : (
                       <Button
                         variant='outline'
-                        className='w-full'
+                        className='h-10 w-full rounded-lg'
                         onClick={() => {
                           setSelectedPlan(p)
                           setPurchaseOpen(true)

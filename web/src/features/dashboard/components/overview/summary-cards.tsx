@@ -18,12 +18,21 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Flame, ShieldCheck, TrendingDown } from 'lucide-react'
+import {
+  ArrowRight,
+  CreditCard,
+  Flame,
+  ShieldCheck,
+  TrendingDown,
+} from 'lucide-react'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { StaggerContainer, StaggerItem } from '@/components/page-transition'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { IconBadge } from '@/components/ui/icon-badge'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import { useSummaryCardsConfig } from '@/features/dashboard/hooks/use-dashboard-config'
 import type { QuotaDataItem } from '@/features/dashboard/types'
@@ -250,25 +259,13 @@ export function SummaryCards() {
   })
 
   return (
-    <div className='bg-card overflow-hidden rounded-xl border'>
-      <div className='grid xl:grid-cols-[minmax(0,1fr)_19rem]'>
-        <div className='flex flex-col gap-5 p-4 sm:p-5'>
-          <div className='flex flex-wrap items-start justify-between gap-3'>
-            <div className='flex flex-col gap-1'>
-              <h3 className='text-sm font-semibold sm:text-base'>
-                {t('Usage at a glance')}
-              </h3>
-              <p className='text-muted-foreground text-xs sm:text-sm'>
-                {t('Monitor balance, usage, and request volume')}
-              </p>
-            </div>
-          </div>
-          <StaggerContainer className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+    <section aria-label={t('Usage at a glance')}>
+      <h3 className='sr-only'>{t('Usage at a glance')}</h3>
+      <Card className='gap-0 py-0'>
+        <CardContent className='grid px-0 xl:grid-cols-[minmax(0,1fr)_19rem]'>
+          <StaggerContainer className='grid min-w-0 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0'>
             {items.map((it) => (
-              <StaggerItem
-                key={it.key}
-                className='bg-background rounded-xl border p-4'
-              >
+              <StaggerItem key={it.key} className='min-w-0 p-5 sm:p-6'>
                 <StatCard
                   title={it.title}
                   value={it.value}
@@ -283,73 +280,79 @@ export function SummaryCards() {
               </StaggerItem>
             ))}
           </StaggerContainer>
-        </div>
 
-        <div className='bg-muted/30 flex flex-col justify-between gap-5 border-t p-4 sm:p-5 xl:border-t-0 xl:border-l'>
-          <div className='flex flex-col gap-2 sm:gap-3'>
-            <div className='flex items-center justify-between'>
-              <span className='text-muted-foreground text-xs font-medium'>
-                {t('Credit remaining')}
-              </span>
-              <span className='flex items-center gap-1.5'>
+          <div className='bg-brand/[0.025] flex min-w-0 flex-col gap-5 border-t p-5 sm:p-6 xl:border-t-0 xl:border-l'>
+            <div className='flex flex-wrap items-center justify-between gap-3'>
+              <div className='flex items-center gap-2.5'>
+                <IconBadge tone='neutral' size='sm'>
+                  <CreditCard />
+                </IconBadge>
+                <span className='text-muted-foreground text-sm font-medium'>
+                  {t('Credit remaining')}
+                </span>
+              </div>
+              <Badge variant='outline'>
                 <span
                   className={cn('size-1.5 rounded-full', healthCfg.dotClass)}
                   aria-hidden='true'
                 />
-                <span className='text-muted-foreground text-xs font-medium'>
-                  {t(healthCfg.labelKey)}
-                </span>
-              </span>
+                {t(healthCfg.labelKey)}
+              </Badge>
             </div>
 
-            <div className='text-3xl font-semibold tracking-tight tabular-nums'>
+            <div className='text-4xl leading-none font-semibold tracking-[-0.04em] break-all tabular-nums'>
               {formatQuota(remainQuota)}
             </div>
 
-            <div className='grid grid-cols-2 gap-2'>
-              <div className='bg-background rounded-lg px-2.5 py-2'>
-                <div className='text-muted-foreground flex items-center gap-1 text-[11px] leading-none font-medium'>
-                  <Flame className='size-3 shrink-0' aria-hidden='true' />
-                  <span className='truncate'>{t('Last 24h usage')}</span>
-                </div>
-                <div className='text-foreground mt-1.5 truncate text-xs font-semibold tabular-nums'>
+            <dl className='grid grid-cols-2 gap-4'>
+              <div className='min-w-0'>
+                <dt className='text-muted-foreground flex items-center gap-1.5 text-xs'>
+                  <Flame className='size-3.5 shrink-0' aria-hidden='true' />
+                  <span>{t('Last 24h usage')}</span>
+                </dt>
+                <dd className='mt-1.5 text-sm font-medium tabular-nums'>
                   {formatQuota(recentUsage)}
-                </div>
+                </dd>
               </div>
-              <div className='bg-background rounded-lg px-2.5 py-2'>
-                <div className='text-muted-foreground flex items-center gap-1 text-[11px] leading-none font-medium'>
+              <div className='min-w-0'>
+                <dt className='text-muted-foreground flex items-center gap-1.5 text-xs'>
                   {runwayDays !== null && runwayDays < 3 ? (
                     <TrendingDown
-                      className='size-3 shrink-0'
+                      className='size-3.5 shrink-0'
                       aria-hidden='true'
                     />
                   ) : (
                     <ShieldCheck
-                      className='size-3 shrink-0'
+                      className='size-3.5 shrink-0'
                       aria-hidden='true'
                     />
                   )}
-                  <span className='truncate'>{t('Runway')}</span>
-                </div>
-                <div
+                  <span>{t('Runway')}</span>
+                </dt>
+                <dd
                   className={cn(
-                    'mt-1.5 truncate text-xs font-semibold tabular-nums',
+                    'mt-1.5 text-sm font-medium tabular-nums',
                     healthLevel === 'critical' && 'text-destructive',
                     healthLevel === 'caution' && 'text-warning'
                   )}
                 >
                   {runwayDisplay}
-                </div>
+                </dd>
               </div>
-            </div>
-          </div>
+            </dl>
 
-          <Button className='justify-between' render={<Link to='/wallet' />}>
-            <span>{t('Wallet')}</span>
-            <ArrowRight data-icon='inline-end' />
-          </Button>
-        </div>
-      </div>
-    </div>
+            <Button
+              variant='outline'
+              size='sm'
+              className='mt-auto justify-between'
+              render={<Link to='/wallet' />}
+            >
+              <span>{t('Wallet')}</span>
+              <ArrowRight data-icon='inline-end' />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
   )
 }

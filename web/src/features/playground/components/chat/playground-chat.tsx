@@ -129,7 +129,7 @@ export function PlaygroundChat({
 
     return (
       <Message
-        className='group flex-row-reverse py-2.5'
+        className='group flex-row-reverse py-3 sm:py-4'
         from={message.from}
         key={message.key}
       >
@@ -212,14 +212,14 @@ export function PlaygroundChat({
   }
 
   return (
-    <Conversation>
+    <Conversation className='min-h-0'>
       {/* Remove outer padding; apply padding to inner centered container to align with input */}
       <ConversationContent className='p-0'>
-        <div className='mx-auto w-full max-w-[52rem] px-4 py-6 sm:px-6'>
+        <div className='mx-auto w-full max-w-[52rem] px-4 pt-5 pb-4 sm:px-6 sm:pt-7'>
           {chatContent}
         </div>
       </ConversationContent>
-      <ConversationScrollButton />
+      <ConversationScrollButton className='rounded-full shadow-sm' />
     </Conversation>
   )
 }
