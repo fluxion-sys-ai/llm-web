@@ -305,11 +305,13 @@ describe('overview setup guide', () => {
     expect(
       document.getElementById(toggle.getAttribute('aria-controls') ?? '')
     ).toBeVisible()
-    expect(
-      screen.getByRole('heading', {
-        name: 'Get started',
-      })
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', {
+          name: 'Get started',
+        })
+      ).toBeVisible()
+    )
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /^API Keys/ })).toBeVisible()
     )
@@ -362,9 +364,11 @@ describe('overview setup guide', () => {
       screen.queryByRole('button', { name: 'Setup guide' })
     ).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Show setup guide' }))
-    expect(
-      screen.getByRole('button', { name: 'Hide setup guide' })
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Hide setup guide' })
+      ).toBeVisible()
+    )
   })
 
   it('removes the collapsed progress banner when the remaining setup step completes', async () => {
@@ -397,9 +401,11 @@ describe('overview setup guide', () => {
     keyLookupError = new Error('Key lookup unavailable')
     await renderOverview()
 
-    expect(
-      await screen.findByRole('button', { name: 'Hide setup guide' })
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Hide setup guide' })
+      ).toBeVisible()
+    )
     expect(
       screen.queryByRole('button', { name: 'Setup guide' })
     ).not.toBeInTheDocument()
