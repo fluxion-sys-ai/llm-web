@@ -136,7 +136,7 @@ test('backend response order does not reorder the featured cards', async () => {
 })
 
 test.each([false, true])(
-  'featured prices and discounts stay configured when connected=%s',
+  'featured GLM follows backend pricing while other catalog prices stay configured when connected=%s',
   async (connected) => {
     await renderFeaturedModels(
       connected
@@ -165,6 +165,12 @@ test.each([false, true])(
     ]
     prices.forEach((element, index) => {
       const pricing = within(element)
+      if (connected && index === 0) {
+        expect(pricing.getByText('7.00')).toBeVisible()
+        expect(pricing.getByText('21.00')).toBeVisible()
+        expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
+        return
+      }
       const [input, output, originalInput, originalOutput] = expected[index]
       expect(pricing.getByText(input)).toBeVisible()
       expect(pricing.getByText(output)).toBeVisible()

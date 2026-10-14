@@ -67,7 +67,8 @@ afterEach(async () => {
 function renderDetails(
   model: PricingModel = catalogModel,
   status: Record<string, unknown> = {},
-  tokenUnit: TokenUnit = 'K'
+  tokenUnit: TokenUnit = 'K',
+  selectedGroup?: string
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -91,6 +92,7 @@ function renderDetails(
         priceRate={1}
         usdExchangeRate={1}
         tokenUnit={tokenUnit}
+        selectedGroup={selectedGroup}
       />
     </QueryClientProvider>
   )
@@ -148,7 +150,7 @@ test('coming-soon API details explain unavailability instead of offering callabl
   expect(pricing.getByText('Input')).toBeVisible()
   expect(pricing.getByText('Output')).toBeVisible()
   const amounts = pricing.getAllByText(/^[\d,]+\.\d+$/)
-  expect(amounts).toHaveLength(4)
+  expect(amounts).toHaveLength(6)
   for (const amount of amounts) expect(amount).toBeVisible()
   expect(
     pricing.getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)
@@ -363,4 +365,48 @@ test('Gemini examples in every language use the Fluxion endpoint and API key hea
     expect(copied).toContain("'x-goog-api-key': process.env.FLUXION_API_KEY")
     expect(copied).not.toContain('?key=')
   }
+})
+
+test('connected GLM details display the backend discounted input, cache and output rates', () => {
+  renderDetails(
+    {
+      ...catalogModel,
+      model_name: 'GLM-5.3',
+      pricing_status: undefined,
+      official_price: officialPrices['glm-5.3'],
+      billing_mode: 'tiered_expr',
+      billing_expr: 'tier("standard", p * 1.12 + cr * 0.208 + c * 3.52)',
+      group_ratio: { default: 1 },
+    },
+    {},
+    'M'
+  )
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('1.12')).toBeVisible()
+  expect(pricing.getByText('0.208')).toBeVisible()
+  expect(pricing.getByText('3.52')).toBeVisible()
+  expect(pricing.getByText('20% off')).toBeVisible()
+})
+
+test('GLM details preserve the selected group price from the catalog', () => {
+  renderDetails(
+    {
+      ...catalogModel,
+      model_name: 'GLM-5.3',
+      pricing_status: undefined,
+      official_price: officialPrices['glm-5.3'],
+      billing_mode: 'tiered_expr',
+      billing_expr: 'tier("standard", p * 1.12 + cr * 0.208 + c * 3.52)',
+      enable_groups: ['default', 'vip'],
+      group_ratio: { default: 1, vip: 2 },
+    },
+    {},
+    'M',
+    'vip'
+  )
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('2.24')).toBeVisible()
+  expect(pricing.getByText('0.416')).toBeVisible()
+  expect(pricing.getByText('7.04')).toBeVisible()
+  expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
 })

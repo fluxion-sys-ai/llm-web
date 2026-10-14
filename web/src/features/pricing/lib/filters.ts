@@ -25,6 +25,7 @@ import {
   OFFICIAL_PRICE_DISCOUNT_PERCENT,
 } from '../constants'
 import type { PricingModel } from '../types'
+import { getGlmBackendPrices, usesGlmBackendPricing } from './catalog-price'
 import { hasTaskUsageSchema } from './dynamic-price'
 import { getDisplayGroupRatio } from './model-helpers'
 
@@ -124,7 +125,13 @@ export function filterByEndpointType(
 /**
  * Get model price for sorting
  */
-function getModelPrice(model: PricingModel): number | null {
+function getModelPrice(
+  model: PricingModel,
+  selectedGroup?: string
+): number | null {
+  if (usesGlmBackendPricing(model)) {
+    return getGlmBackendPrices(model, selectedGroup)?.input ?? null
+  }
   if (model.official_price) {
     return (
       (model.official_price.input * (100 - OFFICIAL_PRICE_DISCOUNT_PERCENT)) /
@@ -137,7 +144,7 @@ function getModelPrice(model: PricingModel): number | null {
   ) {
     return null
   }
-  const groupRatio = getDisplayGroupRatio(model)
+  const groupRatio = getDisplayGroupRatio(model, selectedGroup)
   return model.quota_type === QUOTA_TYPE_VALUES.TOKEN
     ? model.model_ratio * 2 * groupRatio
     : (model.model_price || 0) * groupRatio
@@ -148,7 +155,8 @@ function getModelPrice(model: PricingModel): number | null {
  */
 export function sortModels(
   models: PricingModel[],
-  sortBy: string
+  sortBy: string,
+  selectedGroup?: string
 ): PricingModel[] {
   const sorted = [...models]
 
@@ -171,8 +179,8 @@ export function sortModels(
     case SORT_OPTIONS.PRICE_LOW:
     case SORT_OPTIONS.PRICE_HIGH:
       sorted.sort((a, b) => {
-        const aPrice = getModelPrice(a)
-        const bPrice = getModelPrice(b)
+        const aPrice = getModelPrice(a, selectedGroup)
+        const bPrice = getModelPrice(b, selectedGroup)
         if (aPrice === null || bPrice === null) {
           return Number(aPrice === null) - Number(bPrice === null)
         }
@@ -208,7 +216,7 @@ export function filterAndSortModels(
   result = filterByQuotaType(result, filters.quotaType)
   result = filterByEndpointType(result, filters.endpointType)
   result = filterByTag(result, filters.tag)
-  result = sortModels(result, filters.sortBy)
+  result = sortModels(result, filters.sortBy, filters.group)
 
   return result
 }

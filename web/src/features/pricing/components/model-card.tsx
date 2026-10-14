@@ -28,6 +28,7 @@ import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
+import { usesGlmBackendPricing } from '../lib/catalog-price'
 import {
   getCardExamplePrice,
   getDynamicDisplayGroupRatio,
@@ -91,12 +92,22 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     : null
   const cardExamplePrice = getCardExamplePrice(props.model, dynamicPriceOptions)
   let priceSummary: ReactNode
-  if (props.model.official_price || pricingPending) {
+  if (
+    props.model.official_price ||
+    pricingPending ||
+    usesGlmBackendPricing(props.model)
+  ) {
     priceSummary = (
       <div className='col-span-full'>
         <ModelPriceCell
           model={props.model}
-          options={{ tokenUnit, priceRate, usdExchangeRate, showRechargePrice }}
+          options={{
+            tokenUnit,
+            priceRate,
+            usdExchangeRate,
+            showRechargePrice,
+            selectedGroup: props.selectedGroup,
+          }}
         />
       </div>
     )

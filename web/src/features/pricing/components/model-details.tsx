@@ -1354,6 +1354,7 @@ export interface ModelDetailsContentProps {
   usdExchangeRate: number
   tokenUnit: TokenUnit
   showRechargePrice?: boolean
+  selectedGroup?: string
 }
 
 export function ModelDetailsContent(props: ModelDetailsContentProps) {
@@ -1423,6 +1424,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
                   priceRate: props.priceRate,
                   usdExchangeRate: props.usdExchangeRate,
                   showRechargePrice,
+                  selectedGroup: props.selectedGroup,
                 }}
               />
             ) : (
@@ -1617,6 +1619,7 @@ export function ModelDetails() {
           usdExchangeRate={usdExchangeRate ?? 1}
           tokenUnit={tokenUnit}
           showRechargePrice={search.rechargePrice ?? false}
+          selectedGroup={search.group}
           endpointMap={
             (endpointMap as Record<
               string,

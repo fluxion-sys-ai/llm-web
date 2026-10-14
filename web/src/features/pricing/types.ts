@@ -53,8 +53,8 @@ export type PricingModel = {
   availability?: 'coming_soon'
   /** Unpublished Fluxion prices must never be rendered as zero-cost usage. */
   pricing_status?: 'pending'
-  /** Website reference USD per 1M tokens, displayed with the catalog discount independently of availability. */
-  official_price?: { input: number; output: number }
+  /** Official USD per 1M tokens, used for catalog price comparisons. */
+  official_price?: { input: number; output: number; cache?: number }
   catalog_source?: { name: string; url: string; checked_at: string }
   description?: string
   icon?: string

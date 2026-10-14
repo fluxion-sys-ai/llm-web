@@ -314,9 +314,11 @@ test.each(['GLM-5.3', 'DeepSeek-V4.1-Flash', 'Kimi-K3'])(
     expect(pricing.getByText('Input')).toBeVisible()
     expect(pricing.getByText('Output')).toBeVisible()
     const amounts = pricing.getAllByText(/^[\d,]+\.\d+$/)
-    expect(amounts).toHaveLength(4)
+    expect(amounts).toHaveLength(name === 'GLM-5.3' ? 6 : 4)
     for (const amount of amounts) expect(amount).toBeVisible()
-    expect(amounts.filter((amount) => amount.tagName === 'S')).toHaveLength(2)
+    expect(amounts.filter((amount) => amount.tagName === 'S')).toHaveLength(
+      name === 'GLM-5.3' ? 3 : 2
+    )
     expect(
       pricing.getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)
     ).toBeVisible()
