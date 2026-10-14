@@ -179,7 +179,7 @@ export function formatPrice(
 }
 
 /**
- * Format a vendor's official token price, optionally after the pending-price
+ * Format the website reference token price, optionally after the catalog
  * discount. Returns null when no official price is known.
  */
 export function formatOfficialPrice(

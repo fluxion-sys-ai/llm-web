@@ -1415,8 +1415,16 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
             className='border-border bg-card space-y-5 rounded-xl border p-5'
           >
             <SectionTitle>{t('Pricing')}</SectionTitle>
-            {pricingPending ? (
-              <ModelPriceCell model={props.model} />
+            {props.model.official_price || pricingPending ? (
+              <ModelPriceCell
+                model={props.model}
+                options={{
+                  tokenUnit: props.tokenUnit,
+                  priceRate: props.priceRate,
+                  usdExchangeRate: props.usdExchangeRate,
+                  showRechargePrice,
+                }}
+              />
             ) : (
               <>
                 {showBasePrices && (

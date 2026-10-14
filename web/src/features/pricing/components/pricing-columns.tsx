@@ -130,6 +130,7 @@ export function usePricingColumns(
       cell: ({ row }) => {
         const model = row.original
         if (
+          model.official_price ||
           model.availability === 'coming_soon' ||
           model.pricing_status === 'pending'
         ) {

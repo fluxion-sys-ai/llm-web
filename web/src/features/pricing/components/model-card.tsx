@@ -91,10 +91,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     : null
   const cardExamplePrice = getCardExamplePrice(props.model, dynamicPriceOptions)
   let priceSummary: ReactNode
-  if (pricingPending) {
+  if (props.model.official_price || pricingPending) {
     priceSummary = (
       <div className='col-span-full'>
-        <ModelPriceCell model={props.model} />
+        <ModelPriceCell
+          model={props.model}
+          options={{ tokenUnit, priceRate, usdExchangeRate, showRechargePrice }}
+        />
       </div>
     )
   } else if (dynamicSummary) {
@@ -306,7 +309,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           aria-label={t('Pricing')}
           className='mt-auto flex min-w-0 flex-col gap-1.5'
         >
-          {!pricingPending && (
+          {!pricingPending && !props.model.official_price && (
             <ModelBillingModeBadge model={props.model} appearance='caption' />
           )}
           <div className='grid grid-cols-[repeat(auto-fit,minmax(88px,1fr))] gap-x-3 gap-y-2'>

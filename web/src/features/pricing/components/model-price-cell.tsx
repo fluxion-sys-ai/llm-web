@@ -88,10 +88,7 @@ export function ModelPriceCell(props: {
     props.model.pricing_status === 'pending' && !props.model.official_price
   let discount: string | undefined
 
-  if (
-    (comingSoon || props.model.pricing_status === 'pending') &&
-    props.model.official_price
-  ) {
+  if (props.model.official_price) {
     const officialPrice = (type: 'input' | 'output', discounted: boolean) =>
       formatOfficialPrice(
         props.model,

@@ -27,7 +27,7 @@ import { api } from '@/lib/api'
 import { ModelDetailsContent } from '../components/model-details'
 import { OFFICIAL_PRICE_DISCOUNT_PERCENT } from '../constants'
 import { officialPrices } from '../lib/catalog'
-import type { PricingModel } from '../types'
+import type { PricingModel, TokenUnit } from '../types'
 
 vi.mock('@visactor/react-vchart', () => ({ VChart: () => null }))
 
@@ -66,7 +66,8 @@ afterEach(async () => {
 
 function renderDetails(
   model: PricingModel = catalogModel,
-  status: Record<string, unknown> = {}
+  status: Record<string, unknown> = {},
+  tokenUnit: TokenUnit = 'K'
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -85,7 +86,7 @@ function renderDetails(
         autoGroups={[]}
         priceRate={1}
         usdExchangeRate={1}
-        tokenUnit='K'
+        tokenUnit={tokenUnit}
       />
     </QueryClientProvider>
   )
@@ -205,6 +206,29 @@ test('configured models retain their real price display and raw-name fallback', 
   expect(screen.getByText('Pricing by Group')).toBeVisible()
   expect(screen.queryByText('To be configured')).not.toBeInTheDocument()
   expect(screen.getAllByText(/\$/).length).toBeGreaterThan(0)
+})
+
+test('connected models with catalog prices show the discount without live group or expression prices', () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: { data: { groups: [] } } })
+  renderDetails(
+    {
+      ...catalogModel,
+      pricing_status: undefined,
+      official_price: officialPrices['deepseek-v4.1-flash'],
+      billing_mode: 'tiered_expr',
+      billing_expr: 'tier("standard", p * 7 + c * 21)',
+    },
+    {},
+    'M'
+  )
+
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('0.24')).toBeVisible()
+  expect(pricing.getByText('0.96')).toBeVisible()
+  expect(pricing.getByText('0.30').tagName).toBe('S')
+  expect(pricing.getByText('1.20').tagName).toBe('S')
+  expect(pricing.getByText('20% off')).toBeVisible()
+  expect(pricing.queryByText('Pricing by Group')).not.toBeInTheDocument()
 })
 
 test('catalog descriptions update when the interface language changes', async () => {

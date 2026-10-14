@@ -22,9 +22,11 @@ import {
   QUOTA_TYPES,
   QUOTA_TYPE_VALUES,
   ENDPOINT_TYPES,
+  OFFICIAL_PRICE_DISCOUNT_PERCENT,
 } from '../constants'
 import type { PricingModel } from '../types'
 import { hasTaskUsageSchema } from './dynamic-price'
+import { getDisplayGroupRatio } from './model-helpers'
 
 // ----------------------------------------------------------------------------
 // Filter Utilities
@@ -122,8 +124,23 @@ export function filterByEndpointType(
 /**
  * Get model price for sorting
  */
-function getModelPrice(model: PricingModel): number {
-  return model.quota_type === 0 ? model.model_ratio : model.model_price || 0
+function getModelPrice(model: PricingModel): number | null {
+  if (model.official_price) {
+    return (
+      (model.official_price.input * (100 - OFFICIAL_PRICE_DISCOUNT_PERCENT)) /
+      100
+    )
+  }
+  if (
+    model.pricing_status === 'pending' ||
+    model.availability === 'coming_soon'
+  ) {
+    return null
+  }
+  const groupRatio = getDisplayGroupRatio(model)
+  return model.quota_type === QUOTA_TYPE_VALUES.TOKEN
+    ? model.model_ratio * 2 * groupRatio
+    : (model.model_price || 0) * groupRatio
 }
 
 /**
@@ -152,25 +169,16 @@ export function sortModels(
       )
       break
     case SORT_OPTIONS.PRICE_LOW:
-      sorted.sort((a, b) => {
-        if (a.pricing_status === 'pending' || b.pricing_status === 'pending') {
-          return (
-            Number(a.pricing_status === 'pending') -
-            Number(b.pricing_status === 'pending')
-          )
-        }
-        return getModelPrice(a) - getModelPrice(b)
-      })
-      break
     case SORT_OPTIONS.PRICE_HIGH:
       sorted.sort((a, b) => {
-        if (a.pricing_status === 'pending' || b.pricing_status === 'pending') {
-          return (
-            Number(a.pricing_status === 'pending') -
-            Number(b.pricing_status === 'pending')
-          )
+        const aPrice = getModelPrice(a)
+        const bPrice = getModelPrice(b)
+        if (aPrice === null || bPrice === null) {
+          return Number(aPrice === null) - Number(bPrice === null)
         }
-        return getModelPrice(b) - getModelPrice(a)
+        return sortBy === SORT_OPTIONS.PRICE_LOW
+          ? aPrice - bPrice
+          : bPrice - aPrice
       })
       break
   }
