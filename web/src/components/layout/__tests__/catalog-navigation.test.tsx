@@ -68,9 +68,7 @@ vi.mock('@/hooks/use-status', () => ({
 
 beforeEach(() => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
-  pricing.isLoading = false
-  pricing.error = null
-  pricing.models[0].availability = undefined
+  vi.mocked(useLlmCatalog).mockClear()
   site.status = {}
 })
 
@@ -189,66 +187,78 @@ describe('catalog navigation menus', () => {
     }
   )
 
-  it('retains lazy model loading and existing model detail links through the shared shell', async () => {
-    const user = userEvent.setup()
-    await renderNavigation(<ModelsNavMenu />)
-    expect(useLlmCatalog).toHaveBeenLastCalledWith(false)
-
-    await user.click(screen.getByRole('button', { name: 'Models' }))
-
-    expect(useLlmCatalog).toHaveBeenLastCalledWith(true)
-    expect(
-      screen.getByRole('link', { name: /All Models\s*Models & Pricing/ })
-    ).toHaveAttribute('href', '/pricing')
-    await user.click(
-      screen.getByRole('link', { name: /Catalog test model\s*Test vendor/ })
-    )
-    expect(
-      await screen.findByRole('heading', { name: 'Model destination' })
-    ).toBeVisible()
-    expect(useLlmCatalog).toHaveBeenLastCalledWith(false)
-  })
-
-  it('preserves the model error retry action', async () => {
-    pricing.error = new Error('Offline')
-    const user = userEvent.setup()
-    await renderNavigation(<ModelsNavMenu mobile />)
-    await user.click(screen.getByRole('button', { name: 'Models' }))
-    expect(screen.getByText('Failed to load models')).toBeVisible()
-    await user.click(screen.getByRole('button', { name: /retry/i }))
-    expect(pricing.refetch).toHaveBeenCalledTimes(1)
-  })
-
   it.each([false, true])(
-    'keeps upcoming model navigation without an availability badge when mobile is %s',
+    'offers only LLM and Multimodal destinations without loading models when mobile is %s',
     async (mobile) => {
-      pricing.models[0].availability = 'coming_soon'
       const user = userEvent.setup()
-      await renderNavigation(<ModelsNavMenu mobile={mobile} />)
+      const onNavigate = vi.fn()
+      await renderNavigation(
+        <ModelsNavMenu mobile={mobile} onNavigate={onNavigate} />
+      )
       await user.click(screen.getByRole('button', { name: 'Models' }))
 
-      const modelLink = screen.getByRole('link', {
-        name: /Catalog test model/,
+      const llm = screen.getByRole('link', { name: /^LLM\s*Models & Pricing$/ })
+      const multimodal = screen.getByRole('link', {
+        name: /^Multimodal\s*Models & Pricing$/,
       })
+      expect(llm).toHaveAttribute('href', '/pricing')
+      expect(multimodal).toHaveAttribute(
+        'href',
+        'https://multimodal.fluxion-sys.ai/'
+      )
+      expect(multimodal).not.toHaveAttribute('target')
+      expect(screen.getAllByRole('link')).toHaveLength(2)
       expect(
-        within(modelLink).queryByText('Coming soon')
+        screen.queryByRole('link', { name: /Catalog test model/ })
       ).not.toBeInTheDocument()
-      expect(modelLink).toHaveAttribute('href', '/pricing/catalog-test-model')
-      expect(
-        within(screen.getByRole('link', { name: /All Models/ })).queryByText(
-          'Coming soon'
-        )
-      ).not.toBeInTheDocument()
+      expect(useLlmCatalog).not.toHaveBeenCalled()
+      expect(screen.queryByText('All Models')).not.toBeInTheDocument()
 
-      await user.click(modelLink)
+      await user.click(llm)
 
       expect(
-        await screen.findByRole('heading', { name: 'Model destination' })
+        await screen.findByRole('heading', { name: 'Models destination' })
       ).toBeVisible()
+      expect(onNavigate).toHaveBeenCalledTimes(1)
       expect(screen.getByRole('button', { name: 'Models' })).toHaveAttribute(
         'aria-expanded',
         'false'
       )
+    }
+  )
+
+  it.each([
+    { mobile: false, input: 'mouse' },
+    { mobile: false, input: 'keyboard' },
+    { mobile: true, input: 'mouse' },
+    { mobile: true, input: 'keyboard' },
+  ])(
+    'closes the model menu after selecting Multimodal with $input when mobile is $mobile',
+    async ({ mobile, input }) => {
+      const user = userEvent.setup()
+      const onNavigate = vi.fn()
+      await renderNavigation(
+        <ModelsNavMenu mobile={mobile} onNavigate={onNavigate} />
+      )
+      const trigger = screen.getByRole('button', { name: 'Models' })
+      await user.click(trigger)
+      const multimodal = screen.getByRole('link', {
+        name: /^Multimodal\s*Models & Pricing$/,
+      })
+      // Exercise link selection without leaving the test's document.
+      multimodal.addEventListener('click', (event) => event.preventDefault(), {
+        once: true,
+      })
+
+      if (input === 'keyboard') {
+        multimodal.focus()
+        await user.keyboard('{Enter}')
+      } else {
+        await user.click(multimodal)
+      }
+
+      expect(onNavigate).toHaveBeenCalledTimes(1)
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
     }
   )
 

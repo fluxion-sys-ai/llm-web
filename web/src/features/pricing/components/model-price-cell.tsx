@@ -28,6 +28,12 @@ import {
   OFFICIAL_PRICE_DISCOUNT_PERCENT,
 } from '../constants'
 import {
+  CATALOG_PRICE_TYPES,
+  getCatalogTokenPrices,
+  hasCatalogDiscount,
+  usesGlmBackendPricing,
+} from '../lib/catalog-price'
+import {
   getDynamicDisplayGroupRatio,
   getDynamicPriceUnitLabelKey,
   getDynamicPricingSummary,
@@ -35,6 +41,7 @@ import {
 } from '../lib/dynamic-price'
 import { isTokenBasedModel } from '../lib/model-helpers'
 import {
+  formatCatalogTokenPrice,
   formatOfficialPrice,
   formatPrice,
   formatRequestPrice,
@@ -89,34 +96,59 @@ export function ModelPriceCell(props: {
   let discount: string | undefined
 
   if (
-    (comingSoon || props.model.pricing_status === 'pending') &&
-    props.model.official_price
+    props.model.official_price ||
+    (usesGlmBackendPricing(props.model) &&
+      props.model.pricing_status !== 'pending')
   ) {
-    const officialPrice = (type: 'input' | 'output', discounted: boolean) =>
-      formatOfficialPrice(
-        props.model,
-        type,
-        tokenUnit,
-        discounted,
-        options.showRechargePrice,
-        options.priceRate,
-        options.usdExchangeRate
-      ) ?? '-'
-    metrics = [
-      {
-        label: t('Input'),
-        value: officialPrice('input', true),
-        official: officialPrice('input', false),
-      },
-      {
-        label: t('Output'),
-        value: officialPrice('output', true),
-        official: officialPrice('output', false),
-      },
-    ]
-    discount = t('{{percent}}% off', {
-      percent: OFFICIAL_PRICE_DISCOUNT_PERCENT,
+    const prices = getCatalogTokenPrices(props.model, options.selectedGroup)
+    if (!prices) {
+      return (
+        <span className='text-muted-foreground text-sm'>
+          {props.model.billing_expr && props.model.pricing_status !== 'pending'
+            ? t('Special billing expression')
+            : t('To be configured')}
+        </span>
+      )
+    }
+    const labels = {
+      input: t('Input'),
+      output: t('Output'),
+      cache: t('Cache Read'),
+    }
+    metrics = CATALOG_PRICE_TYPES.flatMap((type) => {
+      const price = prices[type]
+      if (price === undefined) return []
+      const reference = props.model.official_price?.[type]
+      return [
+        {
+          label: labels[type],
+          value: formatCatalogTokenPrice(
+            price,
+            tokenUnit,
+            options.showRechargePrice,
+            options.priceRate,
+            options.usdExchangeRate
+          ),
+          official:
+            reference !== undefined && price < reference - 1e-9
+              ? (formatOfficialPrice(
+                  props.model,
+                  type,
+                  tokenUnit,
+                  false,
+                  options.showRechargePrice,
+                  options.priceRate,
+                  options.usdExchangeRate
+                ) ?? undefined)
+              : undefined,
+        },
+      ]
     })
+    if (hasCatalogDiscount(props.model, prices)) {
+      discount = t('{{percent}}% off', {
+        percent: OFFICIAL_PRICE_DISCOUNT_PERCENT,
+      })
+    }
   } else if (props.model.pricing_status === 'pending') {
     metrics = [
       { label: t('Input'), value: t('To be configured') },
@@ -226,13 +258,16 @@ export function ModelPriceCell(props: {
   return (
     <span className='block w-full max-w-full min-w-0 space-y-1.5'>
       <span
-        className={metrics.length > 1 ? 'grid grid-cols-2 gap-x-4' : 'grid'}
+        className={
+          metrics.length > 1 ? 'grid grid-cols-2 gap-x-4 gap-y-2' : 'grid'
+        }
       >
-        {metrics.map((metric) => (
+        {metrics.map((metric, index) => (
           <span
             key={metric.label}
             className={cn(
               'flex min-w-0 flex-col items-start gap-y-0.5',
+              metrics.length === 3 && index === 2 && 'col-span-2',
               !pendingWithoutPrice &&
                 'sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'
             )}

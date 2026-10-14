@@ -137,7 +137,7 @@ test('backend display and billing fields win over local metadata without rewriti
   expect(result.current.models[0].max_output_tokens).toBe(1024)
 })
 
-test('production DeepSeek expression prices override the legacy 37.5 ratio in catalog display', () => {
+test('connected DeepSeek keeps catalog prices while preserving backend billing fields', () => {
   const result = catalog(
     [
       {
@@ -162,8 +162,11 @@ test('production DeepSeek expression prices override the legacy 37.5 ratio in ca
   ])
   expect(summary?.secondaryEntries.map((entry) => entry.value)).toEqual([0.006])
   render(<ModelPriceCell model={model} options={{ tokenUnit: 'M' }} />)
-  expect(screen.getByText('0.3')).toBeVisible()
-  expect(screen.getByText('1.2')).toBeVisible()
+  expect(screen.getByText('0.24')).toBeVisible()
+  expect(screen.getByText('0.96')).toBeVisible()
+  expect(screen.getByText('0.30').tagName).toBe('S')
+  expect(screen.getByText('1.20').tagName).toBe('S')
+  expect(screen.getByText('20% off')).toBeVisible()
   expect(screen.queryByText(/75/)).not.toBeInTheDocument()
 })
 
@@ -311,9 +314,11 @@ test.each(['GLM-5.3', 'DeepSeek-V4.1-Flash', 'Kimi-K3'])(
     expect(pricing.getByText('Input')).toBeVisible()
     expect(pricing.getByText('Output')).toBeVisible()
     const amounts = pricing.getAllByText(/^[\d,]+\.\d+$/)
-    expect(amounts).toHaveLength(4)
+    expect(amounts).toHaveLength(name === 'GLM-5.3' ? 6 : 4)
     for (const amount of amounts) expect(amount).toBeVisible()
-    expect(amounts.filter((amount) => amount.tagName === 'S')).toHaveLength(2)
+    expect(amounts.filter((amount) => amount.tagName === 'S')).toHaveLength(
+      name === 'GLM-5.3' ? 3 : 2
+    )
     expect(
       pricing.getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)
     ).toBeVisible()

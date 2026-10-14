@@ -27,7 +27,7 @@ import { api } from '@/lib/api'
 import { ModelDetailsContent } from '../components/model-details'
 import { OFFICIAL_PRICE_DISCOUNT_PERCENT } from '../constants'
 import { officialPrices } from '../lib/catalog'
-import type { PricingModel } from '../types'
+import type { PricingModel, TokenUnit } from '../types'
 
 vi.mock('@visactor/react-vchart', () => ({ VChart: () => null }))
 
@@ -66,7 +66,9 @@ afterEach(async () => {
 
 function renderDetails(
   model: PricingModel = catalogModel,
-  status: Record<string, unknown> = {}
+  status: Record<string, unknown> = {},
+  tokenUnit: TokenUnit = 'K',
+  selectedGroup?: string
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -81,11 +83,16 @@ function renderDetails(
         usableGroup={{ default: { desc: '', ratio: 2 } }}
         endpointMap={{
           openai: { path: '/v1/chat/completions', method: 'POST' },
+          gemini: {
+            path: '/v1beta/models/{model}:generateContent',
+            method: 'POST',
+          },
         }}
         autoGroups={[]}
         priceRate={1}
         usdExchangeRate={1}
-        tokenUnit='K'
+        tokenUnit={tokenUnit}
+        selectedGroup={selectedGroup}
       />
     </QueryClientProvider>
   )
@@ -143,7 +150,7 @@ test('coming-soon API details explain unavailability instead of offering callabl
   expect(pricing.getByText('Input')).toBeVisible()
   expect(pricing.getByText('Output')).toBeVisible()
   const amounts = pricing.getAllByText(/^[\d,]+\.\d+$/)
-  expect(amounts).toHaveLength(4)
+  expect(amounts).toHaveLength(6)
   for (const amount of amounts) expect(amount).toBeVisible()
   expect(
     pricing.getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)
@@ -207,6 +214,29 @@ test('configured models retain their real price display and raw-name fallback', 
   expect(screen.getAllByText(/\$/).length).toBeGreaterThan(0)
 })
 
+test('connected models with catalog prices show the discount without live group or expression prices', () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: { data: { groups: [] } } })
+  renderDetails(
+    {
+      ...catalogModel,
+      pricing_status: undefined,
+      official_price: officialPrices['deepseek-v4.1-flash'],
+      billing_mode: 'tiered_expr',
+      billing_expr: 'tier("standard", p * 7 + c * 21)',
+    },
+    {},
+    'M'
+  )
+
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('0.24')).toBeVisible()
+  expect(pricing.getByText('0.96')).toBeVisible()
+  expect(pricing.getByText('0.30').tagName).toBe('S')
+  expect(pricing.getByText('1.20').tagName).toBe('S')
+  expect(pricing.getByText('20% off')).toBeVisible()
+  expect(pricing.queryByText('Pricing by Group')).not.toBeInTheDocument()
+})
+
 test('catalog descriptions update when the interface language changes', async () => {
   renderDetails()
   i18next.addResourceBundle('zh', 'translation', {
@@ -254,16 +284,129 @@ test('configured API documentation does not publish generated rate limits or unv
   ).not.toBeInTheDocument()
 })
 
-test('a configured public API base overrides the shared backend address in model examples', async () => {
-  vi.stubEnv('VITE_LLM_API_BASE_URL', 'https://llm.fluxion-sys.ai/v1')
+test('model examples keep the Fluxion domain despite legacy deployment overrides', async () => {
+  vi.stubEnv('VITE_LLM_API_BASE_URL', 'http://192.0.2.20:3000/v1')
   const user = userEvent.setup()
   renderDetails(catalogModel, { server_address: 'https://video.example.com' })
   await user.click(screen.getByRole('tab', { name: 'API' }))
 
   const panel = screen.getByRole('tabpanel', { name: 'API' })
   expect(panel).toHaveTextContent(
-    'curl https://llm.fluxion-sys.ai/v1/chat/completions'
+    'curl https://api.fluxion-sys.ai/v1/chat/completions'
   )
   expect(panel).not.toHaveTextContent('https://video.example.com')
   expect(panel).not.toHaveTextContent('/v1/v1/')
+})
+
+test('model API examples use the Fluxion domain when the backend advertises an IP address', async () => {
+  vi.stubEnv('VITE_LLM_API_BASE_URL', '')
+  const user = userEvent.setup()
+  renderDetails(catalogModel, { server_address: 'http://192.0.2.10:3000' })
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+
+  const panel = screen.getByRole('tabpanel', { name: 'API' })
+  expect(panel).toHaveTextContent(
+    'curl https://api.fluxion-sys.ai/v1/chat/completions'
+  )
+  expect(panel).not.toHaveTextContent('192.0.2.10')
+
+  await user.click(within(panel).getByRole('tab', { name: 'Python' }))
+  expect(panel).toHaveTextContent('base_url="https://api.fluxion-sys.ai/v1"')
+  expect(panel).not.toHaveTextContent('192.0.2.10')
+
+  await user.click(within(panel).getByRole('tab', { name: 'TypeScript' }))
+  expect(panel).toHaveTextContent("baseURL: 'https://api.fluxion-sys.ai/v1'")
+
+  await user.click(within(panel).getByRole('tab', { name: 'JavaScript' }))
+  expect(panel).toHaveTextContent(
+    "fetch('https://api.fluxion-sys.ai/v1/chat/completions'"
+  )
+  await user.click(within(panel).getByRole('button', { name: 'Copy code' }))
+  expect(await navigator.clipboard.readText()).toContain(
+    'https://api.fluxion-sys.ai/v1/chat/completions'
+  )
+  expect(panel).not.toHaveTextContent('192.0.2.10')
+  expect(panel).not.toHaveTextContent('/v1/v1/')
+})
+
+test('Gemini examples in every language use the Fluxion endpoint and API key header', async () => {
+  const user = userEvent.setup()
+  renderDetails({
+    ...catalogModel,
+    model_name: 'gemini-2.5-flash',
+    supported_endpoint_types: ['openai', 'gemini'],
+  })
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+  const panel = screen.getByRole('tabpanel', { name: 'API' })
+  await user.click(within(panel).getByRole('tab', { name: 'gemini' }))
+  const endpoint =
+    'https://api.fluxion-sys.ai/v1beta/models/gemini-2.5-flash:generateContent'
+
+  expect(panel).toHaveTextContent(endpoint)
+  expect(panel).toHaveTextContent('-H "x-goog-api-key: $FLUXION_API_KEY"')
+
+  await user.click(within(panel).getByRole('tab', { name: 'Python' }))
+  expect(panel).toHaveTextContent(endpoint)
+  expect(panel).toHaveTextContent(
+    '"x-goog-api-key": os.environ["FLUXION_API_KEY"]'
+  )
+
+  for (const language of ['TypeScript', 'JavaScript']) {
+    await user.click(within(panel).getByRole('tab', { name: language }))
+    expect(panel).toHaveTextContent(`fetch('${endpoint}'`)
+    expect(panel).toHaveTextContent(
+      "'x-goog-api-key': process.env.FLUXION_API_KEY"
+    )
+    await user.click(
+      within(panel).getByRole('button', { name: /^(Copy code|Copied!)$/ })
+    )
+    const copied = await navigator.clipboard.readText()
+    expect(copied).toContain(endpoint)
+    expect(copied).toContain("'x-goog-api-key': process.env.FLUXION_API_KEY")
+    expect(copied).not.toContain('?key=')
+  }
+})
+
+test('connected GLM details display the backend discounted input, cache and output rates', () => {
+  renderDetails(
+    {
+      ...catalogModel,
+      model_name: 'GLM-5.3',
+      pricing_status: undefined,
+      official_price: officialPrices['glm-5.3'],
+      billing_mode: 'tiered_expr',
+      billing_expr: 'tier("standard", p * 1.12 + cr * 0.208 + c * 3.52)',
+      group_ratio: { default: 1 },
+    },
+    {},
+    'M'
+  )
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('1.12')).toBeVisible()
+  expect(pricing.getByText('0.208')).toBeVisible()
+  expect(pricing.getByText('3.52')).toBeVisible()
+  expect(pricing.getByText('20% off')).toBeVisible()
+})
+
+test('GLM details preserve the selected group price from the catalog', () => {
+  renderDetails(
+    {
+      ...catalogModel,
+      model_name: 'GLM-5.3',
+      pricing_status: undefined,
+      official_price: officialPrices['glm-5.3'],
+      billing_mode: 'tiered_expr',
+      billing_expr: 'tier("standard", p * 1.12 + cr * 0.208 + c * 3.52)',
+      enable_groups: ['default', 'vip'],
+      group_ratio: { default: 1, vip: 2 },
+    },
+    {},
+    'M',
+    'vip'
+  )
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('2.24')).toBeVisible()
+  expect(pricing.getByText('0.416')).toBeVisible()
+  expect(pricing.getByText('7.04')).toBeVisible()
+  expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
 })

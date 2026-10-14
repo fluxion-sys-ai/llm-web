@@ -16,7 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useMemo } from 'react'
+
 import { useStatus } from '@/hooks/use-status'
+import { FLUXION_API_ORIGIN } from '@/lib/public-api-address'
 
 import type { AnnouncementItem, ApiInfoItem, FAQItem } from '../types'
 
@@ -38,7 +41,32 @@ export function useStatusData<T = unknown>(
  * Get API info list
  */
 export function useApiInfo() {
-  return useStatusData<ApiInfoItem>('api_info_enabled', 'api_info')
+  const { items, loading } = useStatusData<ApiInfoItem>(
+    'api_info_enabled',
+    'api_info'
+  )
+  const publicItems = useMemo(
+    () =>
+      items.map((item) => {
+        let path = ''
+        try {
+          const configuredUrl = new URL(item.url)
+          if (['http:', 'https:'].includes(configuredUrl.protocol)) {
+            path = configuredUrl.pathname.replace(/\/+$/, '')
+          }
+        } catch {
+          // Legacy or incomplete route settings use the public gateway root.
+        }
+        return {
+          ...item,
+          routeKey: `${item.route}:${item.url}`,
+          url: `${FLUXION_API_ORIGIN}${path}`,
+        }
+      }),
+    [items]
+  )
+
+  return { items: publicItems, loading }
 }
 
 /**

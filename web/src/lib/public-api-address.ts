@@ -16,26 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { isHttpUrl } from './content-format'
-
-/**
- * Resolve the public gateway root used by examples and client imports.
- * The build setting accepts a gateway root or an OpenAI base ending in /v1.
- * Existing callers append their protocol-specific path; management APIs remain
- * same-origin and must not use this display-only configuration.
- */
-export function getPublicApiServerAddress(
-  fallback: string,
-  configuredBase: unknown = import.meta.env.VITE_LLM_API_BASE_URL
-): string {
-  if (typeof configuredBase !== 'string') return fallback
-  const value = configuredBase.trim()
-  if (!value || !isHttpUrl(value)) return fallback
-
-  const url = new URL(value)
-  if (url.username || url.password || url.search || url.hash) return fallback
-  const path = url.pathname.replace(/\/+$/, '')
-  if (path && !path.endsWith('/v1')) return fallback
-
-  return `${url.origin}${path.replace(/\/v1$/, '')}`
-}
+// Public inference addresses used in examples and client imports.
+// Management APIs continue to use the same-origin authenticated client.
+export const FLUXION_API_ORIGIN = 'https://api.fluxion-sys.ai'
+export const FLUXION_API_BASE_URL = `${FLUXION_API_ORIGIN}/v1`

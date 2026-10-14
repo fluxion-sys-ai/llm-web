@@ -27,7 +27,7 @@ import {
   testUrlLatency,
   getDefaultPingStatus,
 } from '@/features/dashboard/lib/api-info'
-import type { PingStatusMap, ApiInfoItem } from '@/features/dashboard/types'
+import type { PingStatusMap } from '@/features/dashboard/types'
 
 import { PanelWrapper } from '../ui/panel-wrapper'
 import { ApiInfoItemComponent } from './api-info-item'
@@ -66,9 +66,9 @@ export function ApiInfoPanel() {
     >
       <ScrollArea className='h-72'>
         <div>
-          {list.map((item: ApiInfoItem, idx: number) => (
+          {list.map((item, idx) => (
             <div
-              key={item.url}
+              key={item.routeKey}
               className={
                 idx < list.length - 1 ? 'border-border/60 border-b' : ''
               }

@@ -27,8 +27,7 @@ import {
 } from '@/components/ai-elements/code-block'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useStatus } from '@/hooks/use-status'
-import { getPublicApiServerAddress } from '@/lib/public-api-address'
+import { FLUXION_API_ORIGIN } from '@/lib/public-api-address'
 
 import { replaceModelInPath } from '../lib/model-helpers'
 import type { PricingModel } from '../types'
@@ -221,7 +220,7 @@ function buildAnthropicSample(lang: Lang, ctx: SampleContext): string {
 }
 
 function buildGeminiSample(lang: Lang, ctx: SampleContext): string {
-  const url = `${ctx.baseUrl}${ctx.endpointPath}?key=$${ctx.apiKeyEnv}`
+  const url = `${ctx.baseUrl}${ctx.endpointPath}`
   const userMessage = 'Explain quantum entanglement in one paragraph.'
 
   if (lang === 'curl') {
@@ -232,37 +231,42 @@ function buildGeminiSample(lang: Lang, ctx: SampleContext): string {
     )
     return [
       `curl '${url}' \\`,
+      `  -H "x-goog-api-key: $${ctx.apiKeyEnv}" \\`,
       `  -H 'Content-Type: application/json' \\`,
       `  -d '${body.replaceAll('\n', '\n     ')}'`,
     ].join('\n')
   }
   if (lang === 'python') {
     return [
-      'import google.generativeai as genai',
+      'import json',
+      'import os',
+      'from urllib.request import Request, urlopen',
       '',
-      `genai.configure(api_key="<YOUR_API_KEY>")`,
+      'request = Request(',
+      `    "${url}",`,
+      '    headers={',
+      `        "x-goog-api-key": os.environ["${ctx.apiKeyEnv}"],`,
+      '        "Content-Type": "application/json",',
+      '    },',
+      '    data=json.dumps({',
+      `        "contents": [{"parts": [{"text": "${userMessage}"}]}],`,
+      '    }).encode("utf-8"),',
+      '    method="POST",',
+      ')',
       '',
-      `model = genai.GenerativeModel("${ctx.modelName}")`,
-      `response = model.generate_content("${userMessage}")`,
+      'with urlopen(request) as response:',
+      '    data = json.load(response)',
       '',
-      `print(response.text)`,
-    ].join('\n')
-  }
-  if (lang === 'typescript') {
-    return [
-      `import { GoogleGenerativeAI } from '@google/generative-ai'`,
-      '',
-      `const genAI = new GoogleGenerativeAI(process.env.${ctx.apiKeyEnv}!)`,
-      `const model = genAI.getGenerativeModel({ model: '${ctx.modelName}' })`,
-      '',
-      `const result = await model.generateContent('${userMessage}')`,
-      `console.log(result.response.text())`,
+      'print(data["candidates"][0]["content"]["parts"][0]["text"])',
     ].join('\n')
   }
   return [
     `const response = await fetch('${url}', {`,
     `  method: 'POST',`,
-    `  headers: { 'Content-Type': 'application/json' },`,
+    `  headers: {`,
+    `    'x-goog-api-key': process.env.${ctx.apiKeyEnv}${lang === 'typescript' ? '!' : ''},`,
+    `    'Content-Type': 'application/json',`,
+    `  },`,
     `  body: JSON.stringify({`,
     `    contents: [{ parts: [{ text: '${userMessage}' }] }],`,
     `  }),`,
@@ -430,23 +434,7 @@ function CodeSamplesSection(props: {
   endpointMap: Record<string, { path?: string; method?: string }>
 }) {
   const { t } = useTranslation()
-  const { status } = useStatus()
-
-  const baseUrl = useMemo(() => {
-    const candidate =
-      (status as Record<string, unknown> | null)?.server_address ??
-      (status as Record<string, unknown> | null)?.serverAddress ??
-      (status?.data as Record<string, unknown> | undefined)?.server_address ??
-      (status?.data as Record<string, unknown> | undefined)?.serverAddress
-    if (candidate && typeof candidate === 'string') {
-      return getPublicApiServerAddress(candidate.replace(/\/$/, ''))
-    }
-    return getPublicApiServerAddress(
-      typeof window !== 'undefined'
-        ? window.location.origin
-        : 'https://api.example.com'
-    )
-  }, [status])
+  const baseUrl = FLUXION_API_ORIGIN
 
   const endpoints = useMemo(() => {
     const types = props.model.supported_endpoint_types || []
@@ -477,7 +465,7 @@ function CodeSamplesSection(props: {
 
   const code = buildSample(lang, activeEndpoint.type, {
     baseUrl,
-    apiKeyEnv: 'NEW_API_KEY',
+    apiKeyEnv: 'FLUXION_API_KEY',
     modelName: props.model.model_name || '',
     endpointType: activeEndpoint.type,
     endpointPath: activeEndpoint.path,

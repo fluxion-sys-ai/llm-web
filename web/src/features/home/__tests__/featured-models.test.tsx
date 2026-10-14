@@ -134,3 +134,50 @@ test('backend response order does not reorder the featured cards', async () => {
       .map((heading) => heading.textContent)
   ).toEqual(['GLM 5.3', 'Kimi K3', 'DeepSeek V4.1 Flash'])
 })
+
+test.each([false, true])(
+  'featured GLM follows backend pricing while other catalog prices stay configured when connected=%s',
+  async (connected) => {
+    await renderFeaturedModels(
+      connected
+        ? ['GLM-5.3', 'Kimi-K3', 'deepseek-v4.1-flash'].map(
+            (model_name, id) => ({
+              id,
+              model_name,
+              quota_type: 0,
+              model_ratio: 99,
+              completion_ratio: 10,
+              official_price: { input: 80, output: 90 },
+              billing_mode: 'tiered_expr',
+              billing_expr: 'tier("standard", p * 7 + c * 21)',
+              enable_groups: ['default'],
+              supported_endpoint_types: ['openai'],
+            })
+          )
+        : []
+    )
+
+    const prices = screen.getAllByRole('group', { name: 'Pricing' })
+    const expected = [
+      ['1.12', '3.52', '1.40', '4.40'],
+      ['2.40', '12.00', '3.00', '15.00'],
+      ['0.24', '0.96', '0.30', '1.20'],
+    ]
+    prices.forEach((element, index) => {
+      const pricing = within(element)
+      if (connected && index === 0) {
+        expect(pricing.getByText('7.00')).toBeVisible()
+        expect(pricing.getByText('21.00')).toBeVisible()
+        expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
+        return
+      }
+      const [input, output, originalInput, originalOutput] = expected[index]
+      expect(pricing.getByText(input)).toBeVisible()
+      expect(pricing.getByText(output)).toBeVisible()
+      expect(pricing.getByText(originalInput).tagName).toBe('S')
+      expect(pricing.getByText(originalOutput).tagName).toBe('S')
+      expect(pricing.getByText('20% off')).toBeVisible()
+      expect(pricing.getByText('USD / 1M tokens')).toBeVisible()
+    })
+  }
+)

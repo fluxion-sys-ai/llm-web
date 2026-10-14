@@ -252,11 +252,11 @@ describe('overview setup guide', () => {
     ).toBeEnabled()
   })
 
-  it('uses the configured public API base instead of shared API info in its curl example', async () => {
-    vi.stubEnv('VITE_LLM_API_BASE_URL', 'https://llm.fluxion-sys.ai/v1')
+  it('uses the Fluxion domain despite IP addresses in deployment and API info', async () => {
+    vi.stubEnv('VITE_LLM_API_BASE_URL', 'http://192.0.2.20:3000/v1')
     client.setQueryData(['status'], {
       api_info_enabled: true,
-      api_info: [{ url: 'https://video.example.com/v1' }],
+      api_info: [{ url: 'http://192.0.2.10:3000/v1' }],
     })
     window.localStorage.setItem(storageKey, 'expanded')
     await renderOverview()
@@ -264,12 +264,12 @@ describe('overview setup guide', () => {
     await waitFor(() =>
       expect(
         screen.getByText(
-          /curl https:\/\/llm\.fluxion-sys\.ai\/v1\/chat\/completions/
+          /curl https:\/\/api\.fluxion-sys\.ai\/v1\/chat\/completions/
         )
       ).toBeVisible()
     )
     expect(
-      screen.queryByText(/curl https:\/\/video\.example\.com/)
+      screen.queryByText(/curl http:\/\/192\.0\.2\./)
     ).not.toBeInTheDocument()
   })
 

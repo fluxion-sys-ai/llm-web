@@ -53,7 +53,7 @@ import type { ApiKey } from '@/features/keys/types'
 import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getUserModels } from '@/lib/api'
-import { getPublicApiServerAddress } from '@/lib/public-api-address'
+import { FLUXION_API_BASE_URL } from '@/lib/public-api-address'
 import { ROLE } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth-store'
@@ -126,26 +126,6 @@ function saveSetupGuideExpanded(expanded: boolean): void {
     SETUP_GUIDE_VISIBILITY_STORAGE_KEY,
     expanded ? 'expanded' : 'collapsed'
   )
-}
-
-function getCurrentOrigin(): string {
-  if (typeof window === 'undefined') return ''
-  return window.location.origin
-}
-
-function normalizeEndpoint(sourceUrl?: string): string {
-  const fallback = `${getCurrentOrigin()}/v1/chat/completions`
-  const trimmed = sourceUrl?.trim()
-  if (!trimmed) return fallback
-
-  const withoutTrailingSlash = trimmed.replace(/\/+$/, '')
-  if (withoutTrailingSlash.endsWith('/v1/chat/completions')) {
-    return withoutTrailingSlash
-  }
-  if (withoutTrailingSlash.endsWith('/v1')) {
-    return `${withoutTrailingSlash}/chat/completions`
-  }
-  return `${withoutTrailingSlash}/v1/chat/completions`
 }
 
 function getPreferredKey(keys: ApiKey[]): ApiKey | null {
@@ -523,9 +503,7 @@ export function OverviewDashboard() {
   )
 
   const requestExample = useMemo<RequestExample>(() => {
-    const endpoint = normalizeEndpoint(
-      getPublicApiServerAddress(apiInfoItems[0]?.url ?? getCurrentOrigin())
-    )
+    const endpoint = `${FLUXION_API_BASE_URL}/chat/completions`
     const model = selectedModel ?? ''
     const keyName = preferredKey?.name ?? t('No API key yet')
     const ready = Boolean(preferredKey?.id && model)
@@ -541,7 +519,7 @@ export function OverviewDashboard() {
         : 'sk-...',
       ready,
     }
-  }, [apiInfoItems, modelStatus, preferredKey, selectedModel, t])
+  }, [modelStatus, preferredKey, selectedModel, t])
 
   const completedStepCount = startSteps.filter((step) => step.completed).length
   const setupComplete = completedStepCount === startSteps.length

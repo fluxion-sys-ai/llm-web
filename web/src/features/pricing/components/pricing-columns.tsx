@@ -32,13 +32,21 @@ import { cn } from '@/lib/utils'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
 import {
+  getCatalogTokenPrices,
+  usesGlmBackendPricing,
+} from '../lib/catalog-price'
+import {
   getDynamicDisplayGroupRatio,
   getDynamicPricingSummary,
   isUnconfiguredTaskUsageModel,
 } from '../lib/dynamic-price'
 import { parseTags } from '../lib/filters'
 import { isTokenBasedModel } from '../lib/model-helpers'
-import { formatPrice, stripTrailingZeros } from '../lib/price'
+import {
+  formatCatalogTokenPrice,
+  formatPrice,
+  stripTrailingZeros,
+} from '../lib/price'
 import type { PricingModel } from '../types'
 import { ModelBillingModeBadge } from './model-billing-mode-badge'
 import { ModelPriceCell, type ModelPriceCellOptions } from './model-price-cell'
@@ -130,6 +138,31 @@ export function usePricingColumns(
       cell: ({ row }) => {
         const model = row.original
         if (
+          usesGlmBackendPricing(model) ||
+          model.official_price?.cache !== undefined
+        ) {
+          const cachePrice = getCatalogTokenPrices(model, selectedGroup)?.cache
+          return cachePrice === undefined ? (
+            <span>—</span>
+          ) : (
+            <div className='max-w-full min-w-0'>
+              <span className='font-mono text-sm tabular-nums'>
+                {formatCatalogTokenPrice(
+                  cachePrice,
+                  tokenUnit,
+                  showRechargePrice,
+                  priceRate,
+                  usdExchangeRate
+                )}
+              </span>
+              <div className='text-muted-foreground text-[10px]'>
+                / {tokenUnitLabel}
+              </div>
+            </div>
+          )
+        }
+        if (
+          model.official_price ||
           model.availability === 'coming_soon' ||
           model.pricing_status === 'pending'
         ) {

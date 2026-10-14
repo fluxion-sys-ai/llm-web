@@ -223,7 +223,7 @@ describe('catalog browsing', () => {
     expect(within(comingSoon).getByText('Input')).toBeVisible()
     expect(within(comingSoon).getByText('Output')).toBeVisible()
     const amounts = within(comingSoon).getAllByText(/^[\d,]+\.\d+$/)
-    expect(amounts).toHaveLength(4)
+    expect(amounts).toHaveLength(7)
     for (const amount of amounts) expect(amount).toBeVisible()
     expect(
       within(comingSoon).getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)

@@ -30,20 +30,16 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-test.each([
-  ['https://llm.fluxion-sys.ai/v1', 'https://llm.fluxion-sys.ai'],
-  ['', 'https://video.example.com'],
-  ['javascript:alert(1)', 'https://video.example.com'],
-])(
-  'client imports use the public base %s and keep their existing address when unconfigured or invalid',
-  (configuredBase, expected) => {
+test.each(['http://203.0.113.10:3000/v1', ''])(
+  'client imports use the Fluxion domain despite old environment %s and backend IP',
+  (configuredBase) => {
     vi.stubEnv('VITE_LLM_API_BASE_URL', configuredBase)
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     })
     clients.push(client)
     client.setQueryData(['status'], {
-      server_address: 'https://video.example.com',
+      server_address: 'http://203.0.113.20:3000',
     })
     const { result } = renderHook(() => useChatPresets(), {
       wrapper: (props: { children: ReactNode }) => (
@@ -53,6 +49,6 @@ test.each([
       ),
     })
 
-    expect(result.current.serverAddress).toBe(expected)
+    expect(result.current.serverAddress).toBe('https://api.fluxion-sys.ai')
   }
 )

@@ -1354,6 +1354,7 @@ export interface ModelDetailsContentProps {
   usdExchangeRate: number
   tokenUnit: TokenUnit
   showRechargePrice?: boolean
+  selectedGroup?: string
 }
 
 export function ModelDetailsContent(props: ModelDetailsContentProps) {
@@ -1415,8 +1416,17 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
             className='border-border bg-card space-y-5 rounded-xl border p-5'
           >
             <SectionTitle>{t('Pricing')}</SectionTitle>
-            {pricingPending ? (
-              <ModelPriceCell model={props.model} />
+            {props.model.official_price || pricingPending ? (
+              <ModelPriceCell
+                model={props.model}
+                options={{
+                  tokenUnit: props.tokenUnit,
+                  priceRate: props.priceRate,
+                  usdExchangeRate: props.usdExchangeRate,
+                  showRechargePrice,
+                  selectedGroup: props.selectedGroup,
+                }}
+              />
             ) : (
               <>
                 {showBasePrices && (
@@ -1609,6 +1619,7 @@ export function ModelDetails() {
           usdExchangeRate={usdExchangeRate ?? 1}
           tokenUnit={tokenUnit}
           showRechargePrice={search.rechargePrice ?? false}
+          selectedGroup={search.group}
           endpointMap={
             (endpointMap as Record<
               string,

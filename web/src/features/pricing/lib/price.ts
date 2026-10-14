@@ -64,7 +64,7 @@ export function stripTrailingZeros(formatted: string): string {
  * Returns NaN when the required ratio field is missing/null so callers can
  * skip rendering that price type.
  */
-function calculateTokenPrice(
+export function calculateTokenPrice(
   model: PricingModel,
   type: PriceType,
   ratio: number
@@ -179,12 +179,12 @@ export function formatPrice(
 }
 
 /**
- * Format a vendor's official token price, optionally after the pending-price
+ * Format the website reference token price, optionally after the catalog
  * discount. Returns null when no official price is known.
  */
 export function formatOfficialPrice(
   model: PricingModel,
-  type: 'input' | 'output',
+  type: 'input' | 'output' | 'cache',
   tokenUnit: TokenUnit,
   discounted: boolean,
   showWithRecharge = false,
@@ -194,18 +194,33 @@ export function formatOfficialPrice(
   const official = model.official_price?.[type]
   if (official === undefined) return null
 
-  let priceInUSD = discounted
+  const priceInUSD = discounted
     ? (official * (100 - OFFICIAL_PRICE_DISCOUNT_PERCENT)) / 100
     : official
-  priceInUSD = applyRechargeRate(
+  return formatCatalogTokenPrice(
+    priceInUSD,
+    tokenUnit,
+    showWithRecharge,
+    priceRate,
+    usdExchangeRate
+  )
+}
+
+export function formatCatalogTokenPrice(
+  priceInUSD: number,
+  tokenUnit: TokenUnit,
+  showWithRecharge = false,
+  priceRate = 1,
+  usdExchangeRate = 1
+): string {
+  const displayPrice = applyRechargeRate(
     priceInUSD,
     showWithRecharge,
     priceRate,
     usdExchangeRate
   )
-
   return formatBillingCurrencyFromUSD(
-    priceInUSD / TOKEN_UNIT_DIVISORS[tokenUnit],
+    displayPrice / TOKEN_UNIT_DIVISORS[tokenUnit],
     {
       showSymbol: false,
       digitsLarge: 4,

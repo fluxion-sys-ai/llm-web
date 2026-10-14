@@ -39,10 +39,11 @@ type DisplayMetadata = Pick<
 // metadata takes precedence; serving availability is never inferred from specs.
 const displayMetadata = modelMetadata as Record<string, DisplayMetadata>
 
-// Vendors' published USD per 1M tokens (GLM and DeepSeek as in api-gateway's
-// bootstrap.py). Only displayed, discounted, while a model's pricing is pending.
+// Website reference prices in USD per 1M tokens. Connected GLM-5.3 uses its
+// backend sale prices; other catalog models retain the announced discount.
+// Z.ai reference checked 2026-10-14: https://docs.z.ai/guides/overview/pricing
 export const officialPrices: Record<string, PricingModel['official_price']> = {
-  'glm-5.3': { input: 1.4, output: 4.4 },
+  'glm-5.3': { input: 1.4, cache: 0.26, output: 4.4 },
   'deepseek-v4.1-flash': { input: 0.3, output: 1.2 },
   'kimi-k3': { input: 3, output: 15 },
   'qwen3.8-flash': { input: 0.15, output: 0.47 },
@@ -115,7 +116,7 @@ export function buildLlmCatalog(data?: PricingData): {
       max_output_tokens: model.max_output_tokens ?? metadata?.max_output_tokens,
       input_modalities: model.input_modalities ?? metadata?.input_modalities,
       output_modalities: model.output_modalities ?? metadata?.output_modalities,
-      official_price: model.official_price ?? officialPrices[normalizedName],
+      official_price: officialPrices[normalizedName] ?? model.official_price,
       vendor_name: model.vendor_name || vendor?.name || metadata?.vendor_name,
       vendor_icon: model.vendor_icon || vendor?.icon || metadata?.vendor_icon,
       vendor_description: model.vendor_description || vendor?.description,

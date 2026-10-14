@@ -17,18 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Link } from '@tanstack/react-router'
-import { Grid2X2 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { Grid2X2, Layers } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { EmptyState } from '@/components/empty-state'
-import { ErrorState } from '@/components/error-state'
-import { LoadingState } from '@/components/loading-state'
 import { NavigationMenuLink } from '@/components/ui/navigation-menu'
-import { Separator } from '@/components/ui/separator'
-import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
-import type { PricingModel } from '@/features/pricing/types'
-import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
 import { CatalogNavMenu } from './catalog-nav-menu'
@@ -39,35 +32,25 @@ type ModelsNavMenuProps = {
   onNavigate?: () => void
 }
 
-type ModelMenuLinkProps = {
+type ModelCategoryLinkProps = {
   mobile: boolean
-  model?: PricingModel
+  category: 'llm' | 'multimodal'
   onNavigate: () => void
 }
 
-function ModelMenuLink(props: ModelMenuLinkProps) {
+function ModelCategoryLink(props: ModelCategoryLinkProps) {
   const { t } = useTranslation()
-  const destination = props.model
-    ? {
-        to: '/pricing/$modelId' as const,
-        params: { modelId: props.model.model_name },
-      }
-    : { to: '/pricing' as const }
-  const label = props.model
-    ? props.model.display_name || props.model.model_name
-    : t('All Models')
-  const subtitle = props.model ? props.model.vendor_name : t('Models & Pricing')
+  const multimodal = props.category === 'multimodal'
+  const multimodalUrl = 'https://multimodal.fluxion-sys.ai/'
+  const label = multimodal ? t('Multimodal') : 'LLM'
+  const Icon = multimodal ? Layers : Grid2X2
   const content = (
     <>
       <span
         aria-hidden='true'
         className='flex size-8 shrink-0 items-center justify-center'
       >
-        {props.model ? (
-          getLobeIcon(props.model.icon || props.model.vendor_icon, 22)
-        ) : (
-          <Grid2X2 className='text-brand size-5' />
-        )}
+        <Icon className='text-brand size-5' />
       </span>
       <span className='min-w-0 flex-1'>
         <span className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
@@ -75,11 +58,9 @@ function ModelMenuLink(props: ModelMenuLinkProps) {
             {label}
           </span>
         </span>
-        {subtitle && (
-          <span className='text-muted-foreground block truncate text-xs'>
-            {subtitle}
-          </span>
-        )}
+        <span className='text-muted-foreground block truncate text-xs'>
+          {t('Models & Pricing')}
+        </span>
       </span>
     </>
   )
@@ -87,8 +68,19 @@ function ModelMenuLink(props: ModelMenuLinkProps) {
     'hover:bg-muted focus-visible:bg-muted focus-visible:ring-ring/50 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm outline-none focus-visible:ring-2'
 
   if (props.mobile) {
+    if (multimodal) {
+      return (
+        <a
+          href={multimodalUrl}
+          className={className}
+          onClick={props.onNavigate}
+        >
+          {content}
+        </a>
+      )
+    }
     return (
-      <Link {...destination} className={className} onClick={props.onNavigate}>
+      <Link to='/pricing' className={className} onClick={props.onNavigate}>
         {content}
       </Link>
     )
@@ -97,7 +89,7 @@ function ModelMenuLink(props: ModelMenuLinkProps) {
   return (
     <NavigationMenuLink
       closeOnClick
-      render={<Link {...destination} />}
+      render={multimodal ? <a href={multimodalUrl} /> : <Link to='/pricing' />}
       className={cn(className, "[&_svg:not([class*='size-'])]:size-[22px]")}
       onClick={props.onNavigate}
     >
@@ -109,58 +101,12 @@ function ModelMenuLink(props: ModelMenuLinkProps) {
 export function ModelsNavMenu(props: ModelsNavMenuProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const { models, isLoading, error, refetch } = useLlmCatalog(open)
-  const orderedModels = useMemo(
-    () =>
-      [...models].sort(
-        (a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))
-      ),
-    [models]
-  )
   const mobile = props.mobile ?? false
 
   const handleNavigate = () => {
     setOpen(false)
     props.onNavigate?.()
   }
-
-  let modelItems: ReactNode
-  if (isLoading) {
-    modelItems = <LoadingState size='sm' className='min-h-24 py-4' />
-  } else if (error) {
-    modelItems = (
-      <ErrorState
-        title={t('Failed to load models')}
-        className='min-h-0 gap-3 p-4'
-        onRetry={() => {
-          void refetch()
-        }}
-      />
-    )
-  } else if (orderedModels.length === 0) {
-    modelItems = (
-      <EmptyState title={t('No models found')} className='min-h-0 gap-3 p-4' />
-    )
-  } else {
-    modelItems = orderedModels.map((model) => (
-      <ModelMenuLink
-        key={model.model_name}
-        model={model}
-        mobile={mobile}
-        onNavigate={handleNavigate}
-      />
-    ))
-  }
-
-  const menuContent = (
-    <>
-      <ModelMenuLink mobile={mobile} onNavigate={handleNavigate} />
-      <Separator className='my-1' />
-      <div className='max-h-[min(24rem,calc(100dvh-10rem))] overflow-y-auto overscroll-contain'>
-        {modelItems}
-      </div>
-    </>
-  )
 
   return (
     <CatalogNavMenu
@@ -171,7 +117,16 @@ export function ModelsNavMenu(props: ModelsNavMenuProps) {
       open={open}
       onOpenChange={setOpen}
     >
-      {menuContent}
+      <ModelCategoryLink
+        category='llm'
+        mobile={mobile}
+        onNavigate={handleNavigate}
+      />
+      <ModelCategoryLink
+        category='multimodal'
+        mobile={mobile}
+        onNavigate={handleNavigate}
+      />
     </CatalogNavMenu>
   )
 }

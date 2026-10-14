@@ -40,7 +40,7 @@ export function FluxionWordmark(props: FluxionWordmarkProps) {
     >
       fluxion
       <span className='border-border text-muted-foreground rounded-[4px] border px-1.5 py-0.5 font-mono text-[10px] leading-none tracking-[0.08em]'>
-        LLM
+        AI
       </span>
     </span>
   )
