@@ -26,6 +26,11 @@ import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
 import { ModelCard } from '@/features/pricing/components/model-card'
 import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
+import { featuredModelNames } from '@/features/pricing/lib/catalog'
+
+const featuredOrder = new Map(
+  featuredModelNames.map((name, index) => [name.toLowerCase(), index])
+)
 
 export function LlmFeaturedModels() {
   const { t } = useTranslation()
@@ -33,7 +38,12 @@ export function LlmFeaturedModels() {
   const { models, isLoading, error, refetch, priceRate, usdExchangeRate } =
     useLlmCatalog()
   const featuredModels = [...models]
-    .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+    .sort(
+      (a, b) =>
+        Number(Boolean(b.featured)) - Number(Boolean(a.featured)) ||
+        (featuredOrder.get(a.model_name.toLowerCase()) ?? featuredOrder.size) -
+          (featuredOrder.get(b.model_name.toLowerCase()) ?? featuredOrder.size)
+    )
     .slice(0, 3)
 
   return (

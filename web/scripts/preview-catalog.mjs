@@ -16,8 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-// Reference metadata for the local fixture only; no inference providers are connected.
-// Limits describe the source catalog, not a deployed Fluxion endpoint.
+import modelMetadata from '../src/features/pricing/data/model-metadata.json' with { type: 'json' }
+
+// Preview uses the same display metadata as the public catalog; no inference
+// providers are connected. Callable groups below belong to the fixture only.
 export const previewVendors = [
   { id: 1, name: 'Z.ai', icon: 'ZAI' },
   { id: 2, name: 'DeepSeek', icon: 'DeepSeek.Color' },
@@ -27,17 +29,9 @@ export const previewVendors = [
 
 export const previewCatalog = [
   {
+    ...modelMetadata['glm-5.3'],
     model_name: 'glm-5.3',
-    display_name: 'GLM 5.3',
     vendor_id: 1,
-    featured: true,
-    description:
-      'A long-context reasoning model for complex coding and multi-step agent tasks.',
-    tags: 'Reasoning,Coding,Tools,Long-context',
-    context_length: 1048576,
-    max_output_tokens: 131072,
-    input_modalities: ['text'],
-    output_modalities: ['text'],
     capabilities: ['reasoning', 'tools', 'structured_output'],
     catalog_source: {
       name: 'OpenRouter',
@@ -46,17 +40,9 @@ export const previewCatalog = [
     },
   },
   {
+    ...modelMetadata['kimi-k3'],
     model_name: 'kimi-k3',
-    display_name: 'Kimi K3',
     vendor_id: 4,
-    featured: true,
-    description:
-      'A multimodal reasoning model for large codebases, knowledge work, and extended tool use.',
-    tags: 'Reasoning,Coding,Tools,Vision,Long-context',
-    context_length: 1048576,
-    max_output_tokens: 1048576,
-    input_modalities: ['text', 'image', 'video'],
-    output_modalities: ['text'],
     capabilities: ['reasoning', 'tools', 'structured_output', 'vision'],
     catalog_source: {
       name: 'OpenRouter',
@@ -65,17 +51,9 @@ export const previewCatalog = [
     },
   },
   {
+    ...modelMetadata['deepseek-v4.1-flash'],
     model_name: 'deepseek-v4.1-flash',
-    display_name: 'DeepSeek V4.1 Flash',
     vendor_id: 2,
-    featured: true,
-    description:
-      'Native image understanding and long-context reasoning for coding and tool-driven workflows.',
-    tags: 'Reasoning,Coding,Tools,Vision,Long-context',
-    context_length: 1048576,
-    max_output_tokens: 1048576,
-    input_modalities: ['text', 'image'],
-    output_modalities: ['text'],
     capabilities: ['reasoning', 'tools', 'structured_output', 'vision'],
     catalog_source: {
       name: 'OpenRouter',

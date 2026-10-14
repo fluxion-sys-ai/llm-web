@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { ENDPOINT_TYPES } from '../constants'
+import modelMetadata from '../data/model-metadata.json'
 import type { PricingData, PricingModel, PricingVendor } from '../types'
 
 type DisplayMetadata = Pick<
@@ -27,39 +28,16 @@ type DisplayMetadata = Pick<
   | 'vendor_name'
   | 'vendor_icon'
   | 'featured'
+  | 'tags'
+  | 'context_length'
+  | 'max_output_tokens'
+  | 'input_modalities'
+  | 'output_modalities'
 >
 
-// Presentation metadata for live models and explicitly unavailable announcements.
-// Enabled groups, live API IDs, pricing and capabilities come from the backend.
-const displayMetadata: Record<string, DisplayMetadata> = {
-  'glm-5.3': {
-    display_name: 'GLM 5.3',
-    description:
-      'A long-context reasoning model for complex coding and multi-step agent tasks.',
-    icon: 'ZAI',
-    vendor_name: 'Z.ai',
-    vendor_icon: 'ZAI',
-    featured: true,
-  },
-  'deepseek-v4.1-flash': {
-    display_name: 'DeepSeek V4.1 Flash',
-    description:
-      'Native image understanding and long-context reasoning for coding and tool-driven workflows.',
-    icon: 'DeepSeek.Color',
-    vendor_name: 'DeepSeek',
-    vendor_icon: 'DeepSeek.Color',
-    featured: true,
-  },
-  'kimi-k3': {
-    display_name: 'Kimi K3',
-    description:
-      'A multimodal reasoning model for large codebases, knowledge work, and extended tool use.',
-    icon: 'Kimi.Avatar',
-    vendor_name: 'Moonshot AI',
-    vendor_icon: 'Kimi.Avatar',
-    featured: true,
-  },
-}
+// Shared presentation data for the website and local preview. Live backend
+// metadata takes precedence; serving availability is never inferred from specs.
+const displayMetadata = modelMetadata as Record<string, DisplayMetadata>
 
 // Vendors' published USD per 1M tokens (GLM and DeepSeek as in api-gateway's
 // bootstrap.py). Only displayed, discounted, while a model's pricing is pending.
@@ -71,7 +49,7 @@ export const officialPrices: Record<string, PricingModel['official_price']> = {
   'qwen3.8-27b': { input: 0.425, output: 2.55 },
 }
 
-const announcedModelNames = ['GLM-5.3', 'DeepSeek-V4.1-Flash', 'Kimi-K3']
+export const featuredModelNames = ['GLM-5.3', 'Kimi-K3', 'DeepSeek-V4.1-Flash']
 
 const chatEndpoints = new Set<string>([
   ENDPOINT_TYPES.OPENAI,
@@ -132,6 +110,11 @@ export function buildLlmCatalog(data?: PricingData): {
       description: model.description || metadata?.description,
       icon: model.icon || metadata?.icon,
       featured: model.featured ?? metadata?.featured,
+      tags: model.tags ?? metadata?.tags,
+      context_length: model.context_length ?? metadata?.context_length,
+      max_output_tokens: model.max_output_tokens ?? metadata?.max_output_tokens,
+      input_modalities: model.input_modalities ?? metadata?.input_modalities,
+      output_modalities: model.output_modalities ?? metadata?.output_modalities,
       official_price: model.official_price ?? officialPrices[normalizedName],
       vendor_name: model.vendor_name || vendor?.name || metadata?.vendor_name,
       vendor_icon: model.vendor_icon || vendor?.icon || metadata?.vendor_icon,
@@ -139,7 +122,7 @@ export function buildLlmCatalog(data?: PricingData): {
       group_ratio: data.group_ratio,
     })
   }
-  for (const [index, modelName] of announcedModelNames.entries()) {
+  for (const [index, modelName] of featuredModelNames.entries()) {
     const normalizedName = modelName.toLowerCase()
     if (seenModelNames.has(normalizedName)) continue
     models.push({
