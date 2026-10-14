@@ -87,8 +87,8 @@ export type PricingModel = {
   /** Pricing version returned by backend, useful for cache busting */
   pricing_version?: string
   /**
-   * Optional model metadata fields reserved for backend-provided catalog data.
-   * Keep them data-driven; do not synthesize display values on the client.
+   * Model catalog specifications. Backend values take precedence over the
+   * shared display metadata; these fields do not enable inference access.
    */
   context_length?: number
   max_output_tokens?: number

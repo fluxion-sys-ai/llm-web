@@ -108,10 +108,15 @@ test('real backend IDs keep their prices and receive display metadata when vendo
 })
 
 test('backend display and billing fields win over local metadata without rewriting the customer model ID', () => {
-  const model = {
+  const model: PricingModel = {
     ...glm,
     display_name: 'Configured GLM',
     description: 'Configured description',
+    tags: 'Configured',
+    context_length: 8192,
+    max_output_tokens: 1024,
+    input_modalities: ['text'],
+    output_modalities: ['text'],
     icon: 'OpenAI',
     vendor_id: 99,
     featured: false,
@@ -129,7 +134,7 @@ test('backend display and billing fields win over local metadata without rewriti
     vendor_icon: 'OpenAI',
   })
   expect(result.current.models[0].capabilities).toBeUndefined()
-  expect(result.current.models[0].max_output_tokens).toBeUndefined()
+  expect(result.current.models[0].max_output_tokens).toBe(1024)
 })
 
 test('production DeepSeek expression prices override the legacy 37.5 ratio in catalog display', () => {
@@ -204,8 +209,8 @@ test('video and image generation models stay out while backend-confirmed text mo
   expect(result.current.models.map((model) => model.model_name)).toEqual([
     'GLM-5.3',
     'custom-chat-model',
-    'DeepSeek-V4.1-Flash',
     'Kimi-K3',
+    'DeepSeek-V4.1-Flash',
   ])
 })
 
@@ -236,12 +241,12 @@ test('legacy OpenAI token pricing without modality metadata does not publish unv
   ])
 })
 
-test('a successful empty catalog announces the planned models without callable groups or specifications', () => {
+test('a successful empty catalog announces the planned models with display specifications but no callable groups', () => {
   const result = catalog([], { vendors: [] })
   expect(result.current.models.map((model) => model.model_name)).toEqual([
     'GLM-5.3',
-    'DeepSeek-V4.1-Flash',
     'Kimi-K3',
+    'DeepSeek-V4.1-Flash',
   ])
   for (const model of result.current.models) {
     expect(model).toMatchObject({
@@ -249,23 +254,26 @@ test('a successful empty catalog announces the planned models without callable g
       pricing_status: 'pending',
       enable_groups: [],
     })
-    expect(model.context_length).toBeUndefined()
-    expect(model.max_output_tokens).toBeUndefined()
+    expect(model.context_length).toBeGreaterThan(0)
+    expect(model.max_output_tokens).toBeGreaterThan(0)
+    expect(model.tags).toBeTruthy()
+    expect(model.input_modalities).toContain('text')
+    expect(model.output_modalities).toEqual(['text'])
     expect(model.capabilities).toBeUndefined()
     expect(model.billing_expr).toBeUndefined()
     expect(model.supported_endpoint_types).toBeUndefined()
   }
   expect(result.current.vendors.map((vendor) => vendor.name)).toEqual([
     'Z.ai',
-    'DeepSeek',
     'Moonshot AI',
+    'DeepSeek',
   ])
-  expect(result.current.models[2]).toMatchObject({
+  expect(result.current.models[1]).toMatchObject({
     display_name: 'Kimi K3',
     vendor_name: 'Moonshot AI',
     icon: 'Kimi.Avatar',
   })
-  expect(result.current.models[2].description).not.toContain('coming soon')
+  expect(result.current.models[1].description).not.toContain('coming soon')
 })
 
 test('announced and available models use the same configured reference prices', () => {
