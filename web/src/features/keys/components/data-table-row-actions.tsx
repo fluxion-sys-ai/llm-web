@@ -52,27 +52,12 @@ import { resolveChatUrl, type ChatPreset } from '@/features/chat/lib/chat-links'
 import { sendToFluent } from '@/features/chat/lib/send-to-fluent'
 import { encodeChannelConnectionInfo } from '@/lib/channel-connection-info'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
-import { getPublicApiServerAddress } from '@/lib/public-api-address'
+import { FLUXION_API_ORIGIN } from '@/lib/public-api-address'
 
 import { updateApiKeyStatus } from '../api'
 import { API_KEY_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
 import { apiKeySchema } from '../types'
 import { useApiKeys } from './api-keys-provider'
-
-function getServerAddress(): string {
-  try {
-    const raw = localStorage.getItem('status')
-    if (raw) {
-      const status = JSON.parse(raw)
-      if (status.server_address) {
-        return getPublicApiServerAddress(status.server_address as string)
-      }
-    }
-  } catch {
-    /* empty */
-  }
-  return getPublicApiServerAddress(window.location.origin)
-}
 
 type DataTableRowActionsProps<TData> = {
   row: Row<TData>
@@ -105,7 +90,7 @@ export function DataTableRowActions<TData>({
       if (!realKey) return
 
       if (preset.type === 'fluent') {
-        const success = sendToFluent(realKey, serverAddress)
+        const success = sendToFluent(realKey)
         if (success) {
           toast.success(t('Sent the API key to FluentRead.'))
         } else {
@@ -243,7 +228,7 @@ export function DataTableRowActions<TData>({
             if (!realKey) return
             const connStr = encodeChannelConnectionInfo(
               realKey,
-              getServerAddress()
+              FLUXION_API_ORIGIN
             )
             const ok = await copyToClipboard(connStr)
             if (ok) toast.success(t('Copied'))

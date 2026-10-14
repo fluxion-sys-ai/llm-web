@@ -82,6 +82,10 @@ function renderDetails(
         usableGroup={{ default: { desc: '', ratio: 2 } }}
         endpointMap={{
           openai: { path: '/v1/chat/completions', method: 'POST' },
+          gemini: {
+            path: '/v1beta/models/{model}:generateContent',
+            method: 'POST',
+          },
         }}
         autoGroups={[]}
         priceRate={1}
@@ -278,16 +282,85 @@ test('configured API documentation does not publish generated rate limits or unv
   ).not.toBeInTheDocument()
 })
 
-test('a configured public API base overrides the shared backend address in model examples', async () => {
-  vi.stubEnv('VITE_LLM_API_BASE_URL', 'https://llm.fluxion-sys.ai/v1')
+test('model examples keep the Fluxion domain despite legacy deployment overrides', async () => {
+  vi.stubEnv('VITE_LLM_API_BASE_URL', 'http://192.0.2.20:3000/v1')
   const user = userEvent.setup()
   renderDetails(catalogModel, { server_address: 'https://video.example.com' })
   await user.click(screen.getByRole('tab', { name: 'API' }))
 
   const panel = screen.getByRole('tabpanel', { name: 'API' })
   expect(panel).toHaveTextContent(
-    'curl https://llm.fluxion-sys.ai/v1/chat/completions'
+    'curl https://api.fluxion-sys.ai/v1/chat/completions'
   )
   expect(panel).not.toHaveTextContent('https://video.example.com')
   expect(panel).not.toHaveTextContent('/v1/v1/')
+})
+
+test('model API examples use the Fluxion domain when the backend advertises an IP address', async () => {
+  vi.stubEnv('VITE_LLM_API_BASE_URL', '')
+  const user = userEvent.setup()
+  renderDetails(catalogModel, { server_address: 'http://192.0.2.10:3000' })
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+
+  const panel = screen.getByRole('tabpanel', { name: 'API' })
+  expect(panel).toHaveTextContent(
+    'curl https://api.fluxion-sys.ai/v1/chat/completions'
+  )
+  expect(panel).not.toHaveTextContent('192.0.2.10')
+
+  await user.click(within(panel).getByRole('tab', { name: 'Python' }))
+  expect(panel).toHaveTextContent('base_url="https://api.fluxion-sys.ai/v1"')
+  expect(panel).not.toHaveTextContent('192.0.2.10')
+
+  await user.click(within(panel).getByRole('tab', { name: 'TypeScript' }))
+  expect(panel).toHaveTextContent("baseURL: 'https://api.fluxion-sys.ai/v1'")
+
+  await user.click(within(panel).getByRole('tab', { name: 'JavaScript' }))
+  expect(panel).toHaveTextContent(
+    "fetch('https://api.fluxion-sys.ai/v1/chat/completions'"
+  )
+  await user.click(within(panel).getByRole('button', { name: 'Copy code' }))
+  expect(await navigator.clipboard.readText()).toContain(
+    'https://api.fluxion-sys.ai/v1/chat/completions'
+  )
+  expect(panel).not.toHaveTextContent('192.0.2.10')
+  expect(panel).not.toHaveTextContent('/v1/v1/')
+})
+
+test('Gemini examples in every language use the Fluxion endpoint and API key header', async () => {
+  const user = userEvent.setup()
+  renderDetails({
+    ...catalogModel,
+    model_name: 'gemini-2.5-flash',
+    supported_endpoint_types: ['openai', 'gemini'],
+  })
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+  const panel = screen.getByRole('tabpanel', { name: 'API' })
+  await user.click(within(panel).getByRole('tab', { name: 'gemini' }))
+  const endpoint =
+    'https://api.fluxion-sys.ai/v1beta/models/gemini-2.5-flash:generateContent'
+
+  expect(panel).toHaveTextContent(endpoint)
+  expect(panel).toHaveTextContent('-H "x-goog-api-key: $FLUXION_API_KEY"')
+
+  await user.click(within(panel).getByRole('tab', { name: 'Python' }))
+  expect(panel).toHaveTextContent(endpoint)
+  expect(panel).toHaveTextContent(
+    '"x-goog-api-key": os.environ["FLUXION_API_KEY"]'
+  )
+
+  for (const language of ['TypeScript', 'JavaScript']) {
+    await user.click(within(panel).getByRole('tab', { name: language }))
+    expect(panel).toHaveTextContent(`fetch('${endpoint}'`)
+    expect(panel).toHaveTextContent(
+      "'x-goog-api-key': process.env.FLUXION_API_KEY"
+    )
+    await user.click(
+      within(panel).getByRole('button', { name: /^(Copy code|Copied!)$/ })
+    )
+    const copied = await navigator.clipboard.readText()
+    expect(copied).toContain(endpoint)
+    expect(copied).toContain("'x-goog-api-key': process.env.FLUXION_API_KEY")
+    expect(copied).not.toContain('?key=')
+  }
 })

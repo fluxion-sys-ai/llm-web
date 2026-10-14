@@ -57,11 +57,6 @@ export default defineConfig(({ envMode }) => {
     },
     source: {
       define: {
-        'import.meta.env.VITE_LLM_API_BASE_URL': JSON.stringify(
-          process.env.VITE_LLM_API_BASE_URL ||
-            env.rawPublicVars.VITE_LLM_API_BASE_URL ||
-            ''
-        ),
         'import.meta.env.VITE_LLM_PREVIEW': JSON.stringify(
           process.env.VITE_LLM_PREVIEW || ''
         ),
