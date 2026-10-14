@@ -24,7 +24,6 @@ import { StaticDataTable } from '@/components/data-table'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { LoadingState } from '@/components/loading-state'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ModelBillingModeBadge } from '@/features/pricing/components/model-billing-mode-badge'
 import { ModelPriceCell } from '@/features/pricing/components/model-price-cell'
@@ -101,9 +100,6 @@ export function LlmPricing() {
                       <span className='font-medium break-words'>
                         {model.display_name || model.model_name}
                       </span>
-                      {model.availability === 'coming_soon' && (
-                        <Badge variant='outline'>{t('Coming soon')}</Badge>
-                      )}
                     </span>
                     {model.display_name &&
                       model.display_name !== model.model_name && (

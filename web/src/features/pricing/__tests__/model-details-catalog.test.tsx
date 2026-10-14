@@ -25,6 +25,8 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { api } from '@/lib/api'
 
 import { ModelDetailsContent } from '../components/model-details'
+import { OFFICIAL_PRICE_DISCOUNT_PERCENT } from '../constants'
+import { officialPrices } from '../lib/catalog'
 import type { PricingModel } from '../types'
 
 vi.mock('@visactor/react-vchart', () => ({ VChart: () => null }))
@@ -113,7 +115,7 @@ test('coming-soon details disclose availability and unpublished prices without r
     enable_groups: [],
   })
 
-  expect(screen.getByText('Coming soon')).toBeVisible()
+  expect(screen.queryByText('Coming soon')).not.toBeInTheDocument()
   expect(
     screen.getByText(
       'This model is coming soon and is not available for inference yet.'
@@ -133,14 +135,19 @@ test('coming-soon API details explain unavailability instead of offering callabl
   renderDetails({
     ...catalogModel,
     availability: 'coming_soon',
-    official_price: { input: 1.4, output: 4.4 },
+    official_price: officialPrices['glm-5.3'],
     enable_groups: [],
   })
-  expect(screen.getByText('Coming soon')).toBeVisible()
+  expect(screen.queryByText('Coming soon')).not.toBeInTheDocument()
   const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
-  expect(pricing.getByText('1.12')).toBeVisible()
-  expect(pricing.getByText('3.52')).toBeVisible()
-  expect(pricing.getByText('20% off')).toBeVisible()
+  expect(pricing.getByText('Input')).toBeVisible()
+  expect(pricing.getByText('Output')).toBeVisible()
+  const amounts = pricing.getAllByText(/^[\d,]+\.\d+$/)
+  expect(amounts).toHaveLength(4)
+  for (const amount of amounts) expect(amount).toBeVisible()
+  expect(
+    pricing.getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)
+  ).toBeVisible()
   expect(pricing.queryByText('Pricing by Group')).not.toBeInTheDocument()
   await user.click(screen.getByRole('tab', { name: 'API' }))
 

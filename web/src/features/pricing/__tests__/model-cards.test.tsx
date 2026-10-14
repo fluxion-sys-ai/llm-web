@@ -80,7 +80,7 @@ afterEach(() => {
 })
 
 describe('model cards', () => {
-  it('marks a coming-soon model without prices or performance while keeping details browsable', async () => {
+  it('keeps an unavailable model without known prices browsable without an availability badge', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()
     render(
@@ -95,7 +95,7 @@ describe('model cards', () => {
       />
     )
 
-    expect(screen.getByText('Coming soon')).toBeVisible()
+    expect(screen.queryByText('Coming soon')).not.toBeInTheDocument()
     const pricing = screen.getByRole('group', { name: 'Pricing' })
     expect(within(pricing).getByText('Pricing will be announced')).toBeVisible()
     expect(within(pricing).queryByText(/[$¥€]/)).not.toBeInTheDocument()

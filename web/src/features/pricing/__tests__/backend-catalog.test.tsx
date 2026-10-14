@@ -29,8 +29,9 @@ import { afterEach, expect, test } from 'vitest'
 
 import { ModelCard } from '../components/model-card'
 import { ModelPriceCell } from '../components/model-price-cell'
+import { OFFICIAL_PRICE_DISCOUNT_PERCENT } from '../constants'
 import { useLlmCatalog } from '../hooks/use-llm-catalog'
-import { buildLlmCatalog } from '../lib/catalog'
+import { buildLlmCatalog, officialPrices } from '../lib/catalog'
 import { getDynamicPricingSummary } from '../lib/dynamic-price'
 import type { PricingData, PricingModel } from '../types'
 
@@ -264,27 +265,32 @@ test('a successful empty catalog announces the planned models without callable g
     vendor_name: 'Moonshot AI',
     icon: 'Kimi.Avatar',
   })
-  expect(result.current.models[2].description).toBe(
-    'This model is coming soon and is not available for inference yet.'
-  )
+  expect(result.current.models[2].description).not.toContain('coming soon')
 })
 
-test('announced models carry their vendor-published official price', () => {
+test('announced and available models use the same configured reference prices', () => {
   const result = catalog([], { vendors: [] })
-  expect(result.current.models.map((model) => model.official_price)).toEqual([
-    { input: 1.4, output: 4.4 },
-    { input: 0.3, output: 1.2 },
-    { input: 3, output: 15 },
+  const available = catalog([
+    glm,
+    deepseek,
+    { ...glm, id: 3, model_name: 'Kimi-K3' },
   ])
+  for (const model of result.current.models) {
+    expect(model.official_price).toBeDefined()
+    expect(model.official_price).toEqual(
+      officialPrices[model.model_name.toLowerCase()]
+    )
+    expect(
+      available.current.models.find(
+        (entry) => entry.model_name === model.model_name
+      )?.official_price
+    ).toEqual(model.official_price)
+  }
 })
 
-test.each([
-  ['GLM-5.3', '1.12', '3.52', '1.40', '4.40'],
-  ['DeepSeek-V4.1-Flash', '0.24', '0.96', '0.30', '1.20'],
-  ['Kimi-K3', '2.40', '12.00', '3.00', '15.00'],
-])(
-  'a video-only backend still shows announced prices for %s with Coming soon',
-  (name, input, output, originalInput, originalOutput) => {
+test.each(['GLM-5.3', 'DeepSeek-V4.1-Flash', 'Kimi-K3'])(
+  'a video-only backend still shows announced prices for %s without an availability badge',
+  (name) => {
     const result = catalog([{ ...glm, model_name: 'Wan-3.0' }])
     const model = result.current.models.find(
       (model) => model.model_name === name
@@ -292,13 +298,17 @@ test.each([
     if (!model) throw new Error(`Expected an announcement for ${name}`)
     render(<ModelCard model={model} onClick={() => {}} />)
 
-    expect(screen.getByText('Coming soon')).toBeVisible()
+    expect(screen.queryByText('Coming soon')).not.toBeInTheDocument()
     const pricing = within(screen.getByRole('group', { name: 'Pricing' }))
-    expect(pricing.getByText(input)).toBeVisible()
-    expect(pricing.getByText(output)).toBeVisible()
-    expect(pricing.getByText(originalInput).tagName).toBe('S')
-    expect(pricing.getByText(originalOutput).tagName).toBe('S')
-    expect(pricing.getByText('20% off')).toBeVisible()
+    expect(pricing.getByText('Input')).toBeVisible()
+    expect(pricing.getByText('Output')).toBeVisible()
+    const amounts = pricing.getAllByText(/^[\d,]+\.\d+$/)
+    expect(amounts).toHaveLength(4)
+    for (const amount of amounts) expect(amount).toBeVisible()
+    expect(amounts.filter((amount) => amount.tagName === 'S')).toHaveLength(2)
+    expect(
+      pricing.getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)
+    ).toBeVisible()
     expect(
       pricing.queryByText('Pricing will be announced')
     ).not.toBeInTheDocument()

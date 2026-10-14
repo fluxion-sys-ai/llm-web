@@ -124,38 +124,38 @@ async function renderPricingOverview(data = pricing) {
 it.runIf(GPU_CATALOG_VISIBLE)(
   'defaults to LLM API and switches visible pricing panels with mouse and keyboard',
   async () => {
-  const user = userEvent.setup()
-  await renderPricingOverview()
+    const user = userEvent.setup()
+    await renderPricingOverview()
 
-  expect(screen.getByRole('tab', { name: 'LLM API' })).toHaveAttribute(
-    'aria-selected',
-    'true'
-  )
-  expect(screen.getByRole('tabpanel', { name: 'LLM API' })).toBeVisible()
-  expect(
-    screen.queryByRole('tabpanel', { name: 'GPU compute' })
-  ).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'LLM API' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(screen.getByRole('tabpanel', { name: 'LLM API' })).toBeVisible()
+    expect(
+      screen.queryByRole('tabpanel', { name: 'GPU compute' })
+    ).not.toBeInTheDocument()
 
-  await user.click(screen.getByRole('tab', { name: 'GPU compute' }))
+    await user.click(screen.getByRole('tab', { name: 'GPU compute' }))
 
-  expect(screen.getByRole('tab', { name: 'GPU compute' })).toHaveAttribute(
-    'aria-selected',
-    'true'
-  )
-  expect(screen.getByRole('tabpanel', { name: 'GPU compute' })).toBeVisible()
-  expect(
-    screen.queryByRole('tabpanel', { name: 'LLM API' })
-  ).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'GPU compute' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(screen.getByRole('tabpanel', { name: 'GPU compute' })).toBeVisible()
+    expect(
+      screen.queryByRole('tabpanel', { name: 'LLM API' })
+    ).not.toBeInTheDocument()
 
-  await user.keyboard('{ArrowLeft}')
-  expect(screen.getByRole('tab', { name: 'LLM API' })).toHaveFocus()
-  await user.keyboard('{Enter}')
+    await user.keyboard('{ArrowLeft}')
+    expect(screen.getByRole('tab', { name: 'LLM API' })).toHaveFocus()
+    await user.keyboard('{Enter}')
 
-  expect(screen.getByRole('tab', { name: 'LLM API' })).toHaveAttribute(
-    'aria-selected',
-    'true'
-  )
-  expect(screen.getByRole('tabpanel', { name: 'LLM API' })).toBeVisible()
+    expect(screen.getByRole('tab', { name: 'LLM API' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(screen.getByRole('tabpanel', { name: 'LLM API' })).toBeVisible()
   }
 )
 
@@ -174,14 +174,14 @@ it.skipIf(GPU_CATALOG_VISIBLE)(
   }
 )
 
-it('an upcoming model shows its availability and pricing announcement without an active billing mode or free usage', async () => {
+it('an unavailable model without a known price shows a pricing announcement without an availability badge or free usage', async () => {
   await renderPricingOverview()
   const panel = screen.getByRole('region', { name: 'LLM API' })
   const row = within(panel).getByRole('row', { name: /Catalog Model/ })
 
   expect(
-    within(within(row).getByRole('link')).getByText('Coming soon')
-  ).toBeVisible()
+    within(within(row).getByRole('link')).queryByText('Coming soon')
+  ).not.toBeInTheDocument()
   expect(within(row).queryByText('Token-based')).not.toBeInTheDocument()
   expect(within(row).getByRole('cell', { name: '—' })).toBeVisible()
   expect(within(row).getByText('Pricing will be announced')).toBeVisible()
@@ -242,27 +242,27 @@ it('model names open the canonical model detail and All Models opens the model c
 it.runIf(GPU_CATALOG_VISIBLE)(
   'GPU pricing lists six supported models with pending hourly prices and links to the chosen configuration',
   async () => {
-  const user = userEvent.setup()
-  const router = await renderPricingOverview()
-  await user.click(screen.getByRole('tab', { name: 'GPU compute' }))
-  const panel = screen.getByRole('tabpanel', { name: 'GPU compute' })
+    const user = userEvent.setup()
+    const router = await renderPricingOverview()
+    await user.click(screen.getByRole('tab', { name: 'GPU compute' }))
+    const panel = screen.getByRole('tabpanel', { name: 'GPU compute' })
 
-  expect(within(panel).getAllByRole('row')).toHaveLength(7)
-  expect(within(panel).getAllByText('To be configured')).toHaveLength(6)
-  expect(within(panel).queryByText(/RTX/)).not.toBeInTheDocument()
-  expect(within(panel).queryByText(/[$¥€]/)).not.toBeInTheDocument()
-  const configuration = within(panel).getByRole('link', {
-    name: 'View configuration for B300',
-  })
-  expect(configuration).toHaveAttribute('href', '/gpu?gpu=b300')
-
-  await user.click(configuration)
-
-  expect(
-    await screen.findByRole('heading', {
-      name: 'GPU configuration destination',
+    expect(within(panel).getAllByRole('row')).toHaveLength(7)
+    expect(within(panel).getAllByText('To be configured')).toHaveLength(6)
+    expect(within(panel).queryByText(/RTX/)).not.toBeInTheDocument()
+    expect(within(panel).queryByText(/[$¥€]/)).not.toBeInTheDocument()
+    const configuration = within(panel).getByRole('link', {
+      name: 'View configuration for B300',
     })
-  ).toBeVisible()
-  expect(router.state.location.search).toEqual({ gpu: 'b300' })
+    expect(configuration).toHaveAttribute('href', '/gpu?gpu=b300')
+
+    await user.click(configuration)
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'GPU configuration destination',
+      })
+    ).toBeVisible()
+    expect(router.state.location.search).toEqual({ gpu: 'b300' })
   }
 )

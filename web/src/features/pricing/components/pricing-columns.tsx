@@ -26,7 +26,6 @@ import {
 } from '@/components/data-table'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge } from '@/components/status-badge'
-import { Badge } from '@/components/ui/badge'
 import { formatTokens } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
@@ -90,9 +89,6 @@ export function usePricingColumns(
             >
               {model.display_name || model.model_name}
             </span>
-            {model.availability === 'coming_soon' && (
-              <Badge variant='secondary'>{t('Coming soon')}</Badge>
-            )}
           </div>
         )
       },
