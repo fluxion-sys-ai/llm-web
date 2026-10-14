@@ -47,14 +47,18 @@ const model = {
   updated_time: 1,
 }
 
+let client: QueryClient | undefined
+
 afterEach(() => {
   cleanup()
+  client?.clear()
+  client = undefined
   useAuthStore.getState().auth.reset()
 })
 
 function renderModelActions(currentModel: Model = model, role = 100) {
   useAuthStore.getState().auth.setUser({ id: 1, username: 'admin', role })
-  const client = new QueryClient({
+  client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   render(
@@ -65,7 +69,6 @@ function renderModelActions(currentModel: Model = model, role = 100) {
       </ModelsProvider>
     </QueryClientProvider>
   )
-  return client
 }
 
 describe('model pricing entry', () => {
@@ -100,7 +103,7 @@ describe('model pricing entry', () => {
       storedPrice = 0
       return { data: { success: true } }
     })
-    const client = renderModelActions(channelModel)
+    renderModelActions(channelModel)
     const user = userEvent.setup()
     expect(screen.getByRole('button', { name: 'Add metadata' })).toBeVisible()
     expect(
@@ -139,7 +142,6 @@ describe('model pricing entry', () => {
     ).toBeVisible()
     expect(get).not.toHaveBeenCalledWith('/api/models/0')
     expect(post).not.toHaveBeenCalled()
-    client.clear()
   })
 
   it('opens pricing directly, keeps it selected after metadata loads, and reopens Edit on metadata', async () => {
@@ -172,7 +174,7 @@ describe('model pricing entry', () => {
       }
       return { data: { success: true, data: { items: [] } } }
     })
-    const client = renderModelActions()
+    renderModelActions()
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Pricing' }))
     expect(screen.getByRole('tab', { name: 'Pricing' })).toHaveAttribute(
@@ -213,19 +215,17 @@ describe('model pricing entry', () => {
       'aria-selected',
       'true'
     )
-    client.clear()
   })
 
   it('does not expose a pricing shortcut to an ordinary administrator', () => {
     vi.spyOn(api, 'get').mockResolvedValue({
       data: { success: true, data: { items: [] } },
     })
-    const client = renderModelActions(model, 10)
+    renderModelActions(model, 10)
     expect(screen.getByRole('button', { name: 'Edit' })).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Pricing' })
     ).not.toBeInTheDocument()
-    client.clear()
   })
 
   it('requires a concrete model for matching rules and protects an unsaved price on close', async () => {
@@ -259,7 +259,7 @@ describe('model pricing entry', () => {
       }
       return { data: { success: true, data: { items: [] } } }
     })
-    const client = renderModelActions(matchedModel)
+    renderModelActions(matchedModel)
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Pricing' }))
     await user.click(
@@ -281,7 +281,6 @@ describe('model pricing entry', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(price).toHaveValue('2')
-    client.clear()
   })
 })
 
@@ -318,7 +317,7 @@ describe('metadata editing', () => {
       post.mockResolvedValue({ data: { success: true } })
       const close = vi.fn()
       const fallbackError = vi.fn()
-      const client = new QueryClient({
+      client = new QueryClient({
         defaultOptions: {
           queries: { retry: false },
           mutations: { retry: false, onError: fallbackError },
@@ -330,8 +329,10 @@ describe('metadata editing', () => {
         </QueryClientProvider>
       )
       const user = userEvent.setup()
-      await user.type(screen.getByLabelText('Model Name *'), 'duplicate-model')
-      await user.type(screen.getByLabelText('Description'), 'Keep this draft')
+      await user.click(screen.getByLabelText('Model Name *'))
+      await user.paste('duplicate-model')
+      await user.click(screen.getByLabelText('Description'))
+      await user.paste('Keep this draft')
       await user.click(screen.getByRole('button', { name: 'Save metadata' }))
       expect(await screen.findByRole('alert')).toHaveTextContent(
         '模型名称已存在'
@@ -345,7 +346,7 @@ describe('metadata editing', () => {
         'Keep this draft'
       )
       await user.clear(screen.getByLabelText('Model Name *'))
-      await user.type(screen.getByLabelText('Model Name *'), 'unique-model')
+      await user.paste('unique-model')
       await user.click(screen.getByRole('button', { name: 'Save metadata' }))
       await waitFor(() => expect(close).toHaveBeenCalledWith(false))
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
@@ -357,7 +358,6 @@ describe('metadata editing', () => {
         }),
         { skipBusinessError: true, skipErrorHandler: true }
       )
-      client.clear()
     }
   )
 
@@ -385,7 +385,7 @@ describe('metadata editing', () => {
     const put = vi
       .spyOn(api, 'put')
       .mockResolvedValue({ data: { success: true, data: model } })
-    const client = new QueryClient({
+    client = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
         mutations: { retry: false },
@@ -407,7 +407,8 @@ describe('metadata editing', () => {
     expect(screen.getByText('Gemini.Color')).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Custom model icon' }))
     const icon = screen.getByRole('combobox', { name: 'Icon' })
-    await user.type(icon, 'Claude.Avatar')
+    await user.click(icon)
+    await user.paste('Claude.Avatar')
     await user.keyboard('{Escape}')
     expect(screen.getByText('Claude.Avatar')).toBeVisible()
     await user.click(
@@ -419,11 +420,11 @@ describe('metadata editing', () => {
     expect(screen.getByText('Gemini.Color')).toBeVisible()
     const vendorInput = screen.getByRole('combobox', { name: 'Vendor' })
     await user.click(vendorInput)
-    await user.type(vendorInput, 'Another')
+    await user.paste('Another')
     await user.click(screen.getByRole('option', { name: 'Another vendor' }))
     expect(vendorInput).toHaveValue('Another vendor')
     await user.clear(description)
-    await user.type(description, 'Updated metadata')
+    await user.paste('Updated metadata')
     await user.click(
       screen.getByRole('button', { name: /Update Model|Save metadata/ })
     )
@@ -491,7 +492,7 @@ describe('metadata editing', () => {
         },
       })
       .mockResolvedValue({ data: { success: true } })
-    const client = new QueryClient({
+    client = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
         mutations: { retry: false },
@@ -508,7 +509,7 @@ describe('metadata editing', () => {
     await waitFor(() => expect(description).toHaveValue('Original'))
     const user = userEvent.setup()
     await user.clear(description)
-    await user.type(description, 'Unsaved metadata draft')
+    await user.paste('Unsaved metadata draft')
     await user.click(screen.getByRole('tab', { name: 'Pricing' }))
     const price = await screen.findByPlaceholderText('0.01')
     await waitFor(() => expect(price).toHaveValue('1.5'))
@@ -564,6 +565,5 @@ describe('metadata editing', () => {
     expect(screen.getByLabelText('Description')).toHaveValue(
       'Unsaved metadata draft'
     )
-    client.clear()
   })
 })

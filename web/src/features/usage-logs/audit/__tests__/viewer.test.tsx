@@ -168,7 +168,10 @@ it.each([
         <AuditLogViewer scope='self' />
       </QueryClientProvider>
     )
-    const cell = await screen.findByRole('cell', { name: new RegExp(headline) })
+    // Wait for loaded content before computing accessible names for table cells;
+    // querying all loading skeleton cells can delay the query's own update.
+    await screen.findByText(headline)
+    const cell = screen.getByRole('cell', { name: new RegExp(headline) })
     expect(cell).toHaveTextContent(headline)
     if ('id' in params || 'target_user_id' in params) {
       expect(cell).toHaveTextContent('(ID: 11)')
@@ -383,7 +386,8 @@ it.each([
         </QueryClientProvider>
       </I18nextProvider>
     )
-    expect(await screen.findByRole('cell', { name: single })).toBeVisible()
+    await screen.findByText(single)
+    expect(screen.getByRole('cell', { name: single })).toBeVisible()
     expect(screen.getByRole('cell', { name: batch })).toBeVisible()
     expect(
       screen.queryByRole('cell', { name: 'channel.status_update' })
