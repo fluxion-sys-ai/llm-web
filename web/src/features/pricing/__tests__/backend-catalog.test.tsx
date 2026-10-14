@@ -17,10 +17,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, renderHook, screen } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  renderHook,
+  screen,
+  within,
+} from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, expect, test } from 'vitest'
 
+import { ModelCard } from '../components/model-card'
 import { ModelPriceCell } from '../components/model-price-cell'
 import { useLlmCatalog } from '../hooks/use-llm-catalog'
 import { buildLlmCatalog } from '../lib/catalog'
@@ -270,6 +277,37 @@ test('announced models carry their vendor-published official price', () => {
     { input: 3, output: 15 },
   ])
 })
+
+test.each([
+  ['GLM-5.3', '1.12', '3.52', '1.40', '4.40'],
+  ['DeepSeek-V4.1-Flash', '0.24', '0.96', '0.30', '1.20'],
+  ['Kimi-K3', '2.40', '12.00', '3.00', '15.00'],
+])(
+  'a video-only backend still shows announced prices for %s with Coming soon',
+  (name, input, output, originalInput, originalOutput) => {
+    const result = catalog([{ ...glm, model_name: 'Wan-3.0' }])
+    const model = result.current.models.find(
+      (model) => model.model_name === name
+    )
+    if (!model) throw new Error(`Expected an announcement for ${name}`)
+    render(<ModelCard model={model} onClick={() => {}} />)
+
+    expect(screen.getByText('Coming soon')).toBeVisible()
+    const pricing = within(screen.getByRole('group', { name: 'Pricing' }))
+    expect(pricing.getByText(input)).toBeVisible()
+    expect(pricing.getByText(output)).toBeVisible()
+    expect(pricing.getByText(originalInput).tagName).toBe('S')
+    expect(pricing.getByText(originalOutput).tagName).toBe('S')
+    expect(pricing.getByText('20% off')).toBeVisible()
+    expect(
+      pricing.queryByText('Pricing will be announced')
+    ).not.toBeInTheDocument()
+    expect(model.enable_groups).toEqual([])
+    expect(
+      screen.queryByLabelText('Performance metrics for the last 24 hours')
+    ).not.toBeInTheDocument()
+  }
+)
 
 test('backend models replace announcements and deduplicate case-insensitive IDs without changing live fields', () => {
   const configured = { ...deepseek, model_name: 'deepseek-v4.1-flash' }

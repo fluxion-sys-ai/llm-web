@@ -187,13 +187,19 @@ describe('catalog browsing', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('marks coming-soon table rows without changing a real model price or detail navigation', async () => {
+  it('shows announced prices in coming-soon table rows without changing real pricing or detail navigation', async () => {
     const user = userEvent.setup()
     const onModelClick = vi.fn()
     render(
       <PricingTable
         models={[
-          { ...glm, availability: 'coming_soon', enable_groups: [] },
+          {
+            ...glm,
+            availability: 'coming_soon',
+            pricing_status: undefined,
+            official_price: { input: 1.4, output: 4.4 },
+            enable_groups: [],
+          },
           { ...qwen, pricing_status: undefined, model_ratio: 1 },
         ]}
         onModelClick={onModelClick}
@@ -202,10 +208,9 @@ describe('catalog browsing', () => {
 
     const comingSoon = screen.getByRole('row', { name: /GLM 5.3/ })
     expect(within(comingSoon).getByText('Coming soon')).toBeVisible()
-    expect(
-      within(comingSoon).getByText('Pricing will be announced')
-    ).toBeVisible()
-    expect(within(comingSoon).queryByText(/[$¥€]/)).not.toBeInTheDocument()
+    expect(within(comingSoon).getByText('1.12')).toBeVisible()
+    expect(within(comingSoon).getByText('3.52')).toBeVisible()
+    expect(within(comingSoon).getByText('20% off')).toBeVisible()
     const available = screen.getByRole('row', { name: /Qwen3.8 Flash/ })
     expect(within(available).queryByText('Coming soon')).not.toBeInTheDocument()
     expect(within(available).getByText('USD / 1M tokens')).toBeVisible()

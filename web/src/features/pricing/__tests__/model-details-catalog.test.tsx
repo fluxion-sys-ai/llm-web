@@ -133,8 +133,15 @@ test('coming-soon API details explain unavailability instead of offering callabl
   renderDetails({
     ...catalogModel,
     availability: 'coming_soon',
+    official_price: { input: 1.4, output: 4.4 },
     enable_groups: [],
   })
+  expect(screen.getByText('Coming soon')).toBeVisible()
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('1.12')).toBeVisible()
+  expect(pricing.getByText('3.52')).toBeVisible()
+  expect(pricing.getByText('20% off')).toBeVisible()
+  expect(pricing.queryByText('Pricing by Group')).not.toBeInTheDocument()
   await user.click(screen.getByRole('tab', { name: 'API' }))
 
   const panel = screen.getByRole('tabpanel', { name: 'API' })
