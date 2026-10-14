@@ -45,12 +45,6 @@ interface FooterProps {
   className?: string
 }
 
-const NEW_API_FOOTER_ATTRIBUTION_KEY = [
-  'footer',
-  'new' + 'api',
-  'projectAttributionSuffix',
-].join('.')
-
 function FooterLinkItem(props: { link: FooterLink }) {
   const { t } = useTranslation()
   const isExternal = props.link.href.startsWith('http')
@@ -111,34 +105,6 @@ function LegalLinks(props: { leadingSeparator?: boolean }) {
   )
 }
 
-// inline=true returns just the inner span for composition in a parent flex
-// row. inline=false wraps in a centered/right-aligned div (default).
-function ProjectAttribution(props: { currentYear: number; inline?: boolean }) {
-  const { t } = useTranslation()
-  const content = (
-    <span className='text-muted-foreground'>
-      &copy; {props.currentYear}{' '}
-      <a
-        href='https://github.com/QuantumNous/new-api'
-        target='_blank'
-        rel='noopener noreferrer'
-        className='text-foreground/70 hover:text-foreground font-medium transition-colors'
-      >
-        {t('New API')}
-      </a>
-      . {t(NEW_API_FOOTER_ATTRIBUTION_KEY)}
-    </span>
-  )
-  if (props.inline) {
-    return content
-  }
-  return (
-    <div className='text-muted-foreground text-center text-xs sm:text-right'>
-      {content}
-    </div>
-  )
-}
-
 export function Footer(props: FooterProps) {
   const { t } = useTranslation()
   const { systemName, logo: systemLogo, footerHtml } = useSystemConfig()
@@ -192,7 +158,6 @@ export function Footer(props: FooterProps) {
             />
             <div className='border-border/60 text-muted-foreground flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t pt-4 text-xs sm:w-auto sm:justify-end sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5'>
               <LegalLinks />
-              <ProjectAttribution currentYear={currentYear} inline />
             </div>
           </div>
         </div>
@@ -252,8 +217,8 @@ export function Footer(props: FooterProps) {
         ))}
       </div>
 
-      {/* Copyright + optional legal links inline on the left, project
-          attribution on the right; wraps on narrow screens. */}
+      {/* Copyright + optional legal links inline on the left, site link on
+          the right; wraps on narrow screens. */}
       <div className='border-border border-t'>
         <div className='mx-auto flex w-full max-w-(--page-max) flex-col items-center justify-between gap-x-3 gap-y-2 px-6 py-5 sm:flex-row'>
           <div className='text-muted-foreground flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs sm:justify-start'>
@@ -263,17 +228,14 @@ export function Footer(props: FooterProps) {
             </span>
             {props.columns && <LegalLinks leadingSeparator />}
           </div>
-          <div className='flex flex-col items-center gap-2 sm:items-end'>
-            <a
-              href='https://llm.fluxion-sys.ai'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='text-muted-foreground hover:text-foreground text-xs transition-colors'
-            >
-              llm.fluxion-sys.ai
-            </a>
-            <ProjectAttribution currentYear={currentYear} />
-          </div>
+          <a
+            href='https://llm.fluxion-sys.ai'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-muted-foreground hover:text-foreground text-xs transition-colors'
+          >
+            llm.fluxion-sys.ai
+          </a>
         </div>
       </div>
     </footer>

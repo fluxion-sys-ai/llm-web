@@ -220,6 +220,17 @@ it.each(['html', 'columns'] as const)(
   }
 )
 
+it.each([
+  { label: 'default', custom: undefined },
+  { label: 'custom HTML', custom: 'html' as const },
+])('the $label footer credits only the site owner', async ({ custom }) => {
+  await renderFooter({ custom })
+
+  const footer = screen.getByRole('contentinfo')
+  expect(footer).not.toHaveTextContent('New API')
+  expect(footer.querySelector('a[href*="github.com"]')).toBeNull()
+})
+
 it.each(policies)(
   'the $label footer link opens the local policy while the backend is unavailable',
   async (policy) => {
