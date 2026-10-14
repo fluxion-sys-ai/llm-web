@@ -131,6 +131,9 @@ export const QUOTA_TYPE_VALUES = {
 } as const
 
 /** Token unit divisors */
+// Pending-price models are shown at this discount off the vendor's official rate.
+export const OFFICIAL_PRICE_DISCOUNT_PERCENT = 20
+
 export const TOKEN_UNIT_DIVISORS = {
   M: 1,
   K: 1000,

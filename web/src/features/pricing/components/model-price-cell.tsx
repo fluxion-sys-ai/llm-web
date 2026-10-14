@@ -18,11 +18,15 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
 
+import { Badge } from '@/components/ui/badge'
 import { getCurrencyLabel } from '@/lib/currency'
 import { cn } from '@/lib/utils'
 import { useSystemConfigStore } from '@/stores/system-config-store'
 
-import { DEFAULT_TOKEN_UNIT } from '../constants'
+import {
+  DEFAULT_TOKEN_UNIT,
+  OFFICIAL_PRICE_DISCOUNT_PERCENT,
+} from '../constants'
 import {
   getDynamicDisplayGroupRatio,
   getDynamicPriceUnitLabelKey,
@@ -30,7 +34,11 @@ import {
   isUnconfiguredTaskUsageModel,
 } from '../lib/dynamic-price'
 import { isTokenBasedModel } from '../lib/model-helpers'
-import { formatPrice, formatRequestPrice } from '../lib/price'
+import {
+  formatOfficialPrice,
+  formatPrice,
+  formatRequestPrice,
+} from '../lib/price'
 import type { PricingModel, TokenUnit } from '../types'
 
 export type ModelPriceCellOptions = {
@@ -70,13 +78,42 @@ export function ModelPriceCell(props: {
       options.selectedGroup
     ),
   })
-  let metrics: Array<{ label: string; value: string }>
+  let metrics: Array<{ label: string; value: string; official?: string }>
   let caption = t('{{currency}} / {{unit}} tokens', {
     currency: currencyLabel,
     unit: tokenUnitLabel,
   })
+  const pendingWithoutPrice =
+    props.model.pricing_status === 'pending' && !props.model.official_price
+  let discount: string | undefined
 
-  if (props.model.pricing_status === 'pending') {
+  if (props.model.pricing_status === 'pending' && props.model.official_price) {
+    const officialPrice = (type: 'input' | 'output', discounted: boolean) =>
+      formatOfficialPrice(
+        props.model,
+        type,
+        tokenUnit,
+        discounted,
+        options.showRechargePrice,
+        options.priceRate,
+        options.usdExchangeRate
+      ) ?? '-'
+    metrics = [
+      {
+        label: t('Input'),
+        value: officialPrice('input', true),
+        official: officialPrice('input', false),
+      },
+      {
+        label: t('Output'),
+        value: officialPrice('output', true),
+        official: officialPrice('output', false),
+      },
+    ]
+    discount = t('{{percent}}% off', {
+      percent: OFFICIAL_PRICE_DISCOUNT_PERCENT,
+    })
+  } else if (props.model.pricing_status === 'pending') {
     metrics = [
       { label: t('Input'), value: t('To be configured') },
       { label: t('Output'), value: t('To be configured') },
@@ -192,7 +229,7 @@ export function ModelPriceCell(props: {
             key={metric.label}
             className={cn(
               'flex min-w-0 flex-col items-start gap-y-0.5',
-              props.model.pricing_status !== 'pending' &&
+              !pendingWithoutPrice &&
                 'sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'
             )}
           >
@@ -205,7 +242,7 @@ export function ModelPriceCell(props: {
             <span
               className={cn(
                 'min-w-0 text-sm break-words whitespace-normal',
-                props.model.pricing_status === 'pending'
+                pendingWithoutPrice
                   ? 'font-sans font-medium'
                   : 'font-mono tabular-nums'
               )}
@@ -213,14 +250,25 @@ export function ModelPriceCell(props: {
             >
               {metric.value}
             </span>
+            {metric.official && (
+              <span className='text-muted-foreground font-sans text-sm tabular-nums'>
+                <span className='sr-only'>{t('Official price')} </span>
+                <s className='decoration-muted-foreground/60'>
+                  {metric.official}
+                </s>
+              </span>
+            )}
           </span>
         ))}
       </span>
-      <span
-        className='text-muted-foreground block text-xs font-normal break-words whitespace-normal sm:truncate'
-        title={caption}
-      >
-        {caption}
+      <span className='flex min-w-0 items-center gap-1.5'>
+        <span
+          className='text-muted-foreground block min-w-0 text-xs font-normal break-words whitespace-normal sm:truncate'
+          title={caption}
+        >
+          {caption}
+        </span>
+        {discount && <Badge variant='secondary'>{discount}</Badge>}
       </span>
     </span>
   )

@@ -127,6 +127,22 @@ describe('catalog browsing', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('a pending price with a known official rate shows 20% off beside the struck official rate', () => {
+    render(
+      <ModelCard
+        model={{ ...glm, official_price: { input: 1.4, output: 4.4 } }}
+        onClick={vi.fn()}
+      />
+    )
+    const pricing = screen.getByRole('group', { name: 'Pricing' })
+    expect(within(pricing).getByText('1.12')).toBeVisible()
+    expect(within(pricing).getByText('3.52')).toBeVisible()
+    expect(within(pricing).getByText('1.40').tagName).toBe('S')
+    expect(within(pricing).getByText('4.40').tagName).toBe('S')
+    expect(within(pricing).getByText('20% off')).toBeVisible()
+    expect(within(pricing).queryByText('To be configured')).toBeNull()
+  })
+
   it.each(['zhCN', 'zhTW'])(
     'renders token counts using the project locale %s without crashing',
     async (language) => {

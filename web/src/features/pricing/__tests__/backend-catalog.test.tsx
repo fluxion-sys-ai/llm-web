@@ -262,6 +262,15 @@ test('a successful empty catalog announces the planned models without callable g
   )
 })
 
+test('announced models carry their vendor-published official price', () => {
+  const result = catalog([], { vendors: [] })
+  expect(result.current.models.map((model) => model.official_price)).toEqual([
+    { input: 1.4, output: 4.4 },
+    { input: 0.3, output: 1.2 },
+    { input: 3, output: 15 },
+  ])
+})
+
 test('backend models replace announcements and deduplicate case-insensitive IDs without changing live fields', () => {
   const configured = { ...deepseek, model_name: 'deepseek-v4.1-flash' }
   const configuredKimi = { ...glm, id: 3, model_name: 'kimi-k3' }

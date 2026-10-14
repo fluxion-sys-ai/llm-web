@@ -61,6 +61,16 @@ const displayMetadata: Record<string, DisplayMetadata> = {
   },
 }
 
+// Vendors' published USD per 1M tokens (GLM and DeepSeek as in api-gateway's
+// bootstrap.py). Only displayed, discounted, while a model's pricing is pending.
+const officialPrices: Record<string, PricingModel['official_price']> = {
+  'glm-5.3': { input: 1.4, output: 4.4 },
+  'deepseek-v4.1-flash': { input: 0.3, output: 1.2 },
+  'kimi-k3': { input: 3, output: 15 },
+  'qwen3.8-flash': { input: 0.15, output: 0.47 },
+  'qwen3.8-27b': { input: 0.425, output: 2.55 },
+}
+
 const announcedModelNames = ['GLM-5.3', 'DeepSeek-V4.1-Flash', 'Kimi-K3']
 
 const chatEndpoints = new Set<string>([
@@ -122,6 +132,7 @@ export function buildLlmCatalog(data?: PricingData): {
       description: model.description || metadata?.description,
       icon: model.icon || metadata?.icon,
       featured: model.featured ?? metadata?.featured,
+      official_price: model.official_price ?? officialPrices[normalizedName],
       vendor_name: model.vendor_name || vendor?.name || metadata?.vendor_name,
       vendor_icon: model.vendor_icon || vendor?.icon || metadata?.vendor_icon,
       vendor_description: model.vendor_description || vendor?.description,
@@ -133,6 +144,7 @@ export function buildLlmCatalog(data?: PricingData): {
     if (seenModelNames.has(normalizedName)) continue
     models.push({
       ...displayMetadata[normalizedName],
+      official_price: officialPrices[normalizedName],
       id: -(index + 1),
       key: modelName,
       model_name: modelName,

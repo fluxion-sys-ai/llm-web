@@ -18,7 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { formatBillingCurrencyFromUSD } from '@/lib/currency'
 
-import { QUOTA_TYPE_VALUES, TOKEN_UNIT_DIVISORS } from '../constants'
+import {
+  OFFICIAL_PRICE_DISCOUNT_PERCENT,
+  QUOTA_TYPE_VALUES,
+  TOKEN_UNIT_DIVISORS,
+} from '../constants'
 import type { PricingModel, TokenUnit, PriceType } from '../types'
 import { getConfiguredGroupRatio, getDisplayGroupRatio } from './model-helpers'
 
@@ -172,6 +176,44 @@ export function formatPrice(
     digitsSmall: 6,
     abbreviate: false,
   })
+}
+
+/**
+ * Format a vendor's official token price, optionally after the pending-price
+ * discount. Returns null when no official price is known.
+ */
+export function formatOfficialPrice(
+  model: PricingModel,
+  type: 'input' | 'output',
+  tokenUnit: TokenUnit,
+  discounted: boolean,
+  showWithRecharge = false,
+  priceRate = 1,
+  usdExchangeRate = 1
+): string | null {
+  const official = model.official_price?.[type]
+  if (official === undefined) return null
+
+  let priceInUSD = discounted
+    ? (official * (100 - OFFICIAL_PRICE_DISCOUNT_PERCENT)) / 100
+    : official
+  priceInUSD = applyRechargeRate(
+    priceInUSD,
+    showWithRecharge,
+    priceRate,
+    usdExchangeRate
+  )
+
+  return formatBillingCurrencyFromUSD(
+    priceInUSD / TOKEN_UNIT_DIVISORS[tokenUnit],
+    {
+      showSymbol: false,
+      digitsLarge: 4,
+      digitsSmall: 6,
+      minimumDigits: 2,
+      abbreviate: false,
+    }
+  )
 }
 
 /**
