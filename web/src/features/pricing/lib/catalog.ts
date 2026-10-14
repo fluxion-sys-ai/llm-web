@@ -53,7 +53,7 @@ const displayMetadata: Record<string, DisplayMetadata> = {
   'kimi-k3': {
     display_name: 'Kimi K3',
     description:
-      'This model is coming soon and is not available for inference yet.',
+      'A multimodal reasoning model for large codebases, knowledge work, and extended tool use.',
     icon: 'Kimi.Avatar',
     vendor_name: 'Moonshot AI',
     vendor_icon: 'Kimi.Avatar',
@@ -63,7 +63,7 @@ const displayMetadata: Record<string, DisplayMetadata> = {
 
 // Vendors' published USD per 1M tokens (GLM and DeepSeek as in api-gateway's
 // bootstrap.py). Only displayed, discounted, while a model's pricing is pending.
-const officialPrices: Record<string, PricingModel['official_price']> = {
+export const officialPrices: Record<string, PricingModel['official_price']> = {
   'glm-5.3': { input: 1.4, output: 4.4 },
   'deepseek-v4.1-flash': { input: 0.3, output: 1.2 },
   'kimi-k3': { input: 3, output: 15 },

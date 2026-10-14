@@ -642,11 +642,11 @@ function ModelHeader(props: { model: PricingModel }) {
         {model.vendor_name && (
           <span className='text-muted-foreground'>{model.vendor_name}</span>
         )}
-        <span className='text-muted-foreground/30'>·</span>
-        {model.availability === 'coming_soon' ? (
-          <Badge variant='secondary'>{t('Coming soon')}</Badge>
-        ) : (
-          <ModelBillingModeBadge model={model} />
+        {model.availability !== 'coming_soon' && (
+          <>
+            <span className='text-muted-foreground/30'>·</span>
+            <ModelBillingModeBadge model={model} />
+          </>
         )}
       </div>
       {description && (

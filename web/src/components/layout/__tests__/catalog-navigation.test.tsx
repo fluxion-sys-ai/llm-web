@@ -220,7 +220,7 @@ describe('catalog navigation menus', () => {
   })
 
   it.each([false, true])(
-    'labels upcoming models while preserving detail navigation when mobile is %s',
+    'keeps upcoming model navigation without an availability badge when mobile is %s',
     async (mobile) => {
       pricing.models[0].availability = 'coming_soon'
       const user = userEvent.setup()
@@ -230,7 +230,9 @@ describe('catalog navigation menus', () => {
       const modelLink = screen.getByRole('link', {
         name: /Catalog test model/,
       })
-      expect(within(modelLink).getByText('Coming soon')).toBeVisible()
+      expect(
+        within(modelLink).queryByText('Coming soon')
+      ).not.toBeInTheDocument()
       expect(modelLink).toHaveAttribute('href', '/pricing/catalog-test-model')
       expect(
         within(screen.getByRole('link', { name: /All Models/ })).queryByText(

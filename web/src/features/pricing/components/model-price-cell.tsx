@@ -56,7 +56,8 @@ export function ModelPriceCell(props: {
 }) {
   const { t } = useTranslation()
   const currency = useSystemConfigStore((state) => state.config.currency)
-  if (props.model.availability === 'coming_soon') {
+  const comingSoon = props.model.availability === 'coming_soon'
+  if (comingSoon && !props.model.official_price) {
     return (
       <span className='text-muted-foreground text-sm whitespace-normal'>
         {t('Pricing will be announced')}
@@ -87,7 +88,10 @@ export function ModelPriceCell(props: {
     props.model.pricing_status === 'pending' && !props.model.official_price
   let discount: string | undefined
 
-  if (props.model.pricing_status === 'pending' && props.model.official_price) {
+  if (
+    (comingSoon || props.model.pricing_status === 'pending') &&
+    props.model.official_price
+  ) {
     const officialPrice = (type: 'input' | 'output', discounted: boolean) =>
       formatOfficialPrice(
         props.model,

@@ -366,9 +366,6 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       <CardFooter className='mt-auto border-0 bg-transparent pt-0'>
         {pricingPending ? (
           <div className='border-border flex w-full items-center justify-between gap-2 border-t pt-2'>
-            {comingSoon && (
-              <Badge variant='secondary'>{t('Coming soon')}</Badge>
-            )}
             <Button
               variant='ghost'
               size='sm'

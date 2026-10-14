@@ -23,7 +23,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { ModelCard } from '../components/model-card'
 import { PricingTable } from '../components/pricing-table'
-import { FILTER_ALL, SORT_OPTIONS } from '../constants'
+import {
+  FILTER_ALL,
+  OFFICIAL_PRICE_DISCOUNT_PERCENT,
+  SORT_OPTIONS,
+} from '../constants'
+import { officialPrices } from '../lib/catalog'
 import { filterAndSortModels, filterBySearch, sortModels } from '../lib/filters'
 import type { PricingModel } from '../types'
 
@@ -127,18 +132,23 @@ describe('catalog browsing', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('a pending price with a known official rate shows 20% off beside the struck official rate', () => {
+  it('calculates the discount for an independent test model and strikes its original rates', () => {
     render(
       <ModelCard
-        model={{ ...glm, official_price: { input: 1.4, output: 4.4 } }}
+        model={{
+          ...glm,
+          model_name: 'test-discount-model',
+          display_name: 'Discount test model',
+          official_price: { input: 10, output: 20 },
+        }}
         onClick={vi.fn()}
       />
     )
     const pricing = screen.getByRole('group', { name: 'Pricing' })
-    expect(within(pricing).getByText('1.12')).toBeVisible()
-    expect(within(pricing).getByText('3.52')).toBeVisible()
-    expect(within(pricing).getByText('1.40').tagName).toBe('S')
-    expect(within(pricing).getByText('4.40').tagName).toBe('S')
+    expect(within(pricing).getByText('8.00')).toBeVisible()
+    expect(within(pricing).getByText('16.00')).toBeVisible()
+    expect(within(pricing).getByText('10.00').tagName).toBe('S')
+    expect(within(pricing).getByText('20.00').tagName).toBe('S')
     expect(within(pricing).getByText('20% off')).toBeVisible()
     expect(within(pricing).queryByText('To be configured')).toBeNull()
   })
@@ -187,13 +197,19 @@ describe('catalog browsing', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('marks coming-soon table rows without changing a real model price or detail navigation', async () => {
+  it('shows announced prices in coming-soon table rows without changing real pricing or detail navigation', async () => {
     const user = userEvent.setup()
     const onModelClick = vi.fn()
     render(
       <PricingTable
         models={[
-          { ...glm, availability: 'coming_soon', enable_groups: [] },
+          {
+            ...glm,
+            availability: 'coming_soon',
+            pricing_status: undefined,
+            official_price: officialPrices[glm.model_name],
+            enable_groups: [],
+          },
           { ...qwen, pricing_status: undefined, model_ratio: 1 },
         ]}
         onModelClick={onModelClick}
@@ -201,11 +217,17 @@ describe('catalog browsing', () => {
     )
 
     const comingSoon = screen.getByRole('row', { name: /GLM 5.3/ })
-    expect(within(comingSoon).getByText('Coming soon')).toBeVisible()
     expect(
-      within(comingSoon).getByText('Pricing will be announced')
+      within(comingSoon).queryByText('Coming soon')
+    ).not.toBeInTheDocument()
+    expect(within(comingSoon).getByText('Input')).toBeVisible()
+    expect(within(comingSoon).getByText('Output')).toBeVisible()
+    const amounts = within(comingSoon).getAllByText(/^[\d,]+\.\d+$/)
+    expect(amounts).toHaveLength(4)
+    for (const amount of amounts) expect(amount).toBeVisible()
+    expect(
+      within(comingSoon).getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)
     ).toBeVisible()
-    expect(within(comingSoon).queryByText(/[$¥€]/)).not.toBeInTheDocument()
     const available = screen.getByRole('row', { name: /Qwen3.8 Flash/ })
     expect(within(available).queryByText('Coming soon')).not.toBeInTheDocument()
     expect(within(available).getByText('USD / 1M tokens')).toBeVisible()
