@@ -190,8 +190,8 @@ it('the default footer lists each policy once even when shared backend legal fla
     within(footer).queryByRole('link', { name: 'Blog' })
   ).not.toBeInTheDocument()
   expect(
-    within(footer).getByRole('link', { name: 'llm.fluxion-sys.ai' })
-  ).toHaveAttribute('href', 'https://llm.fluxion-sys.ai')
+    within(footer).getByRole('link', { name: 'fluxion-sys.ai' })
+  ).toHaveAttribute('href', 'https://fluxion-sys.ai')
   for (const policy of policies) {
     const link = within(footer).getByRole('link', {
       name: policy.label,

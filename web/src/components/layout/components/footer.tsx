@@ -229,12 +229,12 @@ export function Footer(props: FooterProps) {
             {props.columns && <LegalLinks leadingSeparator />}
           </div>
           <a
-            href='https://llm.fluxion-sys.ai'
+            href='https://fluxion-sys.ai'
             target='_blank'
             rel='noopener noreferrer'
             className='text-muted-foreground hover:text-foreground text-xs transition-colors'
           >
-            llm.fluxion-sys.ai
+            fluxion-sys.ai
           </a>
         </div>
       </div>
