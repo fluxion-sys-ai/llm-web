@@ -29,7 +29,7 @@ import { Footer } from '@/components/layout/components/footer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
-const chatExample = `export FLUXION_API_BASE="https://YOUR_API_HOST/v1"
+const chatExample = `export FLUXION_API_BASE="https://api.fluxion-sys.ai/v1"
 export FLUXION_API_KEY="YOUR_API_KEY"
 
 curl "$FLUXION_API_BASE/chat/completions" \\
