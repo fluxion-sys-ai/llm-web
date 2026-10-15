@@ -26,13 +26,20 @@ import {
   RouterProvider,
 } from '@tanstack/react-router'
 import { cleanup, render, screen, within } from '@testing-library/react'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import type { PricingModel } from '@/features/pricing/types'
+import { api } from '@/lib/api'
 
 import { LlmFeaturedModels } from '../components/sections/llm-featured-models'
 
 let client: QueryClient
+
+beforeEach(() => {
+  vi.spyOn(api, 'get').mockResolvedValue({
+    data: { success: true, data: { models: [] } },
+  })
+})
 
 afterEach(() => {
   cleanup()
@@ -70,6 +77,66 @@ async function renderFeaturedModels(models: PricingModel[]) {
     </QueryClientProvider>
   )
 }
+
+test('featured cards show matching live performance and keep missing models neutral', async () => {
+  vi.mocked(api.get).mockResolvedValue({
+    data: {
+      success: true,
+      data: {
+        models: [
+          {
+            model_name: 'unrelated-model',
+            success_rate: 100,
+            avg_latency_ms: 1000,
+            avg_tps: 10,
+          },
+          {
+            model_name: 'GLM-5.3',
+            success_rate: 83.72,
+            avg_latency_ms: 739,
+            avg_tps: 95.78,
+            recent_success_series: [],
+          },
+        ],
+      },
+    },
+  })
+  await renderFeaturedModels([
+    {
+      id: 1,
+      model_name: 'GLM-5.3',
+      quota_type: 0,
+      model_ratio: 1,
+      completion_ratio: 1,
+      enable_groups: ['default'],
+    },
+    {
+      id: 2,
+      model_name: 'Kimi-K3',
+      quota_type: 0,
+      model_ratio: 1,
+      completion_ratio: 1,
+      enable_groups: ['default'],
+    },
+  ])
+
+  expect(await screen.findByText('83.7%')).toBeVisible()
+  const [glm, ...otherModels] = screen
+    .getAllByLabelText('Performance metrics for the last 24 hours')
+    .map((element) => within(element))
+  expect(glm.getByText('83.7%')).toBeVisible()
+  expect(glm.getByText('739ms')).toBeVisible()
+  expect(glm.getByText('95.8t/s')).toBeVisible()
+  expect(otherModels).toHaveLength(1)
+  for (const model of otherModels) {
+    expect(model.getByText('—%')).toBeVisible()
+    expect(model.getByText('—s')).toBeVisible()
+    expect(model.getByText('—t/s')).toBeVisible()
+  }
+  expect(api.get).toHaveBeenCalledWith('/api/perf-metrics/summary', {
+    params: { hours: 24 },
+  })
+})
 
 test('a video-only backend still shows the complete featured cards from the reference', async () => {
   await renderFeaturedModels([
