@@ -16,14 +16,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
+import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
+import type { PerfModelSummary } from '@/features/performance-metrics/types'
 import { ModelCard } from '@/features/pricing/components/model-card'
 import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 import { featuredModelNames } from '@/features/pricing/lib/catalog'
@@ -37,6 +41,19 @@ export function LlmFeaturedModels() {
   const navigate = useNavigate()
   const { models, isLoading, error, refetch, priceRate, usdExchangeRate } =
     useLlmCatalog()
+  const perfQuery = useQuery({
+    queryKey: ['perf-metrics-summary', 24],
+    queryFn: () => getPerfMetricsSummary(24),
+    staleTime: 60 * 1000,
+    retry: false,
+  })
+  const perfMap = useMemo(() => {
+    const map = new Map<string, PerfModelSummary>()
+    for (const model of perfQuery.data?.data?.models ?? []) {
+      map.set(model.model_name, model)
+    }
+    return map
+  }, [perfQuery.data])
   const featuredModels = [...models]
     .sort(
       (a, b) =>
@@ -96,6 +113,7 @@ export function LlmFeaturedModels() {
                   model={model}
                   priceRate={priceRate}
                   usdExchangeRate={usdExchangeRate}
+                  perf={perfMap.get(model.model_name)}
                   onClick={() => {
                     void navigate({
                       to: '/pricing/$modelId',
