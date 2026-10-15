@@ -195,6 +195,34 @@ describe('catalog browsing', () => {
     expect(
       screen.queryByRole('columnheader', { name: 'Groups' })
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Endpoints' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides routing metadata in the configured pricing table while retaining prices', () => {
+    render(
+      <PricingTable
+        models={[
+          {
+            ...glm,
+            pricing_status: undefined,
+            model_ratio: 1,
+            enable_groups: ['private-routing-group'],
+            supported_endpoint_types: ['openai'],
+          },
+        ]}
+      />
+    )
+    for (const name of ['Groups', 'Endpoints']) {
+      expect(
+        screen.queryByRole('columnheader', { name })
+      ).not.toBeInTheDocument()
+    }
+    expect(screen.queryByText('private-routing-group')).not.toBeInTheDocument()
+    expect(screen.queryByText('openai')).not.toBeInTheDocument()
+    expect(screen.getByText('USD / 1M tokens')).toBeVisible()
+    expect(screen.getAllByText(/^[\d,]+\.\d+$/).length).toBeGreaterThan(0)
   })
 
   it('shows announced prices in coming-soon table rows without changing real pricing or detail navigation', async () => {

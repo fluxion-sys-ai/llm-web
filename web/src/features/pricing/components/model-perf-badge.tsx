@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import {
   formatLatency,
   formatThroughput,
+  getAvailableSuccessRate,
   getSuccessRateDotClass,
 } from '@/features/performance-metrics/lib/format'
 import type { SuccessRatePoint } from '@/features/performance-metrics/types'
@@ -30,6 +31,7 @@ import { cn } from '@/lib/utils'
 export type ModelPerfBadgeData = {
   avg_latency_ms: number
   success_rate: number
+  success_rate_available?: boolean
   avg_tps: number
   recent_success_series?: SuccessRatePoint[]
 }
@@ -49,7 +51,7 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
     ' t/s',
     't/s'
   )
-  const successRate = props.perf?.success_rate
+  const successRate = getAvailableSuccessRate(props.perf)
   const hasSuccessRate =
     successRate != null &&
     Number.isFinite(successRate) &&
@@ -61,7 +63,7 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
     const currentHourStart = Math.floor(Date.now() / 1000 / 3600) * 3600
     const ratesByHour = new Map<number, number>()
     for (const point of props.perf?.recent_success_series ?? []) {
-      ratesByHour.set(point.ts, point.success_rate)
+      ratesByHour.set(point.ts, getAvailableSuccessRate(point))
     }
     return STATUS_SLOTS.map((slot) => {
       const hourStart = currentHourStart - (23 - slot) * 3600
@@ -80,12 +82,12 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
       <dl className='flex min-w-0 items-start gap-5 text-xs tabular-nums'>
         <div className='w-24 shrink-0'>
           <dt
-            title={t('Request success rate sampled over the last 24 hours')}
+            title={t('Excludes client errors and client cancellations.')}
             className='text-muted-foreground flex items-center justify-between gap-1 text-[11px] leading-4'
           >
             <span>{t('Status')}</span>
             <span className='font-mono'>
-              {hasSuccessRate ? `${successRate.toFixed(1)}%` : '—%'}
+              {hasSuccessRate ? `${successRate.toFixed(1)}%` : '—'}
             </span>
           </dt>
           <dd

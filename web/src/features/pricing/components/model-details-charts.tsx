@@ -21,7 +21,10 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useThemeCustomization } from '@/context/theme-customization-provider'
-import { getSuccessRateColor } from '@/features/performance-metrics/lib/format'
+import {
+  formatUptimePct,
+  getSuccessRateColor,
+} from '@/features/performance-metrics/lib/format'
 import { useThemeRadiusPx } from '@/lib/theme-radius'
 import { useChartTheme } from '@/lib/use-chart-theme'
 import { cn } from '@/lib/utils'
@@ -67,13 +70,15 @@ const UPTIME_AXIS_MAX = 100
 const UPTIME_FOCUSED_AXIS_MIN = 95
 const UPTIME_MINOR_OUTAGE_AXIS_MIN = 90
 
-function toUptimeChartValue(value: number): number {
-  if (!Number.isFinite(value)) return 0
+function toUptimeChartValue(value: number): number | null {
+  if (!Number.isFinite(value)) return null
   return Math.min(UPTIME_AXIS_MAX, Math.max(0, value))
 }
 
-function getUptimeAxisMin(values: number[]): number {
-  const finiteValues = values.filter((value) => Number.isFinite(value))
+function getUptimeAxisMin(values: (number | null)[]): number {
+  const finiteValues = values.filter(
+    (value): value is number => value !== null && Number.isFinite(value)
+  )
   if (finiteValues.length === 0) return UPTIME_FOCUSED_AXIS_MIN
 
   const minValue = Math.max(0, Math.min(...finiteValues))
@@ -199,14 +204,15 @@ export function UptimeTrendChart(props: {
   const { resolvedTheme, themeReady } = useChartTheme()
   const { textColor, gridColor } = getChartThemeTokens(resolvedTheme)
 
+  const hasData = props.series.some((point) =>
+    Number.isFinite(point.uptime_pct)
+  )
   const spec = useMemo(() => {
-    if (props.series.length === 0) return null
+    if (!hasData) return null
 
     const rawData = props.series.map((point) => ({
       date: formatDayLabel(point.date),
       uptime: toUptimeChartValue(point.uptime_pct),
-      incidents: point.incidents,
-      outage: point.outage_minutes,
     }))
     const data =
       rawData.length === 1
@@ -224,7 +230,7 @@ export function UptimeTrendChart(props: {
       yField: 'uptime',
       smooth: true,
       line: {
-        style: { stroke: '#10b981', lineWidth: 2 },
+        style: { stroke: '#3b82f6', lineWidth: 2 },
       },
       point: {
         visible: true,
@@ -232,8 +238,8 @@ export function UptimeTrendChart(props: {
           size: 5,
           stroke: '#ffffff',
           lineWidth: 1.5,
-          fill: (datum: { uptime: number }) =>
-            getSuccessRateColor(datum.uptime),
+          fill: (datum: { uptime: number | null }) =>
+            getSuccessRateColor(datum.uptime ?? Number.NaN),
         },
       },
       tooltip: {
@@ -243,16 +249,9 @@ export function UptimeTrendChart(props: {
           },
           content: [
             {
-              key: t('Uptime'),
-              value: (d: { uptime: number }) => `${d.uptime.toFixed(2)}%`,
-            },
-            {
-              key: t('Incidents'),
-              value: (d: { incidents: number }) => `${d.incidents}`,
-            },
-            {
-              key: t('Outage'),
-              value: (d: { outage: number }) => `${d.outage} ${t('minutes')}`,
+              key: t('Success rate'),
+              value: (d: { uptime: number | null }) =>
+                formatUptimePct(d.uptime ?? Number.NaN),
             },
           ],
         },
@@ -283,9 +282,9 @@ export function UptimeTrendChart(props: {
         },
       ],
     }
-  }, [gridColor, props.series, t, textColor])
+  }, [gridColor, hasData, props.series, t, textColor])
 
-  if (props.series.length === 0) {
+  if (!hasData) {
     return (
       <div
         className={cn(
@@ -293,7 +292,7 @@ export function UptimeTrendChart(props: {
           props.className
         )}
       >
-        {t('No uptime data available')}
+        {t('No request success-rate data available')}
       </div>
     )
   }

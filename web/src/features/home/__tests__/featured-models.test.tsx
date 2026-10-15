@@ -129,7 +129,7 @@ test('featured cards show matching live performance and keep missing models neut
   expect(glm.getByText('95.8t/s')).toBeVisible()
   expect(otherModels).toHaveLength(1)
   for (const model of otherModels) {
-    expect(model.getByText('—%')).toBeVisible()
+    expect(model.getByText('—')).toBeVisible()
     expect(model.getByText('—s')).toBeVisible()
     expect(model.getByText('—t/s')).toBeVisible()
   }
