@@ -38,6 +38,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import type { SidebarData } from '@/components/layout/types'
+import { useObservability } from '@/features/observability/use-observability'
 import { ROLE } from '@/lib/roles'
 
 /**
@@ -48,6 +49,7 @@ import { ROLE } from '@/lib/roles'
  */
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
+  const observability = useObservability()
 
   return {
     navGroups: [
@@ -155,6 +157,16 @@ export function useSidebarData(): SidebarData {
             icon: PlugZap,
             requiredRole: ROLE.SUPER_ADMIN,
           },
+          ...(observability.available
+            ? [
+                {
+                  title: t('Observability'),
+                  url: '/observability',
+                  icon: Activity,
+                  requiredRole: ROLE.ADMIN,
+                },
+              ]
+            : []),
           {
             title: t('System Settings'),
             url: '/system-settings/site',
