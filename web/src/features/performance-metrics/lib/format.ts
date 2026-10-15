@@ -96,3 +96,18 @@ export function getSuccessRateDotClass(rate: number): string {
 export function getSuccessRateColor(rate: number): string {
   return SUCCESS_RATE_HEX_COLOR[getSuccessRateLevel(rate)]
 }
+
+/** A missing flag supports older servers; explicit false means no eligible requests. */
+export function getAvailableSuccessRate(metric?: {
+  success_rate: number
+  success_rate_available?: boolean
+}): number {
+  if (
+    !metric ||
+    metric.success_rate_available === false ||
+    !Number.isFinite(metric.success_rate)
+  ) {
+    return Number.NaN
+  }
+  return metric.success_rate
+}

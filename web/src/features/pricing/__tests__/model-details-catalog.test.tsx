@@ -104,6 +104,8 @@ test('a catalog model displays its readable name and copies the canonical model 
 
   expect(screen.getByRole('heading', { name: 'Catalog Model' })).toBeVisible()
   expect(screen.getByText('provider/catalog-model')).toBeVisible()
+  expect(screen.queryByText('Groups')).not.toBeInTheDocument()
+  expect(screen.queryByText('default')).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Copy model name' }))
   expect(await navigator.clipboard.readText()).toBe('provider/catalog-model')
   expect(screen.queryByText('Catalog source')).not.toBeInTheDocument()
@@ -209,7 +211,11 @@ test('configured models retain their real price display and raw-name fallback', 
   expect(
     screen.getByRole('heading', { name: 'provider/catalog-model' })
   ).toBeVisible()
-  expect(screen.getByText('Pricing by Group')).toBeVisible()
+  expect(screen.getByText('Endpoints')).toBeVisible()
+  expect(screen.getByText('openai')).toBeVisible()
+  expect(screen.queryByText('Pricing by Group')).not.toBeInTheDocument()
+  expect(screen.queryByText('Groups')).not.toBeInTheDocument()
+  expect(screen.queryByText('default')).not.toBeInTheDocument()
   expect(screen.queryByText('To be configured')).not.toBeInTheDocument()
   expect(screen.getAllByText(/\$/).length).toBeGreaterThan(0)
 })
@@ -410,3 +416,50 @@ test('GLM details preserve the selected group price from the catalog', () => {
   expect(pricing.getByText('7.04')).toBeVisible()
   expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
 })
+
+test.each([
+  { available: true, expected: '90.00%' },
+  { available: false, expected: '—' },
+])(
+  'Overview uses model summary availability $available instead of a group average',
+  async ({ available, expected }) => {
+    vi.spyOn(api, 'get').mockImplementation(async (url) => ({
+      data: {
+        success: true,
+        data:
+          url === '/api/perf-metrics/summary'
+            ? {
+                models: [
+                  {
+                    model_name: catalogModel.model_name,
+                    success_rate: 90,
+                    success_rate_available: available,
+                  },
+                ],
+              }
+            : {
+                groups: [
+                  {
+                    group: 'a',
+                    success_rate: 100,
+                    avg_latency_ms: 500,
+                    avg_tps: 40,
+                    series: [],
+                  },
+                  {
+                    group: 'b',
+                    success_rate: 0,
+                    avg_latency_ms: 500,
+                    avg_tps: 40,
+                    series: [],
+                  },
+                ],
+              },
+      },
+    }))
+    renderDetails({ ...catalogModel, pricing_status: undefined })
+    expect(await screen.findByText('40.0 t/s')).toBeVisible()
+    expect(screen.getByText(expected)).toBeVisible()
+    expect(screen.queryByText('50.00%')).not.toBeInTheDocument()
+  }
+)

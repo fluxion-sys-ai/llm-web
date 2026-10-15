@@ -28,6 +28,7 @@ import {
   formatLatency,
   formatThroughput,
   formatUptimePct,
+  getAvailableSuccessRate,
   getSuccessRateDotClass,
   getSuccessRateTextClass,
 } from '@/features/performance-metrics/lib/format'
@@ -47,7 +48,10 @@ function simpleAverage(
   let total = 0
   let count = 0
   for (const row of rows) {
-    const value = Number(row[metric])
+    const value =
+      metric === 'success_rate'
+        ? getAvailableSuccessRate(row)
+        : Number(row[metric])
     if (!isValid(value)) continue
     total += value
     count++
@@ -107,7 +111,7 @@ export function PerformanceHealthPanel() {
         <div className='grid grid-cols-3 gap-2'>
           <MetricCell
             icon={HeartPulse}
-            label={t('Success rate')}
+            label={t('Average model success rate')}
             value={formatUptimePct(summary.successRate)}
             loading={loading}
             valueClassName={getSuccessRateTextClass(summary.successRate)}
@@ -151,17 +155,19 @@ export function PerformanceHealthPanel() {
                       <span
                         className={cn(
                           'size-1.5 rounded-full',
-                          getSuccessRateDotClass(model.success_rate)
+                          getSuccessRateDotClass(getAvailableSuccessRate(model))
                         )}
                         aria-hidden='true'
                       />
                       <span
                         className={cn(
                           'font-mono text-[11px] font-semibold tabular-nums',
-                          getSuccessRateTextClass(model.success_rate)
+                          getSuccessRateTextClass(
+                            getAvailableSuccessRate(model)
+                          )
                         )}
                       >
-                        {formatUptimePct(model.success_rate)}
+                        {formatUptimePct(getAvailableSuccessRate(model))}
                       </span>
                     </span>
                   </div>

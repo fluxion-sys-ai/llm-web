@@ -127,7 +127,7 @@ describe('model cards', () => {
     const metrics = screen.getByLabelText(
       'Performance metrics for the last 24 hours'
     )
-    expect(within(metrics).getByText('—%')).toBeVisible()
+    expect(within(metrics).getByText('—')).toBeVisible()
     expect(within(metrics).getByText('—s')).toBeVisible()
     expect(within(metrics).getByText('—t/s')).toBeVisible()
     expect(within(metrics).queryByText(/100/)).not.toBeInTheDocument()
@@ -140,7 +140,7 @@ describe('model cards', () => {
     expect(screen.getByRole('button', { name: 'Details' })).toBeEnabled()
   })
 
-  it('keeps group, endpoint and tag overflow counts with their own metadata', () => {
+  it('hides groups and endpoints while retaining tags and pricing', () => {
     const groups = ['default-with-a-long-group-name', 'premium', 'internal']
     const endpoints = ['openai-response', 'openai', 'claude', 'gemini', 'jina']
     const tags = [
@@ -162,21 +162,13 @@ describe('model cards', () => {
       />
     )
 
-    const groupField = screen.getByText('Groups').parentElement
-    const endpointField = screen.getByText('Endpoints').parentElement
-    if (!groupField || !endpointField) {
-      throw new Error('Expected labeled group and endpoint fields')
-    }
-    const tagField = screen.getByRole('group', { name: 'Tags' })
-    expect(within(groupField).getByText(groups[0])).toBeVisible()
-    expect(within(groupField).getByText('+2')).toHaveAttribute(
-      'title',
-      groups.slice(1).join(', ')
-    )
+    expect(screen.queryByText('Groups')).not.toBeInTheDocument()
+    expect(screen.queryByText('Endpoints')).not.toBeInTheDocument()
+    expect(screen.queryByText(groups[0])).not.toBeInTheDocument()
     expect(
-      within(endpointField).getByText('openai-response, openai')
-    ).toHaveAttribute('title', endpoints.join(', '))
-    expect(within(endpointField).getByText('+3')).toBeVisible()
+      screen.queryByText('openai-response, openai')
+    ).not.toBeInTheDocument()
+    const tagField = screen.getByRole('group', { name: 'Tags' })
     for (const tag of tags.slice(0, 4)) {
       expect(within(tagField).getByText(tag)).toBeVisible()
     }
@@ -208,15 +200,22 @@ describe('model cards', () => {
   it.each([
     { success_rate: 0, expected: '0.0%' },
     { success_rate: 99.8, expected: '99.8%' },
-    { success_rate: Number.NaN, expected: '—%' },
+    { success_rate: Number.NaN, expected: '—' },
+    { success_rate: 0, success_rate_available: false, expected: '—' },
+    { success_rate: 100, success_rate_available: false, expected: '—' },
   ])(
     'shows $expected for the reported request success rate $success_rate',
-    ({ success_rate, expected }) => {
+    ({ success_rate, success_rate_available, expected }) => {
       render(
         <ModelCard
           model={pricingModel()}
           onClick={vi.fn()}
-          perf={{ avg_latency_ms: 1200, avg_tps: 42, success_rate }}
+          perf={{
+            avg_latency_ms: 1200,
+            avg_tps: 42,
+            success_rate,
+            success_rate_available,
+          }}
         />
       )
       const metrics = screen.getByLabelText(
@@ -465,6 +464,11 @@ describe('model cards', () => {
           recent_success_series: [
             { ts: currentHourStart, success_rate: 100 },
             { ts: currentHourStart - 5 * 3600, success_rate: 80 },
+            {
+              ts: currentHourStart - 3600,
+              success_rate: 0,
+              success_rate_available: false,
+            },
           ],
         }}
       />

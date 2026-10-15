@@ -139,26 +139,30 @@ describe('pricing controls', () => {
     expect(props.onSortChange).toHaveBeenCalledWith('price-low')
   })
 
-  it('opens mobile filters from the left, selects a group, and restores focus on close', async () => {
+  it('opens mobile filters from the left, selects a capability, and restores focus on close', async () => {
     const props = toolbarProps()
+    props.tags = ['Coding']
+    props.models = [pricingModel({ tags: 'Coding' })]
     const user = userEvent.setup()
     const { rerender } = render(<PricingToolbar {...props} />)
     await user.click(screen.getByRole('button', { name: 'Filter' }))
     const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     expect(dialog).toHaveAttribute('data-side', 'left')
     expect(within(dialog).getByRole('button', { name: 'Reset' })).toBeDisabled()
-    await user.click(within(dialog).getByRole('button', { name: /premium/ }))
-    expect(props.onGroupChange).toHaveBeenCalledWith('premium')
+    expect(within(dialog).queryByText('Groups')).not.toBeInTheDocument()
+    expect(within(dialog).queryByText('Endpoint Type')).not.toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: /Coding/ }))
+    expect(props.onTagChange).toHaveBeenCalledWith('Coding')
     rerender(
       <PricingToolbar
         {...props}
-        groupFilter='premium'
+        tagFilter='Coding'
         hasActiveFilters
         activeFilterCount={1}
       />
     )
     expect(
-      within(dialog).getByRole('button', { name: /premium/ })
+      within(dialog).getByRole('button', { name: /Coding/ })
     ).toHaveAttribute('aria-pressed', 'true')
     await user.click(within(dialog).getByRole('button', { name: 'Reset' }))
     expect(props.onClearFilters).toHaveBeenCalledOnce()
@@ -199,7 +203,7 @@ describe('pricing controls', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows technical filters when models offer distinct groups, billing types, and endpoints', () => {
+  it('hides groups and endpoints even when models offer multiple values while retaining billing filters', () => {
     const props = toolbarProps()
     props.models = [
       pricingModel(),
@@ -213,9 +217,11 @@ describe('pricing controls', () => {
     ]
     render(<PricingSidebar {...props} />)
 
-    for (const name of ['Groups', 'Pricing Type', 'Endpoint Type']) {
-      expect(screen.getByRole('button', { name })).toBeInTheDocument()
+    for (const name of ['Groups', 'Endpoint Type']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
     }
+    expect(screen.getByRole('button', { name: 'Pricing Type' })).toBeVisible()
+    expect(screen.queryByText('premium')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /^Task billing/ })
     ).not.toBeInTheDocument()
@@ -224,7 +230,7 @@ describe('pricing controls', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps active zero-result filters visible so users can clear them', async () => {
+  it('keeps the billing filter usable and lets reset clear hidden legacy filters', async () => {
     const props = toolbarProps()
     const user = userEvent.setup()
     render(
@@ -238,18 +244,16 @@ describe('pricing controls', () => {
       />
     )
 
-    for (const name of [/premium/, /^Per Request/, /^Embeddings/]) {
-      expect(screen.getByRole('button', { name })).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      )
+    for (const name of [/premium/, /^Embeddings/]) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
     }
-    await user.click(screen.getByRole('button', { name: 'All Groups' }))
+    expect(
+      screen.getByRole('button', { name: /^Per Request/ })
+    ).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: /^All Models/ }))
-    await user.click(screen.getByRole('button', { name: /^All Types/ }))
-    expect(props.onGroupChange).toHaveBeenCalledWith('all')
     expect(props.onQuotaTypeChange).toHaveBeenCalledWith('all')
-    expect(props.onEndpointTypeChange).toHaveBeenCalledWith('all')
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
+    expect(props.onClearFilters).toHaveBeenCalledOnce()
   })
 
   it('offers catalog sorting without price controls when all prices are pending', async () => {

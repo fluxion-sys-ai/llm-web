@@ -30,13 +30,7 @@ import {
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
-import {
-  ENDPOINT_TYPES,
-  FILTER_ALL,
-  QUOTA_TYPES,
-  getEndpointTypeLabels,
-  getQuotaTypeLabels,
-} from '../constants'
+import { FILTER_ALL, QUOTA_TYPES, getQuotaTypeLabels } from '../constants'
 import { hasTaskUsageSchema } from '../lib/dynamic-price'
 import { parseTags } from '../lib/filters'
 import type { PricingModel, PricingVendor } from '../types'
@@ -82,14 +76,6 @@ function countBy(
   predicate: (model: PricingModel) => boolean
 ): number {
   return models.reduce((count, model) => count + (predicate(model) ? 1 : 0), 0)
-}
-
-function formatGroupRatio(ratio: number | undefined): string | undefined {
-  if (ratio == null) return undefined
-  const formatted = Number.isInteger(ratio)
-    ? ratio.toString()
-    : ratio.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')
-  return `x${formatted}`
 }
 
 function FilterChip(props: {
@@ -162,7 +148,6 @@ function FilterSection(props: FilterSectionProps) {
 export function PricingSidebar(props: PricingSidebarProps) {
   const { t } = useTranslation()
   const quotaTypeLabels = getQuotaTypeLabels(t)
-  const endpointTypeLabels = getEndpointTypeLabels(t)
 
   const vendorOptions: FilterOption[] = [
     {
@@ -181,21 +166,6 @@ export function PricingSidebar(props: PricingSidebarProps) {
         icon: vendor.icon ? getLobeIcon(vendor.icon, 14) : undefined,
       }))
       .filter((vendor) => vendor.count > 0),
-  ]
-
-  const groupOptions: FilterOption[] = [
-    {
-      value: FILTER_ALL,
-      label: t('All Groups'),
-    },
-    ...props.groups.map((group) => ({
-      value: group,
-      label: group,
-      count: countBy(props.models, (model) =>
-        model.enable_groups.includes(group)
-      ),
-      suffix: formatGroupRatio(props.groupRatios?.[group]),
-    })),
   ]
 
   const quotaOptions: FilterOption[] = [
@@ -244,41 +214,11 @@ export function PricingSidebar(props: PricingSidebarProps) {
     })),
   ]
 
-  const endpointOptions: FilterOption[] = [
-    {
-      value: ENDPOINT_TYPES.ALL,
-      label: endpointTypeLabels[ENDPOINT_TYPES.ALL],
-      count: props.models.length,
-    },
-    ...Object.entries(endpointTypeLabels)
-      .filter(([value]) => value !== ENDPOINT_TYPES.ALL)
-      .map(([value, label]) => ({
-        value,
-        label,
-        count: countBy(
-          props.models,
-          (model) => model.supported_endpoint_types?.includes(value) ?? false
-        ),
-      })),
-  ]
-
-  const visibleGroupOptions = groupOptions.filter(
-    (option) =>
-      option.value === FILTER_ALL ||
-      (option.count ?? 0) > 0 ||
-      option.value === props.groupFilter
-  )
   const visibleQuotaOptions = quotaOptions.filter(
     (option) =>
       option.value === QUOTA_TYPES.ALL ||
       (option.count ?? 0) > 0 ||
       option.value === props.quotaTypeFilter
-  )
-  const visibleEndpointOptions = endpointOptions.filter(
-    (option) =>
-      option.value === ENDPOINT_TYPES.ALL ||
-      (option.count ?? 0) > 0 ||
-      option.value === props.endpointTypeFilter
   )
 
   return (
@@ -329,15 +269,6 @@ export function PricingSidebar(props: PricingSidebarProps) {
           options={tagOptions}
           onChange={props.onTagChange}
         />
-        {(visibleGroupOptions.length > 2 ||
-          props.groupFilter !== FILTER_ALL) && (
-          <FilterSection
-            title={t('Groups')}
-            value={props.groupFilter}
-            options={visibleGroupOptions}
-            onChange={props.onGroupChange}
-          />
-        )}
         {(visibleQuotaOptions.length > 2 ||
           props.quotaTypeFilter !== QUOTA_TYPES.ALL) && (
           <FilterSection
@@ -345,15 +276,6 @@ export function PricingSidebar(props: PricingSidebarProps) {
             value={props.quotaTypeFilter}
             options={visibleQuotaOptions}
             onChange={props.onQuotaTypeChange}
-          />
-        )}
-        {(visibleEndpointOptions.length > 2 ||
-          props.endpointTypeFilter !== ENDPOINT_TYPES.ALL) && (
-          <FilterSection
-            title={t('Endpoint Type')}
-            value={props.endpointTypeFilter}
-            options={visibleEndpointOptions}
-            onChange={props.onEndpointTypeChange}
           />
         )}
       </div>
