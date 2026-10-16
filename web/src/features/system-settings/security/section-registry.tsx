@@ -16,6 +16,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { Separator } from '@/components/ui/separator'
+
+import { SettingsPageProvider } from '../components/settings-page-context'
+import { LLMUsageLimitSection } from '../request-limits/llm-usage-limit-section'
 import { RateLimitSection } from '../request-limits/rate-limit-section'
 import { SensitiveWordsSection } from '../request-limits/sensitive-words-section'
 import { SSRFSection } from '../request-limits/ssrf-section'
@@ -28,17 +32,27 @@ const SECURITY_SECTIONS = [
     id: 'rate-limit',
     titleKey: 'Rate Limiting',
     build: (settings: SecuritySettings) => (
-      <RateLimitSection
-        defaultValues={{
-          ModelRequestRateLimitEnabled: settings.ModelRequestRateLimitEnabled,
-          ModelRequestRateLimitCount: settings.ModelRequestRateLimitCount,
-          ModelRequestRateLimitSuccessCount:
-            settings.ModelRequestRateLimitSuccessCount,
-          ModelRequestRateLimitDurationMinutes:
-            settings.ModelRequestRateLimitDurationMinutes,
-          ModelRequestRateLimitGroup: settings.ModelRequestRateLimitGroup,
-        }}
-      />
+      <SettingsPageProvider
+        actionsContainer={null}
+        suppressSectionHeader={false}
+      >
+        <div className='grid gap-8'>
+          <RateLimitSection
+            defaultValues={{
+              ModelRequestRateLimitEnabled:
+                settings.ModelRequestRateLimitEnabled,
+              ModelRequestRateLimitCount: settings.ModelRequestRateLimitCount,
+              ModelRequestRateLimitSuccessCount:
+                settings.ModelRequestRateLimitSuccessCount,
+              ModelRequestRateLimitDurationMinutes:
+                settings.ModelRequestRateLimitDurationMinutes,
+              ModelRequestRateLimitGroup: settings.ModelRequestRateLimitGroup,
+            }}
+          />
+          <Separator />
+          <LLMUsageLimitSection defaultValue={settings.LLMUsageLimitPolicy} />
+        </div>
+      </SettingsPageProvider>
     ),
   },
   {

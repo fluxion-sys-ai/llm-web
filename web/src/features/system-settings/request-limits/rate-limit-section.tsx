@@ -117,12 +117,10 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
   return (
     <SettingsSection title={t('Rate Limiting')}>
       <Form {...form}>
-        <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
-          <SettingsPageFormActions
-            onSave={form.handleSubmit(onSubmit)}
-            isSaving={updateOption.isPending}
-            saveLabel='Save rate limits'
-          />
+        <SettingsForm
+          aria-label={t('Rate Limiting')}
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
           <FormField
             control={form.control}
             name='ModelRequestRateLimitEnabled'
@@ -316,6 +314,12 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
                 <FormMessage />
               </FormItem>
             )}
+          />
+          <SettingsPageFormActions
+            placement='inline'
+            onSave={form.handleSubmit(onSubmit)}
+            isSaving={updateOption.isPending}
+            saveLabel='Save rate limits'
           />
         </SettingsForm>
       </Form>
