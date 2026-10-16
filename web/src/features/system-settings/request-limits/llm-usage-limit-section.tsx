@@ -99,7 +99,13 @@ export function LLMUsageLimitSection(props: { defaultValue: string }) {
     try {
       const response = await updateOption.mutateAsync({
         key: 'LLMUsageLimitPolicy',
-        value: JSON.stringify(values),
+        value: JSON.stringify({
+          ...values,
+          // Older backends reject this field, even when it is empty.
+          user_overrides: Object.keys(values.user_overrides).length
+            ? values.user_overrides
+            : undefined,
+        }),
       })
       if (!response.success) {
         form.setError('root', {
@@ -130,16 +136,6 @@ export function LLMUsageLimitSection(props: { defaultValue: string }) {
             })
           )}
         >
-          <SettingsPageFormActions
-            onSave={form.handleSubmit(onSubmit, () =>
-              form.setError('root', {
-                message: t('Correct invalid policy fields before saving.'),
-              })
-            )}
-            isSaving={updateOption.isPending}
-            isSaveDisabled={!saved}
-            saveLabel='Save model usage limits'
-          />
           <div>
             <h4 className='text-sm font-semibold'>
               {t('Usage token buckets')}
@@ -188,6 +184,17 @@ export function LLMUsageLimitSection(props: { defaultValue: string }) {
               </AlertDescription>
             </Alert>
           )}
+          <SettingsPageFormActions
+            placement='inline'
+            onSave={form.handleSubmit(onSubmit, () =>
+              form.setError('root', {
+                message: t('Correct invalid policy fields before saving.'),
+              })
+            )}
+            isSaving={updateOption.isPending}
+            isSaveDisabled={!saved}
+            saveLabel='Save model usage limits'
+          />
         </SettingsForm>
       </Form>
     </SettingsSection>

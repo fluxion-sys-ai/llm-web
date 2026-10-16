@@ -27,13 +27,19 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import zhTW from '@/i18n/locales/zh-TW.json'
 import zhCN from '@/i18n/locales/zh.json'
 import { api } from '@/lib/api'
 
-import { SettingsPageProvider } from '../../components/settings-page-context'
+import {
+  SettingsPageFormActions,
+  SettingsPageProvider,
+} from '../../components/settings-page-context'
+import { getSecuritySectionContent } from '../../security/section-registry'
+import type { SecuritySettings } from '../../types'
 import {
   createLLMUsageLimitSchema,
   defaultLLMUsageLimitPolicy,
@@ -44,7 +50,7 @@ import { LLMUsageLimitSection } from '../llm-usage-limit-section'
 const clients: QueryClient[] = []
 const containers: HTMLDivElement[] = []
 
-function renderPolicy(value = JSON.stringify(defaultLLMUsageLimitPolicy)) {
+function renderSettings(content: ReactNode) {
   const actions = document.createElement('div')
   document.body.append(actions)
   containers.push(actions)
@@ -52,13 +58,18 @@ function renderPolicy(value = JSON.stringify(defaultLLMUsageLimitPolicy)) {
     defaultOptions: { mutations: { retry: false } },
   })
   clients.push(client)
-  return render(
+  const rendered = render(
     <QueryClientProvider client={client}>
       <SettingsPageProvider actionsContainer={actions}>
-        <LLMUsageLimitSection defaultValue={value} />
+        {content}
       </SettingsPageProvider>
     </QueryClientProvider>
   )
+  return { ...rendered, actions }
+}
+
+function renderPolicy(value = JSON.stringify(defaultLLMUsageLimitPolicy)) {
+  return renderSettings(<LLMUsageLimitSection defaultValue={value} />)
 }
 
 beforeEach(async () => {
@@ -75,6 +86,19 @@ afterEach(async () => {
 })
 
 describe('Model usage policy configuration', () => {
+  test('shared form actions still appear in the page header by default', () => {
+    const save = vi.fn()
+    const { actions } = renderSettings(
+      <SettingsPageFormActions onSave={save} />
+    )
+
+    fireEvent.click(
+      within(actions).getByRole('button', { name: 'Save Changes' })
+    )
+
+    expect(save).toHaveBeenCalledOnce()
+  })
+
   test.each([
     {
       language: 'zhCN',
@@ -133,7 +157,8 @@ describe('Model usage policy configuration', () => {
     expect(put).toHaveBeenCalledWith('/api/option/', {
       key: 'LLMUsageLimitPolicy',
       value: JSON.stringify({
-        ...defaultLLMUsageLimitPolicy,
+        ...defaultLLMUsageRules,
+        counter_epoch: 0,
         refill_period_seconds: 300,
         output: { capacity: 6000, refill: 1000 },
       }),
@@ -195,8 +220,131 @@ describe('Model usage policy configuration', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(put).toHaveBeenCalledWith('/api/option/', {
       key: 'LLMUsageLimitPolicy',
-      value: JSON.stringify({ ...saved, refill_period_seconds: 300 }),
+      value: JSON.stringify({
+        ...defaultLLMUsageRules,
+        counter_epoch: 7,
+        refill_period_seconds: 300,
+      }),
     })
+  })
+
+  test.each([false, true])(
+    'saves a default policy toggle against an older hub when initially enabled=%s',
+    async (enabled) => {
+      const legacyPolicy = {
+        ...defaultLLMUsageRules,
+        enabled,
+        output: { capacity: 100, refill: 20 },
+        counter_epoch: 7,
+      }
+      const put = vi.spyOn(api, 'put').mockImplementation(async (_, body) => {
+        const policy = JSON.parse((body as { value: string }).value)
+        if ('user_overrides' in policy) {
+          return {
+            data: {
+              success: false,
+              message: 'unknown LLM usage limit field user_overrides',
+            },
+          }
+        }
+        return { data: { success: true } }
+      })
+      renderPolicy(JSON.stringify(legacyPolicy))
+
+      fireEvent.click(
+        screen.getByRole('switch', {
+          name: 'Enable default model usage limits',
+        })
+      )
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Save model usage limits' })
+      )
+
+      await waitFor(() => expect(put).toHaveBeenCalledOnce())
+      expect(
+        JSON.parse((put.mock.calls[0][1] as { value: string }).value)
+      ).toEqual({
+        ...legacyPolicy,
+        enabled: !enabled,
+      })
+      expect(
+        screen.queryByText('unknown LLM usage limit field user_overrides')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('switch', {
+          name: 'Enable default model usage limits',
+        })
+      ).toHaveAttribute('aria-checked', String(!enabled))
+    }
+  )
+
+  test('the combined rate-limit page keeps each save in its labelled form and preserves the other form edits', async () => {
+    const put = vi
+      .spyOn(api, 'put')
+      .mockResolvedValue({ data: { success: true } })
+    const settings: SecuritySettings = {
+      LLMUsageLimitPolicy: JSON.stringify(defaultLLMUsageLimitPolicy),
+      ModelRequestRateLimitEnabled: false,
+      ModelRequestRateLimitCount: 0,
+      ModelRequestRateLimitSuccessCount: 1000,
+      ModelRequestRateLimitDurationMinutes: 1,
+      ModelRequestRateLimitGroup: '',
+      CheckSensitiveEnabled: false,
+      CheckSensitiveOnPromptEnabled: false,
+      SensitiveWords: '',
+      'fetch_setting.enable_ssrf_protection': true,
+      'fetch_setting.allow_private_ip': false,
+      'fetch_setting.domain_filter_mode': false,
+      'fetch_setting.ip_filter_mode': false,
+      'fetch_setting.domain_list': [],
+      'fetch_setting.ip_list': [],
+      'fetch_setting.allowed_ports': [],
+      'fetch_setting.apply_ip_filter_for_domain': false,
+      'token_setting.max_user_tokens': 1000,
+    }
+    const { actions } = renderSettings(
+      getSecuritySectionContent('rate-limit', settings)
+    )
+    const rateForm = within(screen.getByRole('form', { name: 'Rate Limiting' }))
+    const usageForm = within(
+      screen.getByRole('form', { name: 'Model usage limits' })
+    )
+    expect(screen.getByRole('heading', { name: 'Rate Limiting' })).toBeVisible()
+    expect(
+      screen.getByRole('heading', { name: 'Model usage limits' })
+    ).toBeVisible()
+    expect(within(actions).queryByRole('button')).not.toBeInTheDocument()
+    const rateSave = rateForm.getByRole('button', { name: 'Save rate limits' })
+    const usageSave = usageForm.getByRole('button', {
+      name: 'Save model usage limits',
+    })
+    const rateCount = rateForm.getByDisplayValue('0')
+    const usageConcurrency = usageForm.getByRole('spinbutton', {
+      name: 'Maximum concurrent model operations per user',
+    })
+    fireEvent.change(rateCount, { target: { value: '25' } })
+    fireEvent.change(usageConcurrency, { target: { value: '2' } })
+
+    fireEvent.click(rateSave)
+    await waitFor(() => expect(put).toHaveBeenCalledOnce())
+    expect(put).toHaveBeenNthCalledWith(1, '/api/option/', {
+      key: 'ModelRequestRateLimitCount',
+      value: 25,
+    })
+    expect(usageConcurrency).toHaveValue(2)
+    fireEvent.change(rateCount, { target: { value: '30' } })
+
+    fireEvent.click(usageSave)
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(2))
+    expect(put).toHaveBeenNthCalledWith(2, '/api/option/', {
+      key: 'LLMUsageLimitPolicy',
+      value: JSON.stringify({
+        ...defaultLLMUsageRules,
+        max_concurrent: 2,
+        counter_epoch: 0,
+      }),
+    })
+    expect(rateCount).toHaveValue(30)
   })
 
   test('retains input on a server rejection', async () => {
@@ -387,8 +535,10 @@ describe('Per-user model usage policies', () => {
     await waitFor(() => expect(put).toHaveBeenCalledTimes(2))
     expect(
       JSON.parse((put.mock.calls[1][1] as { value: string }).value)
-        .user_overrides
-    ).toEqual({})
+    ).toEqual({
+      ...enabledRules,
+      counter_epoch: 0,
+    })
   })
 
   test('rejects invalid IDs, missing users and failed lookups without allowing an override', async () => {
