@@ -372,6 +372,7 @@ export type OperationsSettings = {
 }
 
 export type SecuritySettings = {
+  LLMUsageLimitPolicy: string
   ModelRequestRateLimitEnabled: boolean
   ModelRequestRateLimitCount: number
   ModelRequestRateLimitSuccessCount: number
