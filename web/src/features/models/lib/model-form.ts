@@ -45,6 +45,12 @@ export const modelFormSchema = z.object({
 
 export type ModelFormValues = z.infer<typeof modelFormSchema>
 
+export const modelServicePauseSchema = z.object({
+  reason: z.string().trim().max(500, 'Reason must be 500 characters or fewer'),
+})
+
+export type ModelServicePauseValues = z.infer<typeof modelServicePauseSchema>
+
 // ============================================================================
 // Vendor Form Schema
 // ============================================================================

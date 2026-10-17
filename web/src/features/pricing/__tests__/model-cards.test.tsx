@@ -210,6 +210,7 @@ describe('model cards', () => {
         <ModelCard
           model={pricingModel()}
           onClick={vi.fn()}
+          serviceStatus='available'
           perf={{
             avg_latency_ms: 1200,
             avg_tps: 42,
@@ -222,7 +223,7 @@ describe('model cards', () => {
         'Performance metrics for the last 24 hours'
       )
       expect(within(metrics).getByText(expected)).toBeVisible()
-      expect(within(metrics).getByText('Status')).toBeVisible()
+      expect(within(metrics).getByText('Available')).toBeVisible()
       expect(within(metrics).getByText('1.20s')).toBeVisible()
       expect(within(metrics).getByText('42.0t/s')).toBeVisible()
     }
@@ -578,3 +579,33 @@ describe('model cards', () => {
     vi.useRealTimers()
   })
 })
+
+// Current service availability is independent from the historical success rate.
+it.each(['unavailable', 'unknown'] as const)(
+  'does not present a historical zero as current health when %s',
+  (status) => {
+    render(
+      <ModelCard
+        model={pricingModel()}
+        onClick={vi.fn()}
+        serviceStatus={status}
+        perf={{
+          avg_latency_ms: 1200,
+          avg_tps: 42,
+          success_rate: 0,
+          success_rate_available: true,
+        }}
+      />
+    )
+    const metrics = within(
+      screen.getByLabelText('Performance metrics for the last 24 hours')
+    )
+    expect(
+      metrics.getByText(
+        status === 'unavailable' ? 'Temporarily unavailable' : 'No recent data'
+      )
+    ).toBeVisible()
+    expect(metrics.getByText('—')).toBeVisible()
+    expect(metrics.queryByText('0.0%')).not.toBeInTheDocument()
+  }
+)

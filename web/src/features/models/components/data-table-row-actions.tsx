@@ -25,14 +25,18 @@ import { useTranslation } from 'react-i18next'
 import { DataTableRowActionMenu } from '@/components/data-table/core/row-action-menu'
 import { Button } from '@/components/ui/button'
 import {
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuShortcut,
 } from '@/components/ui/dropdown-menu'
 import { useCanEditModelPricing } from '@/features/model-pricing/api'
+import { ROLE } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { handleToggleModelStatus, isModelEnabled } from '../lib'
 import type { Model } from '../types'
 import { ModelDeleteDialog } from './dialogs/model-delete-dialog'
+import { ModelServiceDialog } from './dialogs/model-service-dialog'
 import { useModels } from './models-provider'
 
 interface DataTableRowActionsProps {
@@ -42,10 +46,15 @@ interface DataTableRowActionsProps {
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { t } = useTranslation()
   const canPrice = useCanEditModelPricing()
+  const canManageService = useAuthStore(
+    (state) => (state.auth.user?.role ?? ROLE.GUEST) >= ROLE.ADMIN
+  )
   const model = row.original
   const { setOpen, setCurrentRow } = useModels()
   const queryClient = useQueryClient()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false)
+  const showServiceControls = canManageService && model.name_rule === 0
 
   const isEnabled = isModelEnabled(model)
 
@@ -88,27 +97,45 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         </Button>
       )}
 
-      {model.id > 0 && (
+      {(model.id > 0 || showServiceControls) && (
         <DataTableRowActionMenu ariaLabel={t('Open menu')}>
-          <DropdownMenuItem onClick={handleToggleStatus}>
-            {toggleLabel}
-            <DropdownMenuShortcut>
-              {isEnabled ? <EyeOff size={16} /> : <Eye size={16} />}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault()
-              setDeleteConfirmOpen(true)
-            }}
-            className='text-destructive focus:text-destructive'
-          >
-            {t('Delete')}
-            <DropdownMenuShortcut>
-              <Trash2 size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            {showServiceControls && (
+              <DropdownMenuItem onClick={() => setServiceDialogOpen(true)}>
+                {t('Service controls')}
+              </DropdownMenuItem>
+            )}
+            {model.id > 0 && (
+              <>
+                <DropdownMenuItem onClick={handleToggleStatus}>
+                  {toggleLabel}
+                  <DropdownMenuShortcut>
+                    {isEnabled ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    setDeleteConfirmOpen(true)
+                  }}
+                  className='text-destructive focus:text-destructive'
+                >
+                  {t('Delete')}
+                  <DropdownMenuShortcut>
+                    <Trash2 size={16} />
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuGroup>
         </DataTableRowActionMenu>
+      )}
+
+      {serviceDialogOpen && (
+        <ModelServiceDialog
+          model={model}
+          onClose={() => setServiceDialogOpen(false)}
+        />
       )}
 
       {deleteConfirmOpen && (

@@ -28,6 +28,7 @@ import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
 import { getPerfMetricsSummary } from '@/features/performance-metrics/api'
 import type { PerfModelSummary } from '@/features/performance-metrics/types'
+import { useModelServiceStatuses } from '@/features/performance-metrics/use-model-service-status'
 import { ModelCard } from '@/features/pricing/components/model-card'
 import { useLlmCatalog } from '@/features/pricing/hooks/use-llm-catalog'
 import { featuredModelNames } from '@/features/pricing/lib/catalog'
@@ -41,6 +42,7 @@ export function LlmFeaturedModels() {
   const navigate = useNavigate()
   const { models, isLoading, error, refetch, priceRate, usdExchangeRate } =
     useLlmCatalog()
+  const serviceStatuses = useModelServiceStatuses()
   const perfQuery = useQuery({
     queryKey: ['perf-metrics-summary', 24],
     queryFn: () => getPerfMetricsSummary(24),
@@ -113,6 +115,7 @@ export function LlmFeaturedModels() {
                   model={model}
                   priceRate={priceRate}
                   usdExchangeRate={usdExchangeRate}
+                  serviceStatus={serviceStatuses.get(model.model_name)}
                   perf={perfMap.get(model.model_name)}
                   onClick={() => {
                     void navigate({

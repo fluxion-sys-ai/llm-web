@@ -26,6 +26,7 @@ import {
   getSuccessRateDotClass,
 } from '@/features/performance-metrics/lib/format'
 import type { SuccessRatePoint } from '@/features/performance-metrics/types'
+import type { ModelServiceStatus } from '@/features/performance-metrics/use-model-service-status'
 import { cn } from '@/lib/utils'
 
 export type ModelPerfBadgeData = {
@@ -38,6 +39,7 @@ export type ModelPerfBadgeData = {
 
 export interface ModelPerfBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   perf: ModelPerfBadgeData | undefined
+  serviceStatus?: ModelServiceStatus
 }
 
 const STATUS_SLOTS = Array.from({ length: 24 }, (_, slot) => slot)
@@ -53,10 +55,16 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
   )
   const successRate = getAvailableSuccessRate(props.perf)
   const hasSuccessRate =
+    props.serviceStatus === 'available' &&
     successRate != null &&
     Number.isFinite(successRate) &&
     successRate >= 0 &&
     successRate <= 100
+  let statusLabel = t('No recent data')
+  if (props.serviceStatus === 'available') statusLabel = t('Available')
+  if (props.serviceStatus === 'unavailable') {
+    statusLabel = t('Temporarily unavailable')
+  }
   // Hourly points with timestamps, anchored to the client's current hour.
   // Hours without traffic stay gray. Slot 23 is the current, partial hour.
   const statusRates = useMemo(() => {
@@ -79,13 +87,15 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
         props.className
       )}
     >
-      <dl className='flex min-w-0 items-start gap-5 text-xs tabular-nums'>
-        <div className='w-24 shrink-0'>
+      <dl className='flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2 text-xs tabular-nums'>
+        <div className='min-w-24 shrink-0'>
           <dt
-            title={t('Excludes client errors and client cancellations.')}
+            title={t(
+              'Current service status; the percentage and bars summarize the last 24 hours.'
+            )}
             className='text-muted-foreground flex items-center justify-between gap-1 text-[11px] leading-4'
           >
-            <span>{t('Status')}</span>
+            <span>{statusLabel}</span>
             <span className='font-mono'>
               {hasSuccessRate ? `${successRate.toFixed(1)}%` : '—'}
             </span>

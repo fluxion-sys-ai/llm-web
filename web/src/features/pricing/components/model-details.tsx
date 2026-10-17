@@ -60,6 +60,7 @@ import {
   getAvailableSuccessRate,
   getSuccessRateTextClass,
 } from '@/features/performance-metrics/lib/format'
+import { useModelServiceStatuses } from '@/features/performance-metrics/use-model-service-status'
 import { formatTokens } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
@@ -251,7 +252,12 @@ function OverviewSummaryGrid(props: { model: PricingModel }) {
   const modelSummary = summaryQuery.data?.data.models?.find(
     (model) => model.model_name === props.model.model_name
   )
-  const successRate = getAvailableSuccessRate(modelSummary)
+  const serviceStatuses = useModelServiceStatuses()
+  const serviceStatus = serviceStatuses.get(props.model.model_name)
+  const successRate =
+    serviceStatus === 'available'
+      ? getAvailableSuccessRate(modelSummary)
+      : Number.NaN
   const tpsValues = groups
     .map((group) => group.avg_tps)
     .filter((value) => value > 0)
@@ -924,9 +930,32 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
     simpleTaskPricing ||
     taskTiers.length === 0
 
+  const serviceStatuses = useModelServiceStatuses(!pricingPending)
+  const serviceStatus = serviceStatuses.get(props.model.model_name)
+  let serviceLabel = t('No recent data')
+  if (serviceStatus === 'available') serviceLabel = t('Available')
+  if (serviceStatus === 'unavailable') {
+    serviceLabel = t('Temporarily unavailable')
+  }
+
   return (
     <div className='@container/details space-y-6'>
       <ModelHeader model={props.model} />
+      {!pricingPending && (
+        <Alert>
+          <HeartPulse aria-hidden />
+          <AlertDescription className='flex flex-col gap-1'>
+            <span className='font-medium'>
+              {t('Service status')}: {serviceLabel}
+            </span>
+            <span>
+              {t(
+                'Historical performance remains available in the Performance tab.'
+              )}
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
       {comingSoon && (
         <Alert>
           <AlertDescription>
