@@ -35,6 +35,14 @@ export interface BoundChannel {
  */
 export type ModelSquareState = 'visible' | 'unavailable' | 'hidden' | 'partial'
 
+export interface ModelServiceStatus {
+  model_name: string
+  status: 'available' | 'unavailable' | 'unknown'
+  paused: boolean
+  reason: string
+  updated_at: number
+}
+
 export interface Model {
   square_state?: ModelSquareState
   has_metadata?: boolean

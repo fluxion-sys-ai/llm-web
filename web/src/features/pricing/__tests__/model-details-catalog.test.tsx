@@ -423,43 +423,118 @@ test.each([
 ])(
   'Overview uses model summary availability $available instead of a group average',
   async ({ available, expected }) => {
-    vi.spyOn(api, 'get').mockImplementation(async (url) => ({
-      data: {
-        success: true,
-        data:
-          url === '/api/perf-metrics/summary'
-            ? {
-                models: [
-                  {
-                    model_name: catalogModel.model_name,
-                    success_rate: 90,
-                    success_rate_available: available,
-                  },
-                ],
-              }
-            : {
-                groups: [
-                  {
-                    group: 'a',
-                    success_rate: 100,
-                    avg_latency_ms: 500,
-                    avg_tps: 40,
-                    series: [],
-                  },
-                  {
-                    group: 'b',
-                    success_rate: 0,
-                    avg_latency_ms: 500,
-                    avg_tps: 40,
-                    series: [],
-                  },
-                ],
-              },
-      },
-    }))
+    vi.spyOn(api, 'get').mockImplementation(async (url) => {
+      if (url === '/api/model-service-status') {
+        return {
+          data: {
+            success: true,
+            data: {
+              models: [
+                { model_name: catalogModel.model_name, status: 'available' },
+              ],
+            },
+          },
+        }
+      }
+      return {
+        data: {
+          success: true,
+          data:
+            url === '/api/perf-metrics/summary'
+              ? {
+                  models: [
+                    {
+                      model_name: catalogModel.model_name,
+                      success_rate: 90,
+                      success_rate_available: available,
+                    },
+                  ],
+                }
+              : {
+                  groups: [
+                    {
+                      group: 'a',
+                      success_rate: 100,
+                      avg_latency_ms: 500,
+                      avg_tps: 40,
+                      series: [],
+                    },
+                    {
+                      group: 'b',
+                      success_rate: 0,
+                      avg_latency_ms: 500,
+                      avg_tps: 40,
+                      series: [],
+                    },
+                  ],
+                },
+        },
+      }
+    })
     renderDetails({ ...catalogModel, pricing_status: undefined })
     expect(await screen.findByText('40.0 t/s')).toBeVisible()
     expect(screen.getByText(expected)).toBeVisible()
     expect(screen.queryByText('50.00%')).not.toBeInTheDocument()
   }
 )
+
+test('a paused model shows unavailable while Performance preserves its historical failures', async () => {
+  const user = userEvent.setup()
+  vi.spyOn(api, 'get').mockImplementation(async (url) => {
+    if (url === '/api/model-service-status') {
+      return {
+        data: {
+          success: true,
+          data: {
+            models: [
+              { model_name: catalogModel.model_name, status: 'unavailable' },
+            ],
+          },
+        },
+      }
+    }
+    const sample = {
+      ts: Math.floor(Date.now() / 1000),
+      avg_ttft_ms: 400,
+      avg_latency_ms: 1200,
+      avg_tps: 40,
+      success_rate: 0,
+      success_rate_available: true,
+      service_incident: true,
+      incident_classification_complete: true,
+    }
+    if (url === '/api/perf-metrics/summary') {
+      return {
+        data: {
+          success: true,
+          data: {
+            models: [
+              {
+                ...sample,
+                model_name: catalogModel.model_name,
+                recent_success_series: [sample],
+              },
+            ],
+          },
+        },
+      }
+    }
+    return {
+      data: {
+        success: true,
+        data: {
+          model_name: catalogModel.model_name,
+          groups: [{ ...sample, group: 'default', series: [sample] }],
+        },
+      },
+    }
+  })
+  renderDetails({ ...catalogModel, pricing_status: undefined })
+  expect(await screen.findByText(/Temporarily unavailable/)).toBeVisible()
+  expect(screen.queryByText('0.00%')).not.toBeInTheDocument()
+  await user.click(screen.getByRole('tab', { name: 'Performance' }))
+  expect(await screen.findByText('0.00%')).toBeVisible()
+  expect(
+    screen.getByText('Time buckets with confirmed service incidents: 1')
+  ).toBeVisible()
+})

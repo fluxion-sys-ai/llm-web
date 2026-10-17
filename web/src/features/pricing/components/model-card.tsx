@@ -24,6 +24,7 @@ import { CopyButton } from '@/components/copy-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import type { ModelServiceStatus } from '@/features/performance-metrics/use-model-service-status'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
@@ -54,6 +55,7 @@ export interface ModelCardProps {
   tokenUnit?: TokenUnit
   showRechargePrice?: boolean
   selectedGroup?: string
+  serviceStatus?: ModelServiceStatus
   perf?: ModelPerfBadgeData
 }
 
@@ -342,6 +344,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         ) : (
           <ModelPerfBadge
             perf={props.perf}
+            serviceStatus={props.serviceStatus}
             className='border-border border-t pt-2'
           >
             <Button variant='ghost' size='sm' onClick={props.onClick}>

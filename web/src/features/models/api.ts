@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { t } from 'i18next'
+
 import { api } from '@/lib/api'
 
 import type {
@@ -25,6 +27,7 @@ import type {
   GetVendorsResponse,
   GetVendorResponse,
   Model,
+  ModelServiceStatus,
   Vendor,
   SearchModelsParams,
   SyncUpstreamResponse,
@@ -41,6 +44,38 @@ import type {
 // ============================================================================
 // Model CRUD Operations
 // ============================================================================
+
+export async function getModelServiceStatus(
+  modelName: string
+): Promise<ModelServiceStatus> {
+  const res = await api.get('/api/models/service-status', {
+    params: { model: modelName },
+  })
+  if (
+    !res.data.success ||
+    res.data.data?.model_name !== modelName ||
+    typeof res.data.data?.paused !== 'boolean'
+  ) {
+    throw new Error(
+      res.data.message || t('Failed to load model service status')
+    )
+  }
+  return res.data.data
+}
+
+export async function updateModelServiceStatus(data: {
+  model_name: string
+  paused: boolean
+  reason?: string
+}): Promise<ModelServiceStatus> {
+  const res = await api.put('/api/models/service-status', data)
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || t('Failed to update model service status')
+    )
+  }
+  return res.data.data
+}
 
 /**
  * Get paginated list of models

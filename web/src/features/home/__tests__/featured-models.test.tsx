@@ -92,6 +92,7 @@ test('featured cards show matching live performance and keep missing models neut
           },
           {
             model_name: 'GLM-5.3',
+            status: 'available',
             success_rate: 83.72,
             avg_latency_ms: 739,
             avg_tps: 95.78,
