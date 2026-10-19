@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { SectionPageLayout } from '@/components/layout'
+import { WalletPromotionsCard } from '@/features/customer-pricing/components/wallet-promotions-card'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { getSelf } from '@/lib/api'
 
@@ -192,6 +193,7 @@ export function Wallet(props: WalletProps) {
         <SectionPageLayout.Content>
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 sm:gap-6'>
             <WalletStatsCard user={user} loading={userLoading} />
+            <WalletPromotionsCard />
 
             <div
               className={

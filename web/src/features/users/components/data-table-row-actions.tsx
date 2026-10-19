@@ -28,6 +28,7 @@ import {
   ShieldAlert,
   Link2,
   CreditCard,
+  Tags,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -46,7 +47,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { CustomerPricingDrawer } from '@/features/customer-pricing/components/customer-pricing-drawer'
 import { UserSubscriptionsDialog } from '@/features/subscriptions/components/dialogs/user-subscriptions-dialog'
+import {
+  ADMIN_PERMISSION_ACTIONS,
+  ADMIN_PERMISSION_RESOURCES,
+  hasPermission,
+} from '@/lib/admin-permissions'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { manageUser, resetUserPasskey, resetUserTwoFA } from '../api'
 import {
@@ -67,6 +75,17 @@ interface DataTableRowActionsProps {
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { t } = useTranslation()
   const user = row.original
+  const currentUser = useAuthStore((state) => state.auth.user)
+  const canReadPricing =
+    (currentUser?.role ?? 0) >= USER_ROLE.ADMIN &&
+    (currentUser?.role === USER_ROLE.ROOT ||
+      (currentUser?.role ?? 0) > user.role) &&
+    hasPermission(
+      currentUser,
+      ADMIN_PERMISSION_RESOURCES.CUSTOMER_PRICING,
+      ADMIN_PERMISSION_ACTIONS.READ
+    )
+  const [pricingOpen, setPricingOpen] = useState(false)
   const { setOpen, setCurrentRow, triggerRefresh } = useUsers()
   const [resetPasskeyOpen, setResetPasskeyOpen] = useState(false)
   const [resetTwoFAOpen, setResetTwoFAOpen] = useState(false)
@@ -222,6 +241,20 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </DropdownMenuShortcut>
         </DropdownMenuItem>
 
+        {canReadPricing && (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault()
+              setPricingOpen(true)
+            }}
+          >
+            {t('Pricing & promotions')}
+            <DropdownMenuShortcut>
+              <Tags size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+        )}
+
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
@@ -287,6 +320,14 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         confirmText={t('Reset 2FA')}
         handleConfirm={handleResetTwoFA}
       />
+
+      {pricingOpen && (
+        <CustomerPricingDrawer
+          user={user}
+          open={pricingOpen}
+          onOpenChange={setPricingOpen}
+        />
+      )}
 
       <UserBindingDialog
         open={bindingDialogOpen}

@@ -113,7 +113,19 @@ export interface ToolSurchargeItem {
   price: number
 }
 
+export interface CustomerPricingLog {
+  model_multiplier?: number
+  promotion_multiplier?: number
+  multiplier?: number
+  promotion_id?: number
+  promotion_expires_at?: number
+  base_quota?: number
+  charged_quota?: number
+  discount_quota?: number
+}
+
 export interface LogOtherData {
+  customer_pricing?: CustomerPricingLog
   admin_info?: {
     is_multi_key?: boolean
     multi_key_index?: number
