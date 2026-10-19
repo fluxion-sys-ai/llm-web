@@ -57,6 +57,17 @@ beforeEach(() => {
   promotions = []
   useAuthStore.getState().auth.setUser({ id: 1, username: 'root', role: 100 })
   vi.spyOn(api, 'get').mockImplementation(async (url) => {
+    if (url === '/api/customer-pricing/models') {
+      return {
+        data: {
+          success: true,
+          data: [
+            { model_name: 'gpt-5', billing_model_name: 'gpt-5' },
+            { model_name: 'GLM-5.3', billing_model_name: 'GLM-5.3' },
+          ],
+        },
+      }
+    }
     if (url === '/api/customer-pricing/users/42') {
       return { data: { success: true, data: pricing } }
     }
@@ -155,10 +166,11 @@ test('each model rate save disables user-wide promotions, including after explic
     name: 'Allow promotion code discounts',
   })
   expect(toggle).toBeChecked()
-  await userEvent.type(
-    screen.getByRole('textbox', { name: 'Model name' }),
-    'gpt-5'
-  )
+  const model = screen.getByRole('combobox', { name: 'Model name' })
+  await waitFor(() => expect(model).toBeEnabled())
+  await userEvent.click(model)
+  await userEvent.type(model, 'gpt-5')
+  await userEvent.click(await screen.findByRole('option', { name: 'gpt-5' }))
   await userEvent.click(screen.getByRole('button', { name: 'Save model rate' }))
   await waitFor(() => expect(toggle).not.toBeChecked())
   expect(api.put).toHaveBeenLastCalledWith(
@@ -223,6 +235,7 @@ test('code creation converts percent off into a multiplier and only reveals the 
   await userEvent.click(screen.getByRole('button', { name: 'Create code' }))
   expect(await screen.findByText('promo_test_secret')).toBeVisible()
   expect(api.post).toHaveBeenCalledWith('/api/customer-pricing/codes', {
+    audience: 'specific_user',
     user_id: 42,
     name: 'Launch',
     multiplier: 0.7,
@@ -272,4 +285,83 @@ test('unredeemed codes disable while claimed benefits revoke through distinct ac
       '/api/customer-pricing/codes/6/revoke'
     )
   )
+})
+
+test('custom rates require choosing a known model rather than submitting search text', async () => {
+  const save = vi.spyOn(api, 'put')
+  renderDrawer()
+  const model = await screen.findByRole('combobox', { name: 'Model name' })
+  await userEvent.click(model)
+  await userEvent.type(model, 'not-a-model')
+  expect(await screen.findByText('No models found')).toBeVisible()
+  await userEvent.keyboard('{Escape}')
+  await userEvent.click(screen.getByRole('button', { name: 'Save model rate' }))
+  expect(save).not.toHaveBeenCalled()
+})
+
+test('empty model catalog disables saving and shows an empty state', async () => {
+  const existing = vi.mocked(api.get).getMockImplementation()
+  if (!existing) throw new Error('Missing fixture')
+  vi.mocked(api.get).mockImplementation(async (url, options) => {
+    if (url === '/api/customer-pricing/models') {
+      return { data: { success: true, data: [] } }
+    }
+    return existing(url, options)
+  })
+  renderDrawer()
+  expect(
+    await screen.findByText('No models available for pricing')
+  ).toBeVisible()
+  expect(screen.getByRole('combobox', { name: 'Model name' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Save model rate' })).toBeDisabled()
+})
+
+test('failed catalog loading disables model saves and can be retried', async () => {
+  const existing = vi.mocked(api.get).getMockImplementation()
+  if (!existing) throw new Error('Missing fixture')
+  let failing = true
+  vi.mocked(api.get).mockImplementation(async (url, options) => {
+    if (url === '/api/customer-pricing/models' && failing) {
+      throw new Error('Catalog unavailable')
+    }
+    return existing(url, options)
+  })
+  renderDrawer()
+  const retry = await screen.findByRole('button', { name: 'Retry' })
+  expect(screen.getByRole('button', { name: 'Save model rate' })).toBeDisabled()
+  failing = false
+  await userEvent.click(retry)
+  await waitFor(() =>
+    expect(screen.getByRole('combobox', { name: 'Model name' })).toBeEnabled()
+  )
+})
+
+test('editing a billing-normalized rate selects its available catalog model', async () => {
+  pricing.model_prices = [{ model_name: 'canonical-model', multiplier: 0.7 }]
+  const existing = vi.mocked(api.get).getMockImplementation()
+  if (!existing) throw new Error('Missing fixture')
+  vi.mocked(api.get).mockImplementation(async (url, options) => {
+    if (url === '/api/customer-pricing/models') {
+      return {
+        data: {
+          success: true,
+          data: [
+            {
+              model_name: 'available-alias',
+              billing_model_name: 'canonical-model',
+            },
+          ],
+        },
+      }
+    }
+    return existing(url, options)
+  })
+  renderDrawer()
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Edit rate for canonical-model' })
+  )
+  expect(screen.getByRole('combobox', { name: 'Model name' })).toHaveValue(
+    'available-alias'
+  )
+  expect(screen.getByRole('button', { name: 'Save model rate' })).toBeEnabled()
 })

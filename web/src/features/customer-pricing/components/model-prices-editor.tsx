@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -27,7 +27,9 @@ import {
   SideDrawerSection,
   SideDrawerSectionHeader,
 } from '@/components/drawer-layout'
+import { ErrorState } from '@/components/error-state'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import {
   Form,
   FormControl,
@@ -40,7 +42,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 
-import { deleteModelPrice, saveModelPrice, setPromotionEnabled } from '../api'
+import {
+  deleteModelPrice,
+  getPricingModels,
+  saveModelPrice,
+  setPromotionEnabled,
+} from '../api'
 import { modelPriceSchema, type ModelPriceForm } from '../lib/forms'
 import type { CustomerPricing } from '../types'
 
@@ -50,6 +57,11 @@ export function ModelPricesEditor(props: {
 }) {
   const { t } = useTranslation()
   const client = useQueryClient()
+  const models = useQuery({
+    queryKey: ['customer-pricing-models'],
+    queryFn: getPricingModels,
+    enabled: props.canWrite,
+  })
   const [removing, setRemoving] = useState<string | null>(null)
   const form = useForm<ModelPriceForm>({
     resolver: zodResolver(modelPriceSchema),
@@ -123,7 +135,26 @@ export function ModelPricesEditor(props: {
                     <FormItem>
                       <FormLabel>{t('Model name')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder='gpt-5' disabled={busy} />
+                        <Combobox
+                          {...field}
+                          options={(models.data ?? []).map((model) => ({
+                            value: model.model_name,
+                            label: model.model_name,
+                          }))}
+                          onValueChange={(value) => field.onChange(value ?? '')}
+                          disabled={
+                            busy ||
+                            models.isPending ||
+                            models.isError ||
+                            models.data?.length === 0
+                          }
+                          placeholder={
+                            models.isPending
+                              ? t('Loading...')
+                              : t('Select a model')
+                          }
+                          emptyText={t('No models found')}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -153,7 +184,25 @@ export function ModelPricesEditor(props: {
                   )}
                 />
               </div>
-              <Button type='submit' disabled={busy}>
+              {models.isError && (
+                <ErrorState onRetry={() => void models.refetch()} />
+              )}
+              {!models.isPending &&
+                !models.isError &&
+                models.data?.length === 0 && (
+                  <p className='text-muted-foreground text-sm'>
+                    {t('No models available for pricing')}
+                  </p>
+                )}
+              <Button
+                type='submit'
+                disabled={
+                  busy ||
+                  !models.data?.some(
+                    (model) => model.model_name === form.watch('model_name')
+                  )
+                }
+              >
                 {t('Save model rate')}
               </Button>
             </form>
@@ -190,7 +239,19 @@ export function ModelPricesEditor(props: {
                   variant='ghost'
                   size='sm'
                   disabled={busy}
-                  onClick={() => form.reset(price)}
+                  onClick={() => {
+                    const selectedModel =
+                      models.data?.find(
+                        (model) => model.model_name === price.model_name
+                      ) ??
+                      models.data?.find(
+                        (model) => model.billing_model_name === price.model_name
+                      )
+                    form.reset({
+                      ...price,
+                      model_name: selectedModel?.model_name ?? price.model_name,
+                    })
+                  }}
                   aria-label={t('Edit rate for {{model}}', {
                     model: price.model_name,
                   })}

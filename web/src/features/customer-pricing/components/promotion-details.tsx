@@ -41,6 +41,12 @@ export function PromotionDetails(props: {
   const promotion = props.promotion
   const status = getPromotionStatus(promotion, props.now)
   const blocked = status === 'active' && !props.enabled
+  const statusLabel =
+    promotion.audience === 'all_users' &&
+    !promotion.starts_at &&
+    status === 'available'
+      ? 'Available'
+      : statusLabels[status]
   return (
     <div className='min-w-0 space-y-1.5'>
       <div className='flex flex-wrap items-center gap-2'>
@@ -50,7 +56,7 @@ export function PromotionDetails(props: {
         <Badge
           variant={status === 'active' && !blocked ? 'default' : 'secondary'}
         >
-          {blocked ? t('Discounts paused') : t(statusLabels[status])}
+          {blocked ? t('Discounts paused') : t(statusLabel)}
         </Badge>
       </div>
       <p className='text-sm'>

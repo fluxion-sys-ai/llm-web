@@ -56,6 +56,8 @@ export type PromotionForm = z.infer<typeof promotionSchema>
 
 export function toPromotionPayload(userId: number, values: PromotionForm) {
   return {
+    audience:
+      userId === 0 ? ('all_users' as const) : ('specific_user' as const),
     user_id: userId,
     name: values.name,
     multiplier: Number((1 - values.discount_percent / 100).toFixed(8)),

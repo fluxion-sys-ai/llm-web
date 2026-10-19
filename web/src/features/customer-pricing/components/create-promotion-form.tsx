@@ -17,7 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -38,21 +43,43 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { ROLE } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth-store'
 
-import { createPromotionCode } from '../api'
+import { createPromotionCode, getCustomerPricing } from '../api'
 import {
   promotionSchema,
   toPromotionPayload,
   type PromotionForm,
 } from '../lib/forms'
+import { PricingUserSelect, type PricingUser } from './pricing-user-select'
 
 export function CreatePromotionForm(props: {
-  userId: number
-  enabled: boolean
+  userId?: number
+  enabled?: boolean
 }) {
   const { t } = useTranslation()
   const client = useQueryClient()
+  const root = useAuthStore(
+    (state) => state.auth.user?.role === ROLE.SUPER_ADMIN
+  )
+  const [audience, setAudience] = useState<'all_users' | 'specific_user'>(
+    root && !props.userId ? 'all_users' : 'specific_user'
+  )
+  const [user, setUser] = useState<PricingUser | null>(null)
+  const targetUserId = props.userId ?? (audience === 'all_users' ? 0 : user?.id)
+  const targetPricing = useQuery({
+    queryKey: ['customer-pricing', targetUserId],
+    queryFn: targetUserId ? () => getCustomerPricing(targetUserId) : skipToken,
+    enabled:
+      !props.userId &&
+      audience === 'specific_user' &&
+      targetUserId !== undefined,
+  })
+  const promotionsEnabled =
+    props.enabled ?? targetPricing.data?.promotion_codes_enabled
   const [code, setCode] = useState<string | null>(null)
   const form = useForm<PromotionForm>({
     resolver: zodResolver(promotionSchema),
@@ -65,11 +92,11 @@ export function CreatePromotionForm(props: {
   })
   const create = useMutation({
     mutationFn: (values: PromotionForm) =>
-      createPromotionCode(toPromotionPayload(props.userId, values)),
+      createPromotionCode(toPromotionPayload(targetUserId ?? 0, values)),
     onSuccess: (result) => {
       setCode(result.code)
       void client.invalidateQueries({
-        queryKey: ['promotion-codes', props.userId],
+        queryKey: ['promotion-codes'],
       })
     },
   })
@@ -78,13 +105,16 @@ export function CreatePromotionForm(props: {
       <SideDrawerSectionHeader
         title={t('Create promotion code')}
         description={t(
-          'One code for this user only. The discount applies to all models and starts when redeemed. No wallet credit is added.'
+          'Discounts apply to all models. Each user can redeem a code once, and their discount starts when they redeem it. No wallet credit is added.'
         )}
       />
-      <p className='text-sm'>
-        {t('Target user ID')}: <span className='font-mono'>{props.userId}</span>
-      </p>
-      {!props.enabled && (
+      {props.userId && (
+        <p className='text-sm'>
+          {t('Target user ID')}:{' '}
+          <span className='font-mono'>{props.userId}</span>
+        </p>
+      )}
+      {promotionsEnabled === false && (
         <Alert>
           <AlertDescription>
             {t(
@@ -119,8 +149,42 @@ export function CreatePromotionForm(props: {
         <Form {...form}>
           <form
             className='space-y-4'
-            onSubmit={form.handleSubmit((values) => create.mutate(values))}
+            onSubmit={form.handleSubmit((values) => {
+              if (targetUserId !== undefined) create.mutate(values)
+            })}
           >
+            {!props.userId && (
+              <div className='space-y-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='promotion-audience'>{t('Audience')}</Label>
+                  <NativeSelect
+                    id='promotion-audience'
+                    value={audience}
+                    onChange={(event) =>
+                      setAudience(event.target.value as typeof audience)
+                    }
+                    disabled={create.isPending}
+                    className='w-full'
+                  >
+                    {root && (
+                      <NativeSelectOption value='all_users'>
+                        {t('All users')}
+                      </NativeSelectOption>
+                    )}
+                    <NativeSelectOption value='specific_user'>
+                      {t('Specific user')}
+                    </NativeSelectOption>
+                  </NativeSelect>
+                </div>
+                {audience === 'specific_user' && (
+                  <PricingUserSelect
+                    value={user}
+                    onChange={setUser}
+                    disabled={create.isPending}
+                  />
+                )}
+              </div>
+            )}
             <FormField
               control={form.control}
               name='name'
@@ -215,7 +279,10 @@ export function CreatePromotionForm(props: {
                 {t(create.error.message)}
               </p>
             )}
-            <Button type='submit' disabled={create.isPending}>
+            <Button
+              type='submit'
+              disabled={create.isPending || targetUserId === undefined}
+            >
               {t('Create code')}
             </Button>
           </form>

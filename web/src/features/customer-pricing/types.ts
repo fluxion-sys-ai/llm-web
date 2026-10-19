@@ -21,6 +21,13 @@ export interface ModelPrice {
   multiplier: number
 }
 
+export interface PricingModel {
+  model_name: string
+  billing_model_name: string
+}
+
+export type PromotionAudience = 'all_users' | 'specific_user'
+
 export interface CustomerPricing {
   user_id: number
   promotion_codes_enabled: boolean
@@ -35,6 +42,8 @@ export type PromotionStatus =
   | 'revoked'
 
 export interface Promotion {
+  audience?: PromotionAudience
+  redemption_count?: number
   id: number
   user_id: number
   name: string
@@ -60,6 +69,7 @@ export interface PromotionPage {
 }
 
 export interface CreatePromotion {
+  audience: PromotionAudience
   user_id: number
   name: string
   multiplier: number

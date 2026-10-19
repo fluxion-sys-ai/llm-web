@@ -25,6 +25,7 @@ import type {
   CustomerBenefits,
   CustomerPricing,
   ModelPrice,
+  PricingModel,
   Promotion,
   PromotionPage,
 } from './types'
@@ -100,12 +101,16 @@ export async function setPromotionEnabled(
 }
 
 export async function getPromotionCodes(
-  userId: number,
+  userId: number | undefined,
   page: number
 ): Promise<PromotionPage> {
   return customerPricingResult(
     api.get<Response<PromotionPage>>('/api/customer-pricing/codes', {
-      params: { user_id: userId, p: page, page_size: 10 },
+      params: {
+        ...(userId ? { user_id: userId } : {}),
+        p: page,
+        page_size: 10,
+      },
     })
   )
 }
@@ -141,5 +146,11 @@ export async function redeemPromotion(code: string): Promise<Promotion> {
     api.post<Response<Promotion>>('/api/user/self/promotions/redeem', {
       code: code.trim(),
     })
+  )
+}
+
+export async function getPricingModels(): Promise<PricingModel[]> {
+  return customerPricingResult(
+    api.get<Response<PricingModel[]>>('/api/customer-pricing/models')
   )
 }

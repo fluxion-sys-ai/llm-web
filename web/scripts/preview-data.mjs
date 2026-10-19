@@ -32,14 +32,17 @@ const page = (items = []) =>
 
 export function previewAuthBundle(
   now = Math.floor(Date.now() / 1000),
-  session = {}
+  session = {},
+  customerPricing = false
 ) {
   const expiresAt = session.expires_at ?? now + 3600
   return {
     access_token: 'local-preview-only',
     token_type: 'Bearer',
     access_expires_at: expiresAt,
-    user,
+    user: customerPricing
+      ? { ...user, role: 100, display_name: 'Pricing preview admin' }
+      : user,
     session: {
       sid: session.sid ?? 'local-preview',
       current: true,
