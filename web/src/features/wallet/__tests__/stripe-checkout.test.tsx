@@ -77,6 +77,19 @@ beforeEach(() => {
   }
   vi.spyOn(window, 'open').mockReturnValue(null)
   vi.spyOn(api, 'get').mockImplementation(async (url) => {
+    if (url === '/api/user/self/promotions') {
+      return {
+        data: {
+          success: true,
+          data: {
+            user_id: 1,
+            promotion_codes_enabled: true,
+            model_prices: [],
+            promotions: [],
+          },
+        },
+      }
+    }
     if (url === '/api/user/topup/info') {
       if (failInfo) throw new Error('Payment configuration unavailable')
       return { data: { success: true, data: topupInfo } }
@@ -201,7 +214,7 @@ test('mixed backend providers expose only Stripe checkout and use its minimum an
   )
 })
 
-test('backend promotions stay hidden and do not fetch a referral code', async () => {
+test('wallet keeps balance redemption and referrals hidden while model promotions remain separate', async () => {
   await renderWallet()
   expect(
     await screen.findByRole('button', { name: 'Continue with Stripe' })

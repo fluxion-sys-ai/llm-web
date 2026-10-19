@@ -85,6 +85,7 @@ import {
   isTimingLogType,
 } from '../../lib/utils'
 import { USAGE_BILLING_PATH, type LogOtherData } from '../../types'
+import { CustomerPricingDetails } from '../customer-pricing-details'
 import { PluginAuthorLink } from '../plugin-author-link'
 import { DetailRow, DetailSection } from './log-detail-layout'
 
@@ -356,6 +357,9 @@ function BillingBreakdown(props: {
             />
           ))}
         </>
+      )}
+      {other.customer_pricing && (
+        <CustomerPricingDetails pricing={other.customer_pricing} />
       )}
       <DetailRow
         label={t('Total Cost')}

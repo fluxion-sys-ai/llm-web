@@ -25,6 +25,7 @@ export type AdminCapabilities = AdminPermissionMatrix
 
 export const ADMIN_PERMISSION_RESOURCES = {
   AUDIT: 'audit',
+  CUSTOMER_PRICING: 'customer_pricing',
   CHANNEL: 'channel',
   TASK_PLUGIN: 'task_plugin',
 } as const

@@ -19,6 +19,28 @@ For commercial licensing, please contact support@quantumnous.com
 // Static translation keys that don't get picked up by the t('...') regex.
 // These cover dynamic labels (e.g. constants, configs) that are passed into t at runtime.
 export const STATIC_I18N_KEYS = [
+  // Customer pricing validation, status, and backend permission catalog.
+  'Unredeemed',
+  'Revoked',
+  'Model name is required',
+  'Model name is too long',
+  'Enter a multiplier greater than 0 and at most 100',
+  'Enter a discount from 0.01% to 99.99%',
+  'Name is too long',
+  'Redemption deadline must be within the next 365 days',
+  'Please enter a promotion code',
+  'Promotion code is too long',
+  'Customer pricing',
+  'View customer pricing',
+  'View customer model multipliers and promotion metadata.',
+  'Manage customer pricing',
+  'Manage customer model multipliers, eligibility, and promotion codes.',
+  'invalid customer pricing parameters',
+  'Customer or promotion not found',
+  'promotion code is unavailable for this account',
+  'promotion codes are disabled for this account',
+  'promotion cannot be changed in its current state',
+  'Unable to process customer pricing',
   'Account deletion',
   // Model management and metadata synchronization
   'No matching channels',
