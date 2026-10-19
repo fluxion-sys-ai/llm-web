@@ -4,14 +4,19 @@ import { createServer } from 'node:http'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { createPreviewAuth } from './preview-auth.mjs'
+import { createPricingPreview } from './preview-customer-pricing.mjs'
 import { previewAnswer, previewResponse } from './preview-data.mjs'
 
 export function createPreviewServer(options = {}) {
-  const handleAuth = createPreviewAuth(options.now)
+  const handleAuth = createPreviewAuth(options.now, options.customerPricing)
+  const handlePricing = options.customerPricing
+    ? createPricingPreview(options.now)
+    : null
   return createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store')
     const path = new URL(request.url, 'http://127.0.0.1').pathname
     if (await handleAuth(request, response, path)) return
+    if (handlePricing && (await handlePricing(request, response, path))) return
     if (request.method === 'POST' && path === '/pg/chat/completions') {
       let raw = ''
       for await (const part of request) {
@@ -87,7 +92,9 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  const server = createPreviewServer()
+  const server = createPreviewServer({
+    customerPricing: process.env.LLM_PREVIEW_CUSTOMER_PRICING === '1',
+  })
   server.listen(0, '127.0.0.1', () => {
     const address = server.address()
     const child = spawn(

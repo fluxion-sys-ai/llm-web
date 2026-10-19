@@ -41,6 +41,63 @@ test('preview session is a sample ordinary user without operator powers', () => 
   assert.equal(bundle.access_expires_at, 4600)
 })
 
+test('pricing demo admin mode is explicit and does not affect the ordinary preview', () => {
+  assert.equal(previewAuthBundle(1000, {}, true).user.role, 100)
+  assert.equal(previewAuthBundle(1000).user.role, 1)
+  assert.equal(previewResponse('GET', '/api/customer-pricing/models'), null)
+})
+
+test('opt-in pricing demo creates public codes and selects existing model prices without external calls', async (t) => {
+  const server = createPreviewServer({
+    customerPricing: true,
+    now: () => 1000000,
+  })
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  t.after(async () => {
+    server.closeAllConnections()
+    await new Promise((resolve) => server.close(resolve))
+  })
+  const base = `http://127.0.0.1:${server.address().port}`
+  const login = await fetch(`${base}/api/user/login`, {
+    method: 'POST',
+    body: JSON.stringify({ username: 'preview', password: 'preview123' }),
+  })
+  assert.equal((await login.json()).data.user.role, 100)
+  const models = await fetch(`${base}/api/customer-pricing/models`)
+  assert.deepEqual(
+    (await models.json()).data.map((model) => model.model_name),
+    ['GLM-5.3', 'kimi-k3']
+  )
+  const create = await fetch(`${base}/api/customer-pricing/codes`, {
+    method: 'POST',
+    body: JSON.stringify({
+      audience: 'all_users',
+      user_id: 0,
+      name: 'Demo',
+      multiplier: 0.8,
+      duration_seconds: 14400,
+    }),
+  })
+  const created = (await create.json()).data
+  assert.match(created.code, /not-redeemable/)
+  assert.equal(created.promotion.audience, 'all_users')
+  const save = await fetch(`${base}/api/customer-pricing/users/30/models`, {
+    method: 'PUT',
+    body: JSON.stringify({ model_name: 'GLM-5.3', multiplier: 0.7 }),
+  })
+  const saved = (await save.json()).data
+  assert.equal(saved.promotion_codes_enabled, false)
+  assert.deepEqual(saved.model_prices, [
+    { model_name: 'GLM-5.3', multiplier: 0.7 },
+  ])
+  const unknown = await fetch(`${base}/api/customer-pricing/users/30/models`, {
+    method: 'PUT',
+    body: JSON.stringify({ model_name: 'invented', multiplier: 0.7 }),
+  })
+  assert.equal(unknown.status, 400)
+  await unknown.json()
+})
+
 test('preview does not authenticate arbitrary refresh requests', () => {
   assert.equal(previewResponse('POST', '/api/user/auth/refresh'), null)
 })

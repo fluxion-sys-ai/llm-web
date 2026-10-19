@@ -10,7 +10,7 @@ const clearedCookies = [
   'new_api_has_session=; SameSite=Lax; Path=/; Max-Age=0',
 ]
 
-export function createPreviewAuth(now = Date.now) {
+export function createPreviewAuth(now = Date.now, customerPricing = false) {
   const sessions = new Map()
 
   return async function handlePreviewAuth(request, response, path) {
@@ -96,7 +96,7 @@ export function createPreviewAuth(now = Date.now) {
         JSON.stringify({
           success: true,
           message: '',
-          data: previewAuthBundle(timestamp, session),
+          data: previewAuthBundle(timestamp, session, customerPricing),
         })
       )
       return true
@@ -117,7 +117,7 @@ export function createPreviewAuth(now = Date.now) {
       JSON.stringify({
         success: true,
         message: '',
-        data: previewAuthBundle(timestamp, session),
+        data: previewAuthBundle(timestamp, session, customerPricing),
       })
     )
     return true

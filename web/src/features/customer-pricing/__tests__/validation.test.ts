@@ -56,6 +56,7 @@ test('a redemption deadline is serialized as unix seconds without changing the d
       redeem_before: '2027-01-01T00:00:00Z',
     })
   ).toEqual({
+    audience: 'specific_user',
     user_id: 42,
     name: 'Offer',
     multiplier: 0.8,

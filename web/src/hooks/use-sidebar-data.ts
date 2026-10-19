@@ -39,7 +39,13 @@ import { useTranslation } from 'react-i18next'
 
 import type { SidebarData } from '@/components/layout/types'
 import { useObservability } from '@/features/observability/use-observability'
+import {
+  ADMIN_PERMISSION_ACTIONS,
+  ADMIN_PERMISSION_RESOURCES,
+  hasPermission,
+} from '@/lib/admin-permissions'
 import { ROLE } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth-store'
 
 /**
  * Root navigation groups for the application sidebar.
@@ -50,6 +56,7 @@ import { ROLE } from '@/lib/roles'
 export function useSidebarData(): SidebarData {
   const { t } = useTranslation()
   const observability = useObservability()
+  const user = useAuthStore((state) => state.auth.user)
 
   return {
     navGroups: [
@@ -135,6 +142,20 @@ export function useSidebarData(): SidebarData {
             url: '/users',
             icon: Users,
           },
+          ...(hasPermission(
+            user,
+            ADMIN_PERMISSION_RESOURCES.CUSTOMER_PRICING,
+            ADMIN_PERMISSION_ACTIONS.READ
+          )
+            ? [
+                {
+                  title: t('Pricing & promotions'),
+                  url: '/customer-pricing',
+                  icon: Ticket,
+                  requiredRole: ROLE.ADMIN,
+                },
+              ]
+            : []),
           {
             title: t('Redemption Codes'),
             url: '/redemption-codes',

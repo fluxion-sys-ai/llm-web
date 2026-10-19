@@ -29,6 +29,8 @@ import {
 import { ErrorState } from '@/components/error-state'
 import { LoadingState } from '@/components/loading-state'
 import { Button } from '@/components/ui/button'
+import { ROLE } from '@/lib/roles'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { getPromotionCodes, stopPromotion } from '../api'
 import { usePromotionClock } from '../hooks/use-promotion-clock'
@@ -39,16 +41,20 @@ import { PromotionDetails } from './promotion-details'
 const emptyPromotions: Promotion[] = []
 
 export function PromotionCodesList(props: {
-  userId: number
+  userId?: number
   enabled: boolean
   canWrite: boolean
 }) {
   const { t } = useTranslation()
   const client = useQueryClient()
+  const root = useAuthStore(
+    (state) => state.auth.user?.role === ROLE.SUPER_ADMIN
+  )
   const [page, setPage] = useState(1)
   const [action, setAction] = useState<{
     id: number
     type: 'disable' | 'revoke'
+    public?: boolean
   } | null>(null)
   const query = useQuery({
     queryKey: ['promotion-codes', props.userId, page],
@@ -62,7 +68,7 @@ export function PromotionCodesList(props: {
     onSuccess: () => {
       setAction(null)
       void client.invalidateQueries({
-        queryKey: ['promotion-codes', props.userId],
+        queryKey: ['promotion-codes'],
       })
       void client.invalidateQueries({ queryKey: ['customer-benefits'] })
     },
@@ -100,11 +106,63 @@ export function PromotionCodesList(props: {
                 ),
               },
               {
+                id: 'audience',
+                header: t('Audience'),
+                cell: (promotion) =>
+                  promotion.audience === 'all_users'
+                    ? t('All users')
+                    : t('User #{{id}}', { id: promotion.user_id }),
+              },
+              {
+                id: 'redemptions',
+                header: t('Redemptions'),
+                cell: (promotion) =>
+                  promotion.redemption_count ??
+                  (promotion.starts_at > 0 ? 1 : 0),
+              },
+              {
                 id: 'action',
                 header: t('Actions'),
                 cell: (promotion) => {
                   if (!props.canWrite) return null
                   const status = getPromotionStatus(promotion, now)
+                  if (promotion.audience === 'all_users') {
+                    if (!root || status === 'revoked') return null
+                    return (
+                      <div className='flex flex-wrap gap-2'>
+                        {status === 'available' && (
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() =>
+                              setAction({
+                                id: promotion.id,
+                                type: 'disable',
+                                public: true,
+                              })
+                            }
+                          >
+                            {t('Disable code')}
+                          </Button>
+                        )}
+                        {(promotion.redemption_count ?? 0) > 0 && (
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() =>
+                              setAction({
+                                id: promotion.id,
+                                type: 'revoke',
+                                public: true,
+                              })
+                            }
+                          >
+                            {t('Revoke all benefits')}
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  }
                   if (status !== 'available' && status !== 'active') return null
                   const type = status === 'available' ? 'disable' : 'revoke'
                   return (
@@ -156,9 +214,15 @@ export function PromotionCodesList(props: {
         desc={
           action?.type === 'revoke'
             ? t(
-                'This discount will stop immediately. Past charges will not change.'
+                action.public
+                  ? 'This code and all discounts already redeemed from it will stop immediately. Past charges will not change.'
+                  : 'This discount will stop immediately. Past charges will not change.'
               )
-            : t('This code will no longer be redeemable.')
+            : t(
+                action?.public
+                  ? 'This code will no longer be redeemable. Discounts already redeemed remain active.'
+                  : 'This code will no longer be redeemable.'
+              )
         }
         confirmText={t('Confirm')}
         handleConfirm={() => action && stop.mutate(action)}
