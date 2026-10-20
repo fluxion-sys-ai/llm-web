@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { OFFICIAL_PRICE_DISCOUNT_PERCENT } from '../constants'
 import type { PricingModel } from '../types'
 import { parseTiersFromExpr } from './billing-expr'
+import { getCustomerPriceMultiplier, hasCustomerPrice } from './customer-price'
 import { getDisplayGroupRatio } from './model-helpers'
 import { calculateTokenPrice } from './price'
 
@@ -35,6 +36,13 @@ export function usesGlmBackendPricing(model: PricingModel): boolean {
 
 /** Read only complete, unconditional linear rates; never fall back to stale ratios for expressions. */
 export function getGlmBackendPrices(
+  model: PricingModel,
+  selectedGroup?: string
+): CatalogTokenPrices | null {
+  return getBackendTokenPrices(model, selectedGroup)
+}
+
+function getBackendTokenPrices(
   model: PricingModel,
   selectedGroup?: string
 ): CatalogTokenPrices | null {
@@ -89,8 +97,20 @@ export function getCatalogTokenPrices(
   model: PricingModel,
   selectedGroup?: string
 ): CatalogTokenPrices | null {
-  if (usesGlmBackendPricing(model)) {
-    return getGlmBackendPrices(model, selectedGroup)
+  const prices = getPublicCatalogTokenPrices(model, selectedGroup)
+  if (!prices) return null
+  const multiplier = getCustomerPriceMultiplier(model)
+  return Object.fromEntries(
+    Object.entries(prices).map(([type, price]) => [type, price * multiplier])
+  )
+}
+
+export function getPublicCatalogTokenPrices(
+  model: PricingModel,
+  selectedGroup?: string
+): CatalogTokenPrices | null {
+  if (usesGlmBackendPricing(model) || hasCustomerPrice(model)) {
+    return getBackendTokenPrices(model, selectedGroup)
   }
   if (!model.official_price) return null
   const prices: CatalogTokenPrices = {}

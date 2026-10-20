@@ -24,6 +24,7 @@ import {
   TOKEN_UNIT_DIVISORS,
 } from '../constants'
 import type { PricingModel, TokenUnit, PriceType } from '../types'
+import { getCustomerPriceMultiplier } from './customer-price'
 import { getConfiguredGroupRatio, getDisplayGroupRatio } from './model-helpers'
 
 // ----------------------------------------------------------------------------
@@ -161,7 +162,9 @@ export function formatPrice(
 
   const displayGroupRatio = getDisplayGroupRatio(model, selectedGroup)
 
-  let priceInUSD = calculateTokenPrice(model, type, displayGroupRatio)
+  let priceInUSD =
+    calculateTokenPrice(model, type, displayGroupRatio) *
+    getCustomerPriceMultiplier(model)
   priceInUSD = applyRechargeRate(
     priceInUSD,
     showWithRecharge,
@@ -249,7 +252,8 @@ export function formatGroupPrice(
   }
 
   const ratio = getConfiguredGroupRatio(groupRatio, group)
-  let priceInUSD = calculateTokenPrice(model, type, ratio)
+  let priceInUSD =
+    calculateTokenPrice(model, type, ratio) * getCustomerPriceMultiplier(model)
 
   priceInUSD = applyRechargeRate(
     priceInUSD,
@@ -282,7 +286,8 @@ export function formatFixedPrice(
   }
 
   const ratio = getConfiguredGroupRatio(groupRatio, group)
-  let priceInUSD = (model.model_price || 0) * ratio
+  let priceInUSD =
+    (model.model_price || 0) * ratio * getCustomerPriceMultiplier(model)
 
   priceInUSD = applyRechargeRate(
     priceInUSD,
@@ -315,7 +320,10 @@ export function formatRequestPrice(
 
   const displayGroupRatio = getDisplayGroupRatio(model, selectedGroup)
 
-  let priceInUSD = (model.model_price || 0) * displayGroupRatio
+  let priceInUSD =
+    (model.model_price || 0) *
+    displayGroupRatio *
+    getCustomerPriceMultiplier(model)
 
   priceInUSD = applyRechargeRate(
     priceInUSD,

@@ -22,10 +22,10 @@ import {
   QUOTA_TYPES,
   QUOTA_TYPE_VALUES,
   ENDPOINT_TYPES,
-  OFFICIAL_PRICE_DISCOUNT_PERCENT,
 } from '../constants'
 import type { PricingModel } from '../types'
-import { getGlmBackendPrices, usesGlmBackendPricing } from './catalog-price'
+import { getCatalogTokenPrices, usesGlmBackendPricing } from './catalog-price'
+import { getCustomerPriceMultiplier } from './customer-price'
 import { hasTaskUsageSchema } from './dynamic-price'
 import { getDisplayGroupRatio } from './model-helpers'
 
@@ -130,13 +130,10 @@ function getModelPrice(
   selectedGroup?: string
 ): number | null {
   if (usesGlmBackendPricing(model)) {
-    return getGlmBackendPrices(model, selectedGroup)?.input ?? null
+    return getCatalogTokenPrices(model, selectedGroup)?.input ?? null
   }
   if (model.official_price) {
-    return (
-      (model.official_price.input * (100 - OFFICIAL_PRICE_DISCOUNT_PERCENT)) /
-      100
-    )
+    return getCatalogTokenPrices(model, selectedGroup)?.input ?? null
   }
   if (
     model.pricing_status === 'pending' ||
@@ -145,9 +142,11 @@ function getModelPrice(
     return null
   }
   const groupRatio = getDisplayGroupRatio(model, selectedGroup)
-  return model.quota_type === QUOTA_TYPE_VALUES.TOKEN
-    ? model.model_ratio * 2 * groupRatio
-    : (model.model_price || 0) * groupRatio
+  const publicPrice =
+    model.quota_type === QUOTA_TYPE_VALUES.TOKEN
+      ? model.model_ratio * 2 * groupRatio
+      : (model.model_price || 0) * groupRatio
+  return publicPrice * getCustomerPriceMultiplier(model)
 }
 
 /**

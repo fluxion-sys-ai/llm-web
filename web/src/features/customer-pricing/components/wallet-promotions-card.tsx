@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { TicketPercent } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -38,8 +38,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { TitledCard } from '@/components/ui/titled-card'
 
-import { getSelfBenefits, redeemPromotion } from '../api'
-import { usePromotionClock } from '../hooks/use-promotion-clock'
+import { redeemPromotion } from '../api'
+import { useCustomerBenefits } from '../hooks/use-customer-benefits'
 import { redeemPromotionSchema, type RedeemPromotionForm } from '../lib/forms'
 import type { Promotion } from '../types'
 import { PromotionDetails } from './promotion-details'
@@ -49,10 +49,7 @@ const emptyPromotions: Promotion[] = []
 export function WalletPromotionsCard() {
   const { t } = useTranslation()
   const client = useQueryClient()
-  const query = useQuery({
-    queryKey: ['customer-benefits'],
-    queryFn: getSelfBenefits,
-  })
+  const query = useCustomerBenefits()
   const form = useForm<RedeemPromotionForm>({
     resolver: zodResolver(redeemPromotionSchema),
     defaultValues: { code: '' },
@@ -65,8 +62,8 @@ export function WalletPromotionsCard() {
       await client.invalidateQueries({ queryKey: ['customer-benefits'] })
     },
   })
-  const promotions = query.data?.promotions ?? emptyPromotions
-  const now = usePromotionClock(promotions)
+  const benefits = query.data
+  const promotions = benefits?.promotions ?? emptyPromotions
   return (
     <TitledCard
       title={t('Model discounts')}
@@ -85,9 +82,9 @@ export function WalletPromotionsCard() {
           onRetry={() => void query.refetch()}
         />
       )}
-      {query.data && (
+      {benefits && (
         <>
-          {!query.data.promotion_codes_enabled && (
+          {!benefits.promotion_codes_enabled && (
             <Alert>
               <AlertDescription>
                 {t(
@@ -113,7 +110,7 @@ export function WalletPromotionsCard() {
                           {...field}
                           autoComplete='off'
                           disabled={
-                            !query.data.promotion_codes_enabled ||
+                            !benefits.promotion_codes_enabled ||
                             redeem.isPending
                           }
                         />
@@ -125,7 +122,7 @@ export function WalletPromotionsCard() {
                 <Button
                   type='submit'
                   disabled={
-                    !query.data.promotion_codes_enabled || redeem.isPending
+                    !benefits.promotion_codes_enabled || redeem.isPending
                   }
                 >
                   {t('Redeem promotion code')}
@@ -153,20 +150,20 @@ export function WalletPromotionsCard() {
                 <li className='rounded-xl border p-4' key={promotion.id}>
                   <PromotionDetails
                     promotion={promotion}
-                    now={now}
-                    enabled={query.data.promotion_codes_enabled}
+                    now={query.now}
+                    enabled={benefits.promotion_codes_enabled}
                   />
                 </li>
               ))}
             </ul>
           )}
-          {query.data.model_prices.length > 0 && (
+          {benefits.model_prices.length > 0 && (
             <section className='space-y-3 border-t pt-4'>
               <h3 className='text-sm font-medium'>
                 {t('Your custom model rates')}
               </h3>
               <ul className='divide-y'>
-                {query.data.model_prices.map((price) => (
+                {benefits.model_prices.map((price) => (
                   <li
                     key={price.model_name}
                     className='flex flex-wrap justify-between gap-2 py-2 text-sm'

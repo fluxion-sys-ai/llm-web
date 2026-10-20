@@ -83,7 +83,10 @@ type DynamicPricingBreakdownProps = {
   usageSchema?: BillingUsageSchema
   taskPriceOptions?: Pick<
     DynamicPriceOptions,
-    'showRechargePrice' | 'priceRate' | 'usdExchangeRate'
+    | 'showRechargePrice'
+    | 'priceRate'
+    | 'usdExchangeRate'
+    | 'groupRatioMultiplier'
   >
   /**
    * Settlement usage facts from the consume log. Used to highlight the
@@ -186,10 +189,15 @@ function formatBreakdownPrice(
   t: (key: string) => string,
   taskPriceOptions: DynamicPricingBreakdownProps['taskPriceOptions']
 ): string {
+  const groupRatio = taskPriceOptions?.groupRatioMultiplier ?? 1
+  const rechargeRate = taskPriceOptions?.showRechargePrice
+    ? (taskPriceOptions.priceRate ?? 1) /
+      (taskPriceOptions.usdExchangeRate ?? 1)
+    : 1
   const amount =
     field.labelKind === 'schema' || field.unit === 'request'
       ? formatTaskUsageUnitPrice(value, { tokenUnit: 'M', ...taskPriceOptions })
-      : `${symbol}${(value * rate).toFixed(4)}`
+      : `${symbol}${(value * groupRatio * rechargeRate * rate).toFixed(4)}`
   if (field.unit === 'second') return `${amount}/${t('s')}`
   if (field.unit === 'count') return `${amount}/${t('unit')}`
   if (field.unit === 'credit') return `${amount}/${t('credit')}`

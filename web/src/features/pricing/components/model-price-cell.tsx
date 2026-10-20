@@ -30,6 +30,7 @@ import {
 import {
   CATALOG_PRICE_TYPES,
   getCatalogTokenPrices,
+  getPublicCatalogTokenPrices,
   hasCatalogDiscount,
   usesGlmBackendPricing,
 } from '../lib/catalog-price'
@@ -47,6 +48,10 @@ import {
   formatRequestPrice,
 } from '../lib/price'
 import type { PricingModel, TokenUnit } from '../types'
+import {
+  CustomerPriceBadges,
+  CustomerPricePanel,
+} from './customer-price-display'
 
 export type ModelPriceCellOptions = {
   tokenUnit?: TokenUnit
@@ -144,7 +149,12 @@ export function ModelPriceCell(props: {
         },
       ]
     })
-    if (hasCatalogDiscount(props.model, prices)) {
+    if (
+      hasCatalogDiscount(
+        props.model,
+        getPublicCatalogTokenPrices(props.model, options.selectedGroup) ?? {}
+      )
+    ) {
       discount = t('{{percent}}% off', {
         percent: OFFICIAL_PRICE_DISCOUNT_PERCENT,
       })
@@ -256,59 +266,62 @@ export function ModelPriceCell(props: {
     }
   }
   return (
-    <span className='block w-full max-w-full min-w-0 space-y-1.5'>
-      <span
-        className={
-          metrics.length > 1 ? 'grid grid-cols-2 gap-x-4 gap-y-2' : 'grid'
-        }
-      >
-        {metrics.map((metric, index) => (
-          <span
-            key={metric.label}
-            className={cn(
-              'flex min-w-0 flex-col items-start gap-y-0.5',
-              metrics.length === 3 && index === 2 && 'col-span-2',
-              !pendingWithoutPrice &&
-                'sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'
-            )}
-          >
-            <span
-              className='text-muted-foreground min-w-0 truncate text-xs font-normal'
-              title={metric.label}
-            >
-              {metric.label}
-            </span>
-            <span
-              className={cn(
-                'min-w-0 text-sm break-words whitespace-normal',
-                pendingWithoutPrice
-                  ? 'font-sans font-medium'
-                  : 'font-mono tabular-nums'
-              )}
-              title={metric.value}
-            >
-              {metric.value}
-            </span>
-            {metric.official && (
-              <span className='text-muted-foreground font-sans text-sm tabular-nums'>
-                <span className='sr-only'>{t('Official price')} </span>
-                <s className='decoration-muted-foreground/60'>
-                  {metric.official}
-                </s>
-              </span>
-            )}
-          </span>
-        ))}
-      </span>
-      <span className='flex min-w-0 items-center gap-1.5'>
+    <CustomerPricePanel model={props.model}>
+      <span className='block w-full max-w-full min-w-0 space-y-1.5'>
         <span
-          className='text-muted-foreground block min-w-0 text-xs font-normal break-words whitespace-normal sm:truncate'
-          title={caption}
+          className={
+            metrics.length > 1 ? 'grid grid-cols-2 gap-x-4 gap-y-2' : 'grid'
+          }
         >
-          {caption}
+          {metrics.map((metric, index) => (
+            <span
+              key={metric.label}
+              className={cn(
+                'flex min-w-0 flex-col items-start gap-y-0.5',
+                metrics.length === 3 && index === 2 && 'col-span-2',
+                !pendingWithoutPrice &&
+                  'sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-1.5'
+              )}
+            >
+              <span
+                className='text-muted-foreground min-w-0 truncate text-xs font-normal'
+                title={metric.label}
+              >
+                {metric.label}
+              </span>
+              <span
+                className={cn(
+                  'min-w-0 text-sm break-words whitespace-normal',
+                  pendingWithoutPrice
+                    ? 'font-sans font-medium'
+                    : 'font-mono tabular-nums'
+                )}
+                title={metric.value}
+              >
+                {metric.value}
+              </span>
+              {metric.official && (
+                <span className='text-muted-foreground font-sans text-sm tabular-nums'>
+                  <span className='sr-only'>{t('Official price')} </span>
+                  <s className='decoration-muted-foreground/60'>
+                    {metric.official}
+                  </s>
+                </span>
+              )}
+            </span>
+          ))}
         </span>
-        {discount && <Badge variant='secondary'>{discount}</Badge>}
+        <span className='flex min-w-0 flex-wrap items-center gap-1.5'>
+          <span
+            className='text-muted-foreground block min-w-0 text-xs font-normal break-words whitespace-normal sm:truncate'
+            title={caption}
+          >
+            {caption}
+          </span>
+          {discount && <Badge variant='secondary'>{discount}</Badge>}
+          <CustomerPriceBadges model={props.model} />
+        </span>
       </span>
-    </span>
+    </CustomerPricePanel>
   )
 }
