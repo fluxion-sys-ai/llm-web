@@ -19,19 +19,47 @@ For commercial licensing, please contact support@quantumnous.com
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
+import { useCustomerBenefits } from '@/features/customer-pricing/hooks/use-customer-benefits'
 import { useStatus } from '@/hooks/use-status'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { getPricing } from '../api'
+import { resolveCustomerPrice } from '../lib/customer-price'
 
-export function usePricingData(enabled = true) {
+export function usePricingData(enabled = true, personalized = false) {
   const { status } = useStatus()
+  const userId = useAuthStore((state) => state.auth.user?.id)
+  const benefits = useCustomerBenefits(enabled && personalized)
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['pricing'],
+  const {
+    data: publicData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: userId === undefined ? ['pricing'] : ['pricing', userId],
     queryFn: getPricing,
     staleTime: 5 * 60 * 1000,
     enabled,
   })
+
+  const data = useMemo(() => {
+    if (!publicData || !Array.isArray(publicData.data)) return publicData
+    return {
+      ...publicData,
+      data: publicData.data.map((model) => ({
+        ...model,
+        customer_price:
+          personalized && benefits.data && !benefits.isError
+            ? resolveCustomerPrice(
+                model.model_name,
+                benefits.data,
+                benefits.now
+              )
+            : undefined,
+      })),
+    }
+  }, [publicData, personalized, benefits.data, benefits.isError, benefits.now])
 
   // Ensure rates never reach zero to prevent division errors
   const priceRate = useMemo(

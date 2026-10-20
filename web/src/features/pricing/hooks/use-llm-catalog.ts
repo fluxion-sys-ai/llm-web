@@ -23,7 +23,7 @@ import { usePricingData } from './use-pricing-data'
 
 /** Public LLM catalog; generic pricing consumers retain every backend model. */
 export function useLlmCatalog(enabled = true) {
-  const pricing = usePricingData(enabled)
+  const pricing = usePricingData(enabled, true)
   const catalog = useMemo(() => buildLlmCatalog(pricing.data), [pricing.data])
 
   return {

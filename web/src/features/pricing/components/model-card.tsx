@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
 import { usesGlmBackendPricing } from '../lib/catalog-price'
+import { hasCustomerPrice } from '../lib/customer-price'
 import {
   getCardExamplePrice,
   getDynamicDisplayGroupRatio,
@@ -42,6 +43,10 @@ import { isTokenBasedModel } from '../lib/model-helpers'
 import { formatPrice, formatRequestPrice } from '../lib/price'
 import { taskPriceLabel } from '../lib/task-price-display'
 import type { PricingModel, PriceType, TokenUnit } from '../types'
+import {
+  CustomerPriceBadges,
+  CustomerPricePanel,
+} from './customer-price-display'
 import { ModelBillingModeBadge } from './model-billing-mode-badge'
 import { ModelCatalogSpecs } from './model-catalog-specs'
 import { ModelPerfBadge, type ModelPerfBadgeData } from './model-perf-badge'
@@ -91,12 +96,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     ? getDynamicPricingSummary(props.model, dynamicPriceOptions)
     : null
   const cardExamplePrice = getCardExamplePrice(props.model, dynamicPriceOptions)
-  let priceSummary: ReactNode
-  if (
+  const usesPriceCell = Boolean(
     props.model.official_price ||
     pricingPending ||
     usesGlmBackendPricing(props.model)
-  ) {
+  )
+  let priceSummary: ReactNode
+  if (usesPriceCell) {
     priceSummary = (
       <div className='col-span-full'>
         <ModelPriceCell
@@ -238,6 +244,12 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     )
   }
 
+  const priceContent = (
+    <div className='grid grid-cols-[repeat(auto-fit,minmax(88px,1fr))] gap-x-3 gap-y-2'>
+      {priceSummary}
+    </div>
+  )
+
   return (
     <Card className='border-border hover:border-foreground/20 h-full min-w-0 gap-4 rounded-xl shadow-none transition-colors'>
       <CardHeader className='flex flex-row items-start gap-3'>
@@ -323,9 +335,18 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           {!pricingPending && !props.model.official_price && (
             <ModelBillingModeBadge model={props.model} appearance='caption' />
           )}
-          <div className='grid grid-cols-[repeat(auto-fit,minmax(88px,1fr))] gap-x-3 gap-y-2'>
-            {priceSummary}
-          </div>
+          {usesPriceCell ? (
+            priceContent
+          ) : (
+            <CustomerPricePanel model={props.model} className='p-3'>
+              {priceContent}
+              {hasCustomerPrice(props.model) && (
+                <div className='flex flex-wrap items-center gap-1.5'>
+                  <CustomerPriceBadges model={props.model} />
+                </div>
+              )}
+            </CustomerPricePanel>
+          )}
         </div>
       </CardContent>
       <CardFooter className='mt-auto border-0 bg-transparent pt-0'>

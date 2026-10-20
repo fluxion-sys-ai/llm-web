@@ -44,9 +44,19 @@ export type BillingUsageExample = {
   facts: Record<string, string | number>
 }
 
+/** Viewer-specific display adjustment; never sent to billing or admin settings. */
+export type CustomerPriceAdjustment = {
+  modelMultiplier: number
+  promotionMultiplier: number
+  multiplier: number
+  promotionExpiresAt?: number
+  promotionName?: string
+}
+
 export type PricingModel = {
   id: number
   model_name: string
+  customer_price?: CustomerPriceAdjustment
   display_name?: string
   featured?: boolean
   /** Announced models remain visible but must not be offered for API calls. */

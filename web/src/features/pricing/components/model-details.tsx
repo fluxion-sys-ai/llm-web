@@ -67,7 +67,9 @@ import { cn } from '@/lib/utils'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
 import { useLlmCatalog } from '../hooks/use-llm-catalog'
+import { hasCustomerPrice } from '../lib/customer-price'
 import {
+  getDynamicDisplayGroupRatio,
   getDynamicPriceUnitLabelKey,
   getDynamicPricingSummary,
   getTaskUsageQuantityUnitLabelKey,
@@ -76,7 +78,7 @@ import {
 } from '../lib/dynamic-price'
 import { parseTags } from '../lib/filters'
 import { isTokenBasedModel } from '../lib/model-helpers'
-import { formatFixedPrice, formatGroupPrice } from '../lib/price'
+import { formatPrice, formatRequestPrice } from '../lib/price'
 import { getTaskEnumFields, getTaskNumberFields } from '../lib/task-expr'
 import { getTaskPricingDisplayTiers } from '../lib/task-matrix-display'
 import { hasSimpleTaskPricing, taskPriceLabel } from '../lib/task-price-display'
@@ -86,6 +88,10 @@ import type {
   PricingModel,
   TokenUnit,
 } from '../types'
+import {
+  CustomerPriceBadges,
+  CustomerPricePanel,
+} from './customer-price-display'
 import { DynamicPricingBreakdown } from './dynamic-pricing-breakdown'
 import { ModelBillingModeBadge } from './model-billing-mode-badge'
 import { ModelDetailsApi } from './model-details-api'
@@ -648,7 +654,7 @@ function ModelHeader(props: { model: PricingModel }) {
 }
 
 // ----------------------------------------------------------------------------
-// Base price card (used in the Overview tab)
+// Effective price card (used in the Overview tab)
 // ----------------------------------------------------------------------------
 
 function PriceSection(props: {
@@ -657,18 +663,20 @@ function PriceSection(props: {
   usdExchangeRate: number
   tokenUnit: TokenUnit
   showRechargePrice: boolean
+  selectedGroup?: string
 }) {
   const { t } = useTranslation()
   const isTokenBased = isTokenBasedModel(props.model)
   const tokenUnitLabel = props.tokenUnit === 'K' ? '1K' : '1M'
-  const baseGroupKey = '_base'
-  const baseGroupRatioMap = { [baseGroupKey]: 1 }
   const dynamicSummary = getDynamicPricingSummary(props.model, {
     tokenUnit: props.tokenUnit,
     showRechargePrice: props.showRechargePrice,
     priceRate: props.priceRate,
     usdExchangeRate: props.usdExchangeRate,
-    groupRatioMultiplier: 1,
+    groupRatioMultiplier: getDynamicDisplayGroupRatio(
+      props.model,
+      props.selectedGroup
+    ),
   })
 
   const primaryPriceTypes: { label: string; type: PriceType }[] = [
@@ -713,7 +721,6 @@ function PriceSection(props: {
     if (dynamicSummary.isSpecialExpression) {
       return (
         <section>
-          <SectionTitle>{t('Base Price')}</SectionTitle>
           <div className='rounded-lg border border-amber-200/70 bg-amber-50/70 p-3 dark:border-amber-500/20 dark:bg-amber-500/10'>
             <div className='text-sm font-medium text-amber-800 dark:text-amber-200'>
               {t('Special billing expression')}
@@ -736,7 +743,6 @@ function PriceSection(props: {
 
     return (
       <section>
-        <SectionTitle>{t('Base Price')}</SectionTitle>
         {dynamicSummary.primaryEntries.length > 0 ? (
           <div
             className={cn(
@@ -801,7 +807,6 @@ function PriceSection(props: {
   if (isUnconfiguredTaskUsageModel(props.model)) {
     return (
       <section>
-        <SectionTitle>{t('Base Price')}</SectionTitle>
         <UnconfiguredTaskPricingNotice model={props.model} />
       </section>
     )
@@ -810,19 +815,17 @@ function PriceSection(props: {
   if (!isTokenBased) {
     return (
       <section>
-        <SectionTitle>{t('Base Price')}</SectionTitle>
         <div className='flex items-baseline justify-between'>
           <span className='text-muted-foreground text-sm'>
             {t('Per request')}
           </span>
           <span className='text-foreground font-mono text-sm font-semibold tabular-nums'>
-            {formatFixedPrice(
+            {formatRequestPrice(
               props.model,
-              baseGroupKey,
               props.showRechargePrice,
               props.priceRate,
               props.usdExchangeRate,
-              baseGroupRatioMap
+              props.selectedGroup
             )}
           </span>
         </div>
@@ -833,15 +836,14 @@ function PriceSection(props: {
   const secondaryItems = secondaryPriceTypes.filter((p) => p.available)
   const renderPrice = (type: PriceType) => (
     <>
-      {formatGroupPrice(
+      {formatPrice(
         props.model,
-        baseGroupKey,
         type,
         props.tokenUnit,
         props.showRechargePrice,
         props.priceRate,
         props.usdExchangeRate,
-        baseGroupRatioMap
+        props.selectedGroup
       )}
       <span className='text-muted-foreground/40 ml-1 text-xs font-normal'>
         / {tokenUnitLabel}
@@ -851,7 +853,6 @@ function PriceSection(props: {
 
   return (
     <section>
-      <SectionTitle>{t('Base Price')}</SectionTitle>
       <div className='grid grid-cols-2 gap-2'>
         {primaryPriceTypes.map((item) => (
           <div key={item.type} className='bg-muted/20 rounded-lg border p-3'>
@@ -1004,7 +1005,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
                 }}
               />
             ) : (
-              <>
+              <CustomerPricePanel model={props.model}>
                 {showBasePrices && (
                   <PriceSection
                     model={props.model}
@@ -1012,6 +1013,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
                     usdExchangeRate={props.usdExchangeRate}
                     tokenUnit={props.tokenUnit}
                     showRechargePrice={showRechargePrice}
+                    selectedGroup={props.selectedGroup}
                   />
                 )}
                 {isDynamic && !simpleTaskPricing && (
@@ -1022,10 +1024,19 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
                       showRechargePrice,
                       priceRate: props.priceRate,
                       usdExchangeRate: props.usdExchangeRate,
+                      groupRatioMultiplier: getDynamicDisplayGroupRatio(
+                        props.model,
+                        props.selectedGroup
+                      ),
                     }}
                   />
                 )}
-              </>
+                {hasCustomerPrice(props.model) && (
+                  <div className='flex flex-wrap items-center gap-1.5'>
+                    <CustomerPriceBadges model={props.model} />
+                  </div>
+                )}
+              </CustomerPricePanel>
             )}
           </section>
 

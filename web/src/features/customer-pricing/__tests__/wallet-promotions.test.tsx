@@ -23,6 +23,7 @@ import { AxiosError, AxiosHeaders } from 'axios'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { PromotionDetails } from '../components/promotion-details'
 import { WalletPromotionsCard } from '../components/wallet-promotions-card'
@@ -45,6 +46,9 @@ const active: Promotion = {
   status: 'active',
 }
 beforeEach(() => {
+  useAuthStore
+    .getState()
+    .auth.setUser({ id: 42, username: 'customer', role: 1 })
   client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
@@ -61,6 +65,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   client.clear()
+  useAuthStore.getState().auth.reset()
   vi.restoreAllMocks()
   vi.useRealTimers()
 })
@@ -71,6 +76,20 @@ function renderWallet() {
     </QueryClientProvider>
   )
 }
+
+test('switching accounts hides the prior account benefits before loading the new account', async () => {
+  benefits = { ...benefits, promotions: [active] }
+  renderWallet()
+  expect(await screen.findByText('Welcome offer')).toBeVisible()
+
+  benefits = { ...benefits, user_id: 43, promotions: [] }
+  act(() => {
+    useAuthStore.getState().auth.setUser({ id: 43, username: 'next', role: 1 })
+  })
+
+  expect(screen.queryByText('Welcome offer')).not.toBeInTheDocument()
+  expect(await screen.findByText('No promotion benefits yet')).toBeVisible()
+})
 
 test('redeeming a promotion sends the separate endpoint and displays the all-model benefit with expiry', async () => {
   vi.spyOn(api, 'post').mockImplementation(async () => {

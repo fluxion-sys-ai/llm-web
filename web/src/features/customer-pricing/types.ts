@@ -53,6 +53,8 @@ export interface Promotion {
   starts_at: number
   expires_at: number
   created_at: number
+  disabled_at?: number
+  revoked_at?: number
   code_mask: string
   status: PromotionStatus
 }

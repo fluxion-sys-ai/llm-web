@@ -251,3 +251,33 @@ test('coming-soon catalog models remain unselectable even when user models mista
   expect(result.current.config.model).toBe('')
   expect(result.current.canSubmit).toBe(false)
 })
+
+test('cached model options settle when wall time advances during rendering', () => {
+  client.setQueryData(
+    ['playground-models', 'default'],
+    [
+      { label: 'GLM-5.3', value: 'GLM-5.3' },
+      { label: 'DeepSeek-V4.1-Flash', value: 'DeepSeek-V4.1-Flash' },
+    ]
+  )
+  const start = Date.now()
+  let clockReads = 0
+  vi.spyOn(Date, 'now').mockImplementation(() => {
+    // Model renders that cross millisecond boundaries. The guard fails fast
+    // instead of letting a regressed state/effect cycle hang the CI worker.
+    clockReads += 1
+    if (clockReads > 1000) {
+      throw new Error('Model selection did not settle after 1000 clock reads')
+    }
+    return start + clockReads
+  })
+
+  const { result } = renderOptions()
+
+  expect(result.current.canSubmit).toBe(true)
+  expect(result.current.models.map((model) => model.value)).toEqual([
+    'GLM-5.3',
+    'DeepSeek-V4.1-Flash',
+  ])
+  expect(api.get).not.toHaveBeenCalled()
+})
