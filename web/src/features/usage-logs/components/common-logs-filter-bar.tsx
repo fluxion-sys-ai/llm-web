@@ -404,25 +404,9 @@ export function CommonLogsFilterBar<TData>(
           className='max-w-[calc(100vw-2rem)] min-w-52'
         >
           <SelectGroup>
-            {LOG_TYPE_FILTERS.map((type) => (
-              <SelectItem
-                key={type.value}
-                value={type.value}
-                className='[&_[data-slot=select-item-text]]:items-center'
-                aria-description={
-                  type.deprecated ? deprecatedTypeDescription : undefined
-                }
-              >
+            {LOG_TYPE_FILTERS.filter((type) => !type.deprecated).map((type) => (
+              <SelectItem key={type.value} value={type.value}>
                 {t(type.label)}
-                {type.deprecated && (
-                  <Badge
-                    variant='secondary'
-                    className='h-4 px-1.5 text-[10px] font-normal'
-                    title={deprecatedTypeDescription}
-                  >
-                    {t('Deprecated')}
-                  </Badge>
-                )}
               </SelectItem>
             ))}
           </SelectGroup>
