@@ -17,13 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { ColumnDef } from '@tanstack/react-table'
-import { GitBranch, Sparkles, KeyRound } from 'lucide-react'
+import { GitBranch, Sparkles, KeyRound, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
@@ -340,12 +341,14 @@ export function useCommonLogsColumns(
       cell: ({ row }) => {
         const log = row.original
         const timestamp = row.getValue('created_at') as number
+        const [date, ...time] = formatTimestampToDate(timestamp).split(' ')
         const config = getLogTypeConfig(log.type)
 
         return (
           <div className='flex min-w-0 flex-col gap-0.5'>
-            <span className='truncate font-mono text-xs tabular-nums'>
-              {formatTimestampToDate(timestamp)}
+            <span className='font-mono text-xs tabular-nums'>{date}</span>
+            <span className='text-muted-foreground font-mono text-xs tabular-nums'>
+              {time.join(' ')}
             </span>
             <StatusBadge
               label={t(config.label)}
@@ -363,7 +366,7 @@ export function useCommonLogsColumns(
         return value.includes(String(row.original.type))
       },
       enableHiding: false,
-      size: 180,
+      size: 160,
     },
   ]
 
@@ -648,22 +651,67 @@ export function useCommonLogsColumns(
   columns.push(
     {
       accessorKey: 'model_name',
-      header: t('Model'),
+      header: t('Model / operation'),
       cell: function ModelCell({ row }) {
+        const { sensitiveVisible } = useUsageLogsContext()
         const log = row.original
-        if (!isDisplayableLogType(log.type)) return null
-
+        const other = parseLogOther(log.other)
         const modelInfo = formatModelName(log)
+        const isRequest = isDisplayableLogType(log.type)
+        const operation = sensitiveVisible
+          ? renderAuditContent(other, t) ||
+            log.content ||
+            t(getLogTypeConfig(log.type).label)
+          : t(getLogTypeConfig(log.type).label)
+        const streamFailed =
+          other?.stream_status && other.stream_status.status !== 'ok'
 
         return (
-          <div className='flex w-fit flex-col gap-0.5'>
-            <ModelBadge
-              modelName={modelInfo.name}
-              actualModel={modelInfo.actualModel}
-            />
+          <div className='flex max-w-full min-w-0 flex-col gap-1 whitespace-normal'>
+            {isRequest && log.model_name ? (
+              <ModelBadge
+                modelName={modelInfo.name}
+                actualModel={modelInfo.actualModel}
+                wrapText
+              />
+            ) : (
+              <span className='line-clamp-2 text-sm leading-snug break-words'>
+                {operation}
+              </span>
+            )}
+            {log.type === 5 &&
+              log.model_name &&
+              log.content &&
+              sensitiveVisible && (
+                <span className='text-destructive line-clamp-2 text-xs leading-snug break-words'>
+                  {log.content}
+                </span>
+              )}
+            {isAdmin && other?.admin_info?.quota_saturation && (
+              <span className='text-destructive text-xs'>
+                {t('Quota clamped')}
+              </span>
+            )}
+            {isViolationFeeLog(other) && (
+              <span className='text-destructive text-xs'>
+                {t('Violation Fee')}
+              </span>
+            )}
+            {other?.is_system_prompt_overwritten && (
+              <span className='text-xs text-amber-600 dark:text-amber-400'>
+                {t('System Prompt Override')}
+              </span>
+            )}
+            {streamFailed && (
+              <span className='text-destructive text-xs'>
+                {t('Stream Status')}:{' '}
+                {other.stream_status?.status || t('Error')}
+              </span>
+            )}
           </div>
         )
       },
+      size: 300,
       meta: { mobileTitle: true },
     },
     {
@@ -693,7 +741,7 @@ export function useCommonLogsColumns(
     },
     {
       accessorKey: 'prompt_tokens',
-      header: 'Tokens',
+      header: t('Usage'),
       cell: ({ row }) => {
         const log = row.original
         if (!isDisplayableLogType(log.type)) return null
@@ -716,10 +764,18 @@ export function useCommonLogsColumns(
 
         return (
           <div className='flex flex-col gap-0.5'>
-            <span className='font-mono text-xs font-medium tabular-nums'>
-              {promptTokens.toLocaleString()} /{' '}
-              {completionTokens.toLocaleString()}
-            </span>
+            <div className='flex items-baseline gap-2 text-xs'>
+              <span className='text-muted-foreground'>{t('Input')}</span>
+              <span className='font-mono font-medium tabular-nums'>
+                {promptTokens.toLocaleString()}
+              </span>
+            </div>
+            <div className='flex items-baseline gap-2 text-xs'>
+              <span className='text-muted-foreground'>{t('Output')}</span>
+              <span className='font-mono font-medium tabular-nums'>
+                {completionTokens.toLocaleString()}
+              </span>
+            </div>
             {(cacheReadTokens > 0 || cacheWriteTokens > 0) && (
               <div className='flex items-center gap-1 text-[11px]'>
                 {cacheReadTokens > 0 && (
@@ -774,7 +830,7 @@ export function useCommonLogsColumns(
 
     {
       accessorKey: 'content',
-      header: t('Details'),
+      header: t('Billing Details'),
       cell: function DetailsCell({ row }) {
         const { t } = useTranslation()
         const [dialogOpen, setDialogOpen] = useState(false)
@@ -851,6 +907,38 @@ export function useCommonLogsColumns(
       },
       size: 180,
       maxSize: 200,
+    },
+    {
+      id: 'details',
+      header: t('Details'),
+      enableHiding: false,
+      size: 100,
+      cell: function DetailsAction({ row }) {
+        const { sensitiveVisible } = useUsageLogsContext()
+        const [dialogOpen, setDialogOpen] = useState(false)
+        return (
+          <>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='h-8 gap-1 px-2'
+              aria-label={t('View details')}
+              onClick={() => setDialogOpen(true)}
+            >
+              {t('Details')}
+              <ChevronRight className='size-3.5' aria-hidden='true' />
+            </Button>
+            <DetailsDialog
+              log={row.original}
+              isAdmin={isAdmin}
+              isRoot={isRoot}
+              sensitiveVisible={sensitiveVisible}
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+            />
+          </>
+        )
+      },
     }
   )
 

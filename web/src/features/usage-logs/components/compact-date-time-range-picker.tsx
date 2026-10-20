@@ -27,7 +27,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import dayjs from '@/lib/dayjs'
+import {
+  formatPacificTime,
+  formatPacificTimeWithZone,
+  parsePacificDateTime,
+  toPacificTime,
+} from '@/lib/timezone'
 import { cn } from '@/lib/utils'
 
 interface CompactDateTimeRangePickerProps {
@@ -38,13 +43,7 @@ interface CompactDateTimeRangePickerProps {
 }
 
 function toInputValue(date?: Date): string {
-  return date ? dayjs(date).format('YYYY-MM-DDTHH:mm') : ''
-}
-
-function fromInputValue(value: string): Date | undefined {
-  if (!value) return undefined
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? undefined : date
+  return date ? formatPacificTime(date, 'YYYY-MM-DDTHH:mm') : ''
 }
 
 export function CompactDateTimeRangePicker({
@@ -55,6 +54,7 @@ export function CompactDateTimeRangePicker({
 }: CompactDateTimeRangePickerProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const [invalidDate, setInvalidDate] = useState(false)
   const [draftStart, setDraftStart] = useState(toInputValue(start))
   const [draftEnd, setDraftEnd] = useState(toInputValue(end))
 
@@ -64,21 +64,29 @@ export function CompactDateTimeRangePicker({
     // precision, so seconds are always 00 (manual pick) or 59 (preset
     // end-of-day). Hide them in the trigger label to keep the button
     // width compact while still showing the meaningful timestamp.
-    const startText = start ? dayjs(start).format('YYYY-MM-DD HH:mm') : '-'
-    const endText = end ? dayjs(end).format('YYYY-MM-DD HH:mm') : '-'
+    const startText = start
+      ? formatPacificTimeWithZone(start, 'YYYY-MM-DD HH:mm')
+      : '-'
+    const endText = end
+      ? formatPacificTimeWithZone(end, 'YYYY-MM-DD HH:mm')
+      : '-'
     return `${startText} ~ ${endText}`
   }, [end, start, t])
 
   const mobileLabel = useMemo(() => {
     if (!start || !end) return label
-    if (dayjs(start).isSame(end, 'day')) {
-      return `${dayjs(start).format('MM/DD HH:mm')}–${dayjs(end).format('HH:mm')}`
+    if (
+      formatPacificTime(start, 'YYYY-MM-DD') ===
+      formatPacificTime(end, 'YYYY-MM-DD')
+    ) {
+      return `${formatPacificTimeWithZone(start, 'MM/DD HH:mm')}–${formatPacificTimeWithZone(end, 'HH:mm')}`
     }
     return label
   }, [start, end, label])
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
+      setInvalidDate(false)
       setDraftStart(toInputValue(start))
       setDraftEnd(toInputValue(end))
     }
@@ -86,15 +94,18 @@ export function CompactDateTimeRangePicker({
   }
 
   const applyDraft = () => {
-    onChange({
-      start: fromInputValue(draftStart),
-      end: fromInputValue(draftEnd),
-    })
+    const parsedStart = parsePacificDateTime(draftStart, start)
+    const parsedEnd = parsePacificDateTime(draftEnd, end)
+    if ((draftStart && !parsedStart) || (draftEnd && !parsedEnd)) {
+      setInvalidDate(true)
+      return
+    }
+    onChange({ start: parsedStart, end: parsedEnd })
     setOpen(false)
   }
 
   const applyPreset = (kind: 'today' | '7d' | 'week' | '30d' | 'month') => {
-    const now = dayjs()
+    const now = toPacificTime()
     const presets = {
       today: {
         start: now.startOf('day').toDate(),
@@ -151,6 +162,9 @@ export function CompactDateTimeRangePicker({
         className='w-[min(520px,calc(100vw-2rem))] p-3'
       >
         <div className='space-y-3'>
+          <p className='text-muted-foreground text-xs'>
+            {t('Pacific Time (PDT/PST)')}
+          </p>
           <div className='grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-end'>
             <div className='space-y-1.5'>
               <div className='text-muted-foreground text-xs'>
@@ -160,7 +174,10 @@ export function CompactDateTimeRangePicker({
                 type='datetime-local'
                 value={draftStart}
                 aria-label={t('Start Time')}
-                onChange={(e) => setDraftStart(e.target.value)}
+                onChange={(e) => {
+                  setDraftStart(e.target.value)
+                  setInvalidDate(false)
+                }}
                 className='h-8 text-sm leading-5 tabular-nums'
               />
             </div>
@@ -175,11 +192,20 @@ export function CompactDateTimeRangePicker({
                 type='datetime-local'
                 value={draftEnd}
                 aria-label={t('End Time')}
-                onChange={(e) => setDraftEnd(e.target.value)}
+                onChange={(e) => {
+                  setDraftEnd(e.target.value)
+                  setInvalidDate(false)
+                }}
                 className='h-8 text-sm leading-5 tabular-nums'
               />
             </div>
           </div>
+
+          {invalidDate && (
+            <p role='alert' className='text-destructive text-xs'>
+              {t('Enter a valid Pacific date and time.')}
+            </p>
+          )}
 
           <div className='flex flex-wrap gap-1.5'>
             <Button

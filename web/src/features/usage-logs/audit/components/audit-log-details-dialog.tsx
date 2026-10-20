@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { Dialog } from '@/components/dialog'
 import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
-import dayjs from '@/lib/dayjs'
+import { formatTimestampToDate } from '@/lib/format'
 
 import {
   DetailRow,
@@ -85,7 +85,7 @@ export function AuditLogDetailsDialog(props: { entry: AuditLog }) {
           />
           {Number.isFinite(props.entry.created_at) && (
             <span className='text-muted-foreground tabular-nums'>
-              {dayjs.unix(props.entry.created_at).format('YYYY-MM-DD HH:mm:ss')}
+              {formatTimestampToDate(props.entry.created_at)}
             </span>
           )}
         </div>

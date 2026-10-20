@@ -19,6 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 /**
  * Utility functions for usage logs feature
  */
+import { getStartOfDay } from '@/lib/time'
+
 import {
   getAllLogs,
   getUserLogs,
@@ -75,15 +77,14 @@ export function isPerCallBilling(modelPrice?: number): boolean {
 }
 
 /**
- * Get default time range (today 00:00:00 to now + 1 hour)
+ * Get default time range (Pacific midnight with the existing one-hour end buffer)
  */
 export function getDefaultTimeRange(): { start: Date; end: Date } {
   const now = new Date()
-  const start = new Date(now)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(now.getTime() + 3600 * 1000) // +1 hour
-
-  return { start, end }
+  return {
+    start: getStartOfDay(now),
+    end: new Date(now.getTime() + 60 * 60 * 1000),
+  }
 }
 
 /**

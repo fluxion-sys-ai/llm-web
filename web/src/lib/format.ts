@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import dayjs from '@/lib/dayjs'
+import { formatPacificTimeWithZone } from '@/lib/timezone'
 
 import {
   formatCurrencyFromUSD,
@@ -172,7 +173,7 @@ export function formatTimestampToDate(
     return '-'
   }
   const ms = unit === 'seconds' ? timestamp * 1000 : timestamp
-  return dayjs(ms).format('YYYY-MM-DD HH:mm:ss')
+  return formatPacificTimeWithZone(ms)
 }
 
 /**
