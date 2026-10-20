@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { IconBadge } from '@/components/ui/icon-badge'
 import { getUserQuotaDates } from '@/features/dashboard/api'
+import { useAccountUsage } from '@/features/dashboard/hooks/use-account-usage'
 import { useSummaryCardsConfig } from '@/features/dashboard/hooks/use-dashboard-config'
 import type { QuotaDataItem } from '@/features/dashboard/types'
 import { useStatus } from '@/hooks/use-status'
@@ -147,6 +148,7 @@ const HEALTH_CONFIG: Record<
 
 export function SummaryCards() {
   const { t } = useTranslation()
+  useAccountUsage()
   const user = useAuthStore((state) => state.auth.user)
   const { status, loading } = useStatus()
 

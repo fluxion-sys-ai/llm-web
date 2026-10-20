@@ -180,8 +180,8 @@ describe('user settings saves across profile and security', () => {
       screen.queryByRole('switch', { name: 'Record IP Address' })
     ).not.toBeInTheDocument()
     fireEvent.change(
-      screen.getByRole('spinbutton', { name: 'Quota Warning Threshold' }),
-      { target: { value: '2700' } }
+      screen.getByRole('spinbutton', { name: /^Quota Warning Threshold/ }),
+      { target: { value: '0.0054' } }
     )
     fireEvent.click(screen.getByRole('button', { name: 'Save Settings' }))
     await waitFor(() => expect(onUpdate).toHaveBeenCalled())

@@ -28,6 +28,10 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { ROLE } from '@/lib/roles'
+import {
+  DEFAULT_CURRENCY_CONFIG,
+  useSystemConfigStore,
+} from '@/stores/system-config-store'
 
 import { updateUserSettings } from '../../api'
 import { NOTIFICATION_METHODS } from '../../constants'
@@ -53,8 +57,24 @@ interface NotificationTabProps {
 export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
   const { t } = useTranslation()
   const isAdmin = (profile?.role ?? 0) >= ROLE.ADMIN
+  const configuredQuotaPerUnit = useSystemConfigStore(
+    (state) => state.config.currency.quotaPerUnit
+  )
+  const quotaPerUnit =
+    Number.isFinite(configuredQuotaPerUnit) && configuredQuotaPerUnit > 0
+      ? configuredQuotaPerUnit
+      : DEFAULT_CURRENCY_CONFIG.quotaPerUnit
   const [loading, setLoading] = useState(false)
   const [settings, setSettings] = useState(() => normalizeUserSettings())
+  const [thresholdUsd, setThresholdUsd] = useState(() =>
+    String(settings.quota_warning_threshold / quotaPerUnit)
+  )
+  const thresholdQuota = Math.round(Number(thresholdUsd) * quotaPerUnit)
+  const isThresholdValid =
+    thresholdUsd.trim() !== '' &&
+    Number(thresholdUsd) >= 1 / quotaPerUnit &&
+    Number.isSafeInteger(thresholdQuota) &&
+    thresholdQuota > 0
 
   // Update form field helper
   const updateField = useCallback(
@@ -68,16 +88,25 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
   )
 
   useEffect(() => {
-    if (profile?.setting) {
-      setSettings(normalizeUserSettings(profile.setting))
-    }
-  }, [profile])
+    const nextSettings = normalizeUserSettings(profile?.setting)
+    setSettings(nextSettings)
+    setThresholdUsd(String(nextSettings.quota_warning_threshold / quotaPerUnit))
+  }, [profile?.setting, quotaPerUnit])
 
   const handleSave = async () => {
+    if (!isThresholdValid) return
+
     try {
       setLoading(true)
       const { record_ip_log: _recordIpLog, ...notificationSettings } = settings
-      const response = await updateUserSettings(notificationSettings)
+      const thresholdUnchanged =
+        thresholdUsd === String(settings.quota_warning_threshold / quotaPerUnit)
+      const response = await updateUserSettings({
+        ...notificationSettings,
+        quota_warning_threshold: thresholdUnchanged
+          ? settings.quota_warning_threshold
+          : thresholdQuota,
+      })
 
       if (response.success) {
         toast.success(t('Settings updated successfully'))
@@ -131,20 +160,36 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
 
       {/* Warning Threshold */}
       <div className='space-y-1.5'>
-        <Label htmlFor='threshold'>{t('Quota Warning Threshold')}</Label>
+        <Label htmlFor='threshold'>{t('Quota Warning Threshold (USD)')}</Label>
         <Input
           id='threshold'
           type='number'
+          inputMode='decimal'
+          min={1 / quotaPerUnit}
+          step='any'
           className='h-9'
-          value={settings.quota_warning_threshold}
-          onChange={(e) =>
-            updateField('quota_warning_threshold', Number(e.target.value))
+          value={thresholdUsd}
+          onChange={(e) => setThresholdUsd(e.target.value)}
+          aria-invalid={!isThresholdValid}
+          aria-describedby={
+            isThresholdValid
+              ? 'threshold-help'
+              : 'threshold-help threshold-error'
           }
-          placeholder={t('Enter threshold')}
+          placeholder={t('Enter amount in {{currency}}', { currency: 'USD' })}
         />
-        <p className='text-muted-foreground text-xs'>
+        <p id='threshold-help' className='text-muted-foreground text-xs'>
           {t('Get notified when balance falls below this value')}
         </p>
+        {!isThresholdValid && (
+          <p
+            id='threshold-error'
+            className='text-destructive text-xs'
+            role='alert'
+          >
+            {t('Enter a valid USD amount greater than zero.')}
+          </p>
+        )}
       </div>
 
       {/* Email Settings */}
@@ -338,7 +383,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
 
       {/* Save Button */}
       <div className='flex justify-end'>
-        <Button onClick={handleSave} disabled={loading}>
+        <Button onClick={handleSave} disabled={loading || !isThresholdValid}>
           {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
           {loading ? t('Saving...') : t('Save Settings')}
         </Button>

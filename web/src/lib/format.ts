@@ -16,6 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import i18next from 'i18next'
+
+import { toIntlLocale } from '@/i18n/languages'
 import dayjs from '@/lib/dayjs'
 import { formatPacificTimeWithZone } from '@/lib/timezone'
 
@@ -45,7 +48,11 @@ export function formatCompactNumber(
   locales?: Intl.LocalesArgument
 ): string {
   if (value == null || Number.isNaN(value as number)) return '-'
-  return Intl.NumberFormat(locales, {
+  const locale =
+    locales ??
+    toIntlLocale(i18next.resolvedLanguage || i18next.language) ??
+    'en'
+  return Intl.NumberFormat(locale, {
     notation: 'compact',
     maximumFractionDigits: 1,
   }).format(value as number)

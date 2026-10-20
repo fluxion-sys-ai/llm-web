@@ -22,13 +22,17 @@ import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { checkIsActive } from '@/components/layout/lib/url-utils'
+import type { NavGroup } from '@/components/layout/types'
 import {
   parseSidebarModulesAdmin,
   serializeSidebarModulesAdmin,
 } from '@/features/system-settings/maintenance/config'
 import { useAuthStore } from '@/stores/auth-store'
 
-import { useSidebarConfig } from '../use-sidebar-config'
+import {
+  useIsSidebarModuleVisible,
+  useSidebarConfig,
+} from '../use-sidebar-config'
 import { useSidebarData } from '../use-sidebar-data'
 
 beforeEach(() => {
@@ -45,7 +49,7 @@ afterEach(() => {
   useAuthStore.getState().auth.reset()
 })
 
-function sidebarFor(admin?: object, user?: object, canConfigure = true) {
+function sidebarWrapper(admin?: object, user?: object, canConfigure = true) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -66,11 +70,13 @@ function sidebarFor(admin?: object, user?: object, canConfigure = true) {
       </QueryClientProvider>
     )
   }
-  const result = renderHook(
-    () => useSidebarConfig(useSidebarData().navGroups),
-    { wrapper: Wrapper }
-  )
-  return result
+  return Wrapper
+}
+
+function sidebarFor(admin?: object, user?: object, canConfigure = true) {
+  return renderHook(() => useSidebarConfig(useSidebarData().navGroups), {
+    wrapper: sidebarWrapper(admin, user, canConfigure),
+  })
 }
 
 describe('security sidebar visibility', () => {
@@ -91,19 +97,19 @@ describe('security sidebar visibility', () => {
     ).toBe(true)
   })
   it.each([
-    [{ personal: { enabled: true, security: false } }, undefined],
-    [{ personal: { enabled: false } }, { personal: { security: true } }],
-    [undefined, { personal: { enabled: true, security: false } }],
-    [undefined, { personal: { enabled: false } }],
+    [{ personal: { enabled: true, security: false } }, undefined, false],
+    [{ personal: { enabled: false } }, { personal: { security: true } }, false],
+    [undefined, { personal: { enabled: true, security: false } }, true],
+    [undefined, { personal: { enabled: false } }, true],
   ])(
-    'admin or user disablement hides Security & Access (%j, %j)',
-    (admin, user) => {
+    'only admin rules determine Security & Access visibility (%j, %j → %s)',
+    (admin, user, expected) => {
       const { result } = sidebarFor(admin, user)
       expect(
         result.current
           .flatMap((group) => group.items)
           .some((item) => item.title === 'Security & Access')
-      ).toBe(false)
+      ).toBe(expected)
     }
   )
   it('users without sidebar configuration permission retain the admin view', () => {
@@ -155,19 +161,19 @@ describe('audit log sidebar entry', () => {
   })
 
   it.each([
-    [{ console: { enabled: true, audit: false } }, undefined],
-    [{ console: { enabled: false } }, { console: { audit: true } }],
-    [undefined, { console: { enabled: true, audit: false } }],
-    [undefined, { console: { enabled: false } }],
+    [{ console: { enabled: true, audit: false } }, undefined, false],
+    [{ console: { enabled: false } }, { console: { audit: true } }, false],
+    [undefined, { console: { enabled: true, audit: false } }, true],
+    [undefined, { console: { enabled: false } }, true],
   ])(
-    'admin and personal visibility rules can hide Audit Logs (%j, %j)',
-    (admin, user) => {
+    'only admin rules determine Audit Logs visibility (%j, %j → %s)',
+    (admin, user, expected) => {
       const { result } = sidebarFor(admin, user)
       expect(
         result.current
           .flatMap((group) => group.items)
           .some((item) => item.title === 'Audit Logs')
-      ).toBe(false)
+      ).toBe(expected)
     }
   )
 
@@ -179,4 +185,82 @@ describe('audit log sidebar entry', () => {
     expect(titles).not.toContain('Usage Logs')
     expect(titles).toContain('Audit Logs')
   })
+})
+
+describe('retired personal sidebar preferences', () => {
+  it.each([true, false])(
+    'ignores historical chat and nested-link preferences when sidebar_settings permission is %s',
+    (canConfigure) => {
+      const groups: NavGroup[] = [
+        {
+          id: 'chat',
+          title: 'Chat',
+          items: [{ title: 'Chat presets', type: 'chat-presets' }],
+        },
+        {
+          title: 'Account',
+          items: [
+            {
+              title: 'Personal',
+              items: [
+                { title: 'Wallet', url: '/wallet' },
+                { title: 'Profile', url: '/profile' },
+              ],
+            },
+          ],
+        },
+      ]
+      const { result } = renderHook(() => useSidebarConfig(groups), {
+        wrapper: sidebarWrapper(
+          undefined,
+          {
+            chat: { enabled: false, chat: false },
+            personal: { enabled: false, topup: false, personal: false },
+          },
+          canConfigure
+        ),
+      })
+
+      expect(result.current).toEqual(groups)
+    }
+  )
+
+  it.each([
+    { chat: { enabled: false, chat: true } },
+    { chat: { enabled: true, chat: false } },
+  ])('keeps chat presets hidden when the admin disables them (%j)', (admin) => {
+    const groups: NavGroup[] = [
+      {
+        title: 'Chat',
+        items: [{ title: 'Chat presets', type: 'chat-presets' }],
+      },
+    ]
+    const { result } = renderHook(() => useSidebarConfig(groups), {
+      wrapper: sidebarWrapper(admin, { chat: { enabled: true, chat: true } }),
+    })
+
+    expect(result.current).toEqual([])
+  })
+
+  it.each([
+    [undefined, { personal: { enabled: false, topup: false } }, true],
+    [
+      { personal: { enabled: true, topup: false } },
+      { personal: { enabled: true, topup: true } },
+      false,
+    ],
+    [{ personal: { enabled: false } }, undefined, false],
+  ])(
+    'uses the same admin rules for wallet links outside the sidebar (%j, %j → %s)',
+    (admin, user, expected) => {
+      const { result } = renderHook(
+        () => useIsSidebarModuleVisible('/wallet'),
+        {
+          wrapper: sidebarWrapper(admin, user),
+        }
+      )
+
+      expect(result.current).toBe(expected)
+    }
+  )
 })
