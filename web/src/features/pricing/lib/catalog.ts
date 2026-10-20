@@ -39,13 +39,14 @@ type DisplayMetadata = Pick<
 // metadata takes precedence; serving availability is never inferred from specs.
 const displayMetadata = modelMetadata as Record<string, DisplayMetadata>
 
-// Website reference prices in USD per 1M tokens. Connected GLM-5.3 uses its
-// backend sale prices; other catalog models retain the announced discount.
+// Website reference prices in USD per 1M tokens. Connected models use backend
+// sale prices; announced models retain the reference-price discount.
 // Z.ai reference checked 2026-10-14: https://docs.z.ai/guides/overview/pricing
+// Moonshot reference checked 2026-10-19: https://platform.kimi.ai/docs/pricing/chat
 export const officialPrices: Record<string, PricingModel['official_price']> = {
   'glm-5.3': { input: 1.4, cache: 0.26, output: 4.4 },
   'deepseek-v4.1-flash': { input: 0.3, output: 1.2 },
-  'kimi-k3': { input: 3, output: 15 },
+  'kimi-k3': { input: 3, output: 15, cache: 0.3 },
   'qwen3.8-flash': { input: 0.15, output: 0.47 },
   'qwen3.8-27b': { input: 0.425, output: 2.55 },
 }

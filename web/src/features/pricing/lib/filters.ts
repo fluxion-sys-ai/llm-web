@@ -24,7 +24,10 @@ import {
   ENDPOINT_TYPES,
 } from '../constants'
 import type { PricingModel } from '../types'
-import { getCatalogTokenPrices, usesGlmBackendPricing } from './catalog-price'
+import {
+  getCatalogTokenPrices,
+  usesBackendCatalogPricing,
+} from './catalog-price'
 import { getCustomerPriceMultiplier } from './customer-price'
 import { hasTaskUsageSchema } from './dynamic-price'
 import { getDisplayGroupRatio } from './model-helpers'
@@ -129,7 +132,7 @@ function getModelPrice(
   model: PricingModel,
   selectedGroup?: string
 ): number | null {
-  if (usesGlmBackendPricing(model)) {
+  if (usesBackendCatalogPricing(model)) {
     return getCatalogTokenPrices(model, selectedGroup)?.input ?? null
   }
   if (model.official_price) {

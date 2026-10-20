@@ -29,7 +29,7 @@ import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
 import { DEFAULT_TOKEN_UNIT } from '../constants'
-import { usesGlmBackendPricing } from '../lib/catalog-price'
+import { usesBackendCatalogPricing } from '../lib/catalog-price'
 import { hasCustomerPrice } from '../lib/customer-price'
 import {
   getCardExamplePrice,
@@ -99,7 +99,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   const usesPriceCell = Boolean(
     props.model.official_price ||
     pricingPending ||
-    usesGlmBackendPricing(props.model)
+    usesBackendCatalogPricing(props.model)
   )
   let priceSummary: ReactNode
   if (usesPriceCell) {

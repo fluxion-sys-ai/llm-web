@@ -137,7 +137,7 @@ test('backend display and billing fields win over local metadata without rewriti
   expect(result.current.models[0].max_output_tokens).toBe(1024)
 })
 
-test('connected DeepSeek keeps catalog prices while preserving backend billing fields', () => {
+test('connected DeepSeek displays actual backend prices rather than an unsupported reference discount', () => {
   const result = catalog(
     [
       {
@@ -162,11 +162,10 @@ test('connected DeepSeek keeps catalog prices while preserving backend billing f
   ])
   expect(summary?.secondaryEntries.map((entry) => entry.value)).toEqual([0.006])
   render(<ModelPriceCell model={model} options={{ tokenUnit: 'M' }} />)
-  expect(screen.getByText('0.24')).toBeVisible()
-  expect(screen.getByText('0.96')).toBeVisible()
-  expect(screen.getByText('0.30').tagName).toBe('S')
-  expect(screen.getByText('1.20').tagName).toBe('S')
-  expect(screen.getByText('20% off')).toBeVisible()
+  expect(screen.getByText('0.30').tagName).not.toBe('S')
+  expect(screen.getByText('1.20').tagName).not.toBe('S')
+  expect(screen.getByText('0.006')).toBeVisible()
+  expect(screen.queryByText('20% off')).not.toBeInTheDocument()
   expect(screen.queryByText(/75/)).not.toBeInTheDocument()
 })
 
@@ -314,10 +313,11 @@ test.each(['GLM-5.3', 'DeepSeek-V4.1-Flash', 'Kimi-K3'])(
     expect(pricing.getByText('Input')).toBeVisible()
     expect(pricing.getByText('Output')).toBeVisible()
     const amounts = pricing.getAllByText(/^[\d,]+\.\d+$/)
-    expect(amounts).toHaveLength(name === 'GLM-5.3' ? 6 : 4)
+    const rateCount = Object.keys(model.official_price ?? {}).length
+    expect(amounts).toHaveLength(rateCount * 2)
     for (const amount of amounts) expect(amount).toBeVisible()
     expect(amounts.filter((amount) => amount.tagName === 'S')).toHaveLength(
-      name === 'GLM-5.3' ? 3 : 2
+      rateCount
     )
     expect(
       pricing.getByText(`${OFFICIAL_PRICE_DISCOUNT_PERCENT}% off`)

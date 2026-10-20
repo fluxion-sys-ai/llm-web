@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils'
 import { DEFAULT_TOKEN_UNIT } from '../constants'
 import {
   getCatalogTokenPrices,
-  usesGlmBackendPricing,
+  usesBackendCatalogPricing,
 } from '../lib/catalog-price'
 import {
   getDynamicDisplayGroupRatio,
@@ -137,7 +137,7 @@ export function usePricingColumns(
       cell: ({ row }) => {
         const model = row.original
         if (
-          usesGlmBackendPricing(model) ||
+          usesBackendCatalogPricing(model) ||
           model.official_price?.cache !== undefined
         ) {
           const cachePrice = getCatalogTokenPrices(model, selectedGroup)?.cache
