@@ -248,6 +248,9 @@ describe('security page migration', () => {
   })
 
   it('Profile retains preferences and no longer mounts security controls or requests', async () => {
+    useAuthStore
+      .getState()
+      .auth.setUser({ ...profile, permissions: { sidebar_settings: true } })
     await renderPage('/profile')
     await waitFor(() =>
       expect(
@@ -258,6 +261,13 @@ describe('security page migration', () => {
       screen.queryByRole('button', { name: 'Change Password' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('Account Bindings')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Sidebar Personal Settings')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Language Preferences')).toBeVisible()
+    expect(
+      screen.getByRole('spinbutton', { name: 'Quota Warning Threshold (USD)' })
+    ).toBeVisible()
     expect(
       screen.queryByRole('switch', { name: 'Record IP Address' })
     ).not.toBeInTheDocument()
