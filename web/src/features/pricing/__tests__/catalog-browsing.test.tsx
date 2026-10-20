@@ -139,6 +139,7 @@ describe('catalog browsing', () => {
           ...glm,
           model_name: 'test-discount-model',
           display_name: 'Discount test model',
+          availability: 'coming_soon',
           official_price: { input: 10, output: 20 },
         }}
         onClick={vi.fn()}

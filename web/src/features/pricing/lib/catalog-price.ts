@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { OFFICIAL_PRICE_DISCOUNT_PERCENT } from '../constants'
 import type { PricingModel } from '../types'
 import { parseTiersFromExpr } from './billing-expr'
-import { getCustomerPriceMultiplier, hasCustomerPrice } from './customer-price'
+import { getCustomerPriceMultiplier } from './customer-price'
 import { getDisplayGroupRatio } from './model-helpers'
 import { calculateTokenPrice } from './price'
 
@@ -27,21 +27,15 @@ export const CATALOG_PRICE_TYPES = ['input', 'output', 'cache'] as const
 export type CatalogPriceType = (typeof CATALOG_PRICE_TYPES)[number]
 export type CatalogTokenPrices = Partial<Record<CatalogPriceType, number>>
 
-export function usesGlmBackendPricing(model: PricingModel): boolean {
+export function usesBackendCatalogPricing(model: PricingModel): boolean {
   return (
-    model.model_name.toLowerCase() === 'glm-5.3' &&
-    model.availability !== 'coming_soon'
+    model.availability !== 'coming_soon' &&
+    (Boolean(model.official_price) ||
+      model.model_name.toLowerCase() === 'glm-5.3')
   )
 }
 
 /** Read only complete, unconditional linear rates; never fall back to stale ratios for expressions. */
-export function getGlmBackendPrices(
-  model: PricingModel,
-  selectedGroup?: string
-): CatalogTokenPrices | null {
-  return getBackendTokenPrices(model, selectedGroup)
-}
-
 function getBackendTokenPrices(
   model: PricingModel,
   selectedGroup?: string
@@ -109,7 +103,9 @@ export function getPublicCatalogTokenPrices(
   model: PricingModel,
   selectedGroup?: string
 ): CatalogTokenPrices | null {
-  if (usesGlmBackendPricing(model) || hasCustomerPrice(model)) {
+  // Connected models must use their billing base before, during and after an
+  // account benefit. Announced models retain the reference-price discount.
+  if (usesBackendCatalogPricing(model)) {
     return getBackendTokenPrices(model, selectedGroup)
   }
   if (!model.official_price) return null
@@ -131,8 +127,8 @@ export function hasCatalogDiscount(
   if (!official) return false
   return CATALOG_PRICE_TYPES.every((type) => {
     const reference = official[type]
-    // All three GLM rates must agree before advertising the model-wide discount.
-    if (reference === undefined) return !usesGlmBackendPricing(model)
+    // Every published reference rate must agree with the advertised discount.
+    if (reference === undefined) return true
     const actual = prices[type]
     const expected = (reference * (100 - OFFICIAL_PRICE_DISCOUNT_PERCENT)) / 100
     return actual !== undefined && Math.abs(actual - expected) < 1e-9

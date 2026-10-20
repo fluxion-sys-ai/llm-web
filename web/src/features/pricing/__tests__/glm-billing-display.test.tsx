@@ -190,7 +190,7 @@ describe('GLM backend-aligned pricing', () => {
       id: 2,
       model_name: 'other',
       official_price: { input: 1.5, output: 4 },
-      billing_expr: undefined,
+      billing_expr: 'tier("standard", p * 1.2 + c * 3.2)',
     }
     const fullPrice = {
       ...glm,

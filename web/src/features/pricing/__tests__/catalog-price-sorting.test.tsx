@@ -63,17 +63,17 @@ describe('catalog price ordering', () => {
       }
       const models = [unavailable, unpriced, live, connected]
 
-      // Displayed inputs are 0.24, 0.40 and 1.12 USD / 1M tokens.
+      // Displayed inputs are 200.00 (live), 0.40 (live) and 1.12 (announced).
       const expected =
         sortBy === SORT_OPTIONS.PRICE_LOW
-          ? [connected, live, unavailable, unpriced]
-          : [unavailable, live, connected, unpriced]
+          ? [live, unavailable, connected, unpriced]
+          : [connected, unavailable, live, unpriced]
       expect(sortModels(models, sortBy)).toEqual(expected)
       expect(models).toEqual([unavailable, unpriced, live, connected])
     }
   )
 
-  it('does not mix a backend cached price into configured catalog pricing', () => {
+  it('uses backend cached prices for connected catalog models even without an official cache reference', () => {
     render(
       <PricingTable
         models={[
@@ -100,7 +100,7 @@ describe('catalog price ordering', () => {
 
     expect(
       within(configuredRow).getAllByRole('cell')[cachedColumn]
-    ).toHaveTextContent(/^—$/)
+    ).toHaveTextContent('100.00')
     expect(
       within(liveRow).getAllByRole('cell')[cachedColumn]
     ).toHaveTextContent('$1')

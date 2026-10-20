@@ -32,7 +32,7 @@ import {
   getCatalogTokenPrices,
   getPublicCatalogTokenPrices,
   hasCatalogDiscount,
-  usesGlmBackendPricing,
+  usesBackendCatalogPricing,
 } from '../lib/catalog-price'
 import {
   getDynamicDisplayGroupRatio,
@@ -102,7 +102,7 @@ export function ModelPriceCell(props: {
 
   if (
     props.model.official_price ||
-    (usesGlmBackendPricing(props.model) &&
+    (usesBackendCatalogPricing(props.model) &&
       props.model.pricing_status !== 'pending')
   ) {
     const prices = getCatalogTokenPrices(props.model, options.selectedGroup)

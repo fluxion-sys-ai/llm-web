@@ -220,7 +220,7 @@ test('configured models retain their real price display and raw-name fallback', 
   expect(screen.getAllByText(/\$/).length).toBeGreaterThan(0)
 })
 
-test('connected models with catalog prices show the discount without live group or expression prices', () => {
+test('connected model details show backend expression prices without an unsupported reference discount', () => {
   vi.spyOn(api, 'get').mockResolvedValue({ data: { data: { groups: [] } } })
   renderDetails(
     {
@@ -235,11 +235,9 @@ test('connected models with catalog prices show the discount without live group 
   )
 
   const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
-  expect(pricing.getByText('0.24')).toBeVisible()
-  expect(pricing.getByText('0.96')).toBeVisible()
-  expect(pricing.getByText('0.30').tagName).toBe('S')
-  expect(pricing.getByText('1.20').tagName).toBe('S')
-  expect(pricing.getByText('20% off')).toBeVisible()
+  expect(pricing.getByText('7.00')).toBeVisible()
+  expect(pricing.getByText('21.00')).toBeVisible()
+  expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
   expect(pricing.queryByText('Pricing by Group')).not.toBeInTheDocument()
 })
 
