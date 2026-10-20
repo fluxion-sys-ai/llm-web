@@ -46,7 +46,10 @@ export function useCustomerBenefits(enabled = true): CustomerBenefitsQuery {
     userId !== undefined && query.data?.user_id === userId
       ? query.data
       : undefined
-  const now = usePromotionClock(data?.promotions ?? emptyPromotions)
+  const now = usePromotionClock(
+    data?.promotions ?? emptyPromotions,
+    query.dataUpdatedAt
+  )
 
   return { ...query, data, now }
 }

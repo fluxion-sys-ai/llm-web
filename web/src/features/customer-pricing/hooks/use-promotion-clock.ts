@@ -16,12 +16,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import type { Promotion } from '../types'
 
-export function usePromotionClock(promotions: Promotion[]): number {
+export function usePromotionClock(
+  promotions: Promotion[],
+  refreshedAt = 0
+): number {
   const [lastTick, setLastTick] = useState(() => Date.now() / 1000)
+  // Only resample on a timer tick or new benefits. A fresh timestamp on every
+  // render invalidates catalog memoization and can cycle stateful consumers.
+  const snapshot = useMemo(
+    () => ({ promotions, lastTick, refreshedAt, now: Date.now() / 1000 }),
+    [promotions, lastTick, refreshedAt]
+  )
   useEffect(() => {
     const current = Date.now() / 1000
     const next = promotions
@@ -34,6 +43,5 @@ export function usePromotionClock(promotions: Promotion[]): number {
     )
     return () => window.clearTimeout(timeout)
   }, [lastTick, promotions])
-  // Refetched promotions must use wall time, even before the next timer tick.
-  return Date.now() / 1000
+  return snapshot.now
 }
