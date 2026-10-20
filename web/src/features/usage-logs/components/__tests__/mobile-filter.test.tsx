@@ -140,8 +140,8 @@ it('applies the selected mobile date range directly and resets pagination while 
       page: 1,
       group: 'default',
       type: ['2'],
-      startTime: new Date('2026-09-07T09:30').getTime(),
-      endTime: new Date('2026-09-08T17:45').getTime(),
+      startTime: Date.parse('2026-09-07T16:30:00Z'),
+      endTime: Date.parse('2026-09-09T00:45:00Z'),
     })
   )
 })
@@ -265,7 +265,7 @@ it.each([
   'labels the calendar-month preset as 本月 in $language and selects the complete month',
   async ({ language, resources }) => {
     vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(2026, 8, 8, 12))
+    vi.setSystemTime(new Date('2026-09-08T19:00:00Z'))
     i18next.addResourceBundle(language, 'translation', resources, true, true)
     await i18next.changeLanguage(language)
     const user = userEvent.setup()
@@ -282,8 +282,8 @@ it.each([
     expect(preset).toBeVisible()
     await user.click(preset)
     expect(onChange).toHaveBeenCalledWith({
-      start: new Date(2026, 8, 1),
-      end: new Date(2026, 8, 30, 23, 59, 59, 999),
+      start: new Date('2026-09-01T07:00:00Z'),
+      end: new Date('2026-10-01T06:59:59.999Z'),
     })
   }
 )

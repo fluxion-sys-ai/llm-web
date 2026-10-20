@@ -60,7 +60,12 @@ import { DynamicPricingBreakdown } from '@/features/pricing/components/dynamic-p
 import { usePricingData } from '@/features/pricing/hooks/use-pricing-data'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatBillingCurrencyFromUSD } from '@/lib/currency'
-import { formatLogQuota, formatTokens, formatUseTime } from '@/lib/format'
+import {
+  formatLogQuota,
+  formatTokens,
+  formatUseTime,
+  formatTimestampToDate,
+} from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 import { AuditDetailFields } from '../../audit/components/audit-detail-fields'
@@ -87,6 +92,7 @@ import {
 import { USAGE_BILLING_PATH, type LogOtherData } from '../../types'
 import { CustomerPricingDetails } from '../customer-pricing-details'
 import { PluginAuthorLink } from '../plugin-author-link'
+import { StreamTpsCell } from '../timing-metrics-cell'
 import { DetailRow, DetailSection } from './log-detail-layout'
 
 // Maps a channel-update changed-field token (as recorded by the backend audit)
@@ -440,6 +446,7 @@ interface DetailsDialogProps {
   log: UsageLog
   isAdmin: boolean
   isRoot: boolean
+  sensitiveVisible?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -448,6 +455,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
   const { t } = useTranslation()
   const { copiedText, copyToClipboard } = useCopyToClipboard({ notify: false })
   const other = parseLogOther(props.log.other)
+  const sensitiveVisible = props.sensitiveVisible !== false
   const typeConfig = getLogTypeConfig(props.log.type)
 
   const isViolation = isViolationFeeLog(other)
@@ -617,6 +625,42 @@ export function DetailsDialog(props: DetailsDialogProps) {
       <div className='w-full max-w-full min-w-0 space-y-2.5 overflow-x-hidden py-1 sm:space-y-3'>
         {/* Overview section - key identifiers */}
         <div className='min-w-0 space-y-1'>
+          <DetailRow
+            label={t('Time')}
+            value={formatTimestampToDate(props.log.created_at)}
+            mono
+          />
+          {props.log.model_name && (
+            <DetailRow label={t('Model')} value={props.log.model_name} mono />
+          )}
+          {props.isAdmin && props.log.username && (
+            <DetailRow
+              label={t('User')}
+              value={
+                sensitiveVisible
+                  ? `${props.log.username} (ID: ${props.log.user_id})`
+                  : '••••'
+              }
+            />
+          )}
+          {showTiming && (
+            <DetailRow
+              label={t('Performance')}
+              value={
+                <StreamTpsCell
+                  compact
+                  isStream={props.log.is_stream}
+                  isTask={other?.is_task === true}
+                  tokensPerSecond={
+                    props.log.use_time > 0 && props.log.completion_tokens > 0
+                      ? props.log.completion_tokens / props.log.use_time
+                      : null
+                  }
+                  streamStatus={other?.stream_status}
+                />
+              }
+            />
+          )}
           {props.log.request_id && (
             <DetailRow
               label={t('Request ID')}
@@ -641,7 +685,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
                   {props.log.channel_name && (
                     <span className='text-muted-foreground'>
                       {' '}
-                      ({props.log.channel_name})
+                      ({sensitiveVisible ? props.log.channel_name : '••••'})
                     </span>
                   )}
                 </span>
@@ -655,13 +699,21 @@ export function DetailsDialog(props: DetailsDialogProps) {
           )}
 
           {props.log.token_name && (
-            <DetailRow label={t('Token')} value={props.log.token_name} mono />
+            <DetailRow
+              label={t('Token')}
+              value={sensitiveVisible ? props.log.token_name : '••••'}
+              mono
+            />
           )}
 
           {(props.log.group || other?.group) && (
             <DetailRow
               label={t('Group')}
-              value={props.log.group || other?.group || ''}
+              value={
+                sensitiveVisible
+                  ? props.log.group || other?.group || ''
+                  : '••••'
+              }
               mono
             />
           )}

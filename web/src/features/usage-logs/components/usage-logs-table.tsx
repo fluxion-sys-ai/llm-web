@@ -38,6 +38,7 @@ import {
 } from '../constants'
 import { useColumnsByCategory } from '../lib/columns'
 import { parseLogOther } from '../lib/format'
+import { COMMON_LOG_COLUMN_VISIBILITY } from '../lib/table-layout'
 import { fetchLogsByCategory } from '../lib/utils'
 import type { LogCategory } from '../types'
 import { CommonLogsFilterBar } from './common-logs-filter-bar'
@@ -172,6 +173,8 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
     data: logs as Record<string, unknown>[],
     columns: columns as ColumnDef<Record<string, unknown>>[],
     columnFilters,
+    initialColumnVisibility:
+      logCategory === 'common' ? COMMON_LOG_COLUMN_VISIBILITY : undefined,
     columnVisibilityStorageKey: getColumnVisibilityStorageKey(
       logCategory,
       viewAccess
@@ -202,7 +205,7 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       skeletonKeyPrefix='usage-log-skeleton'
       applyHeaderSize
       tableClassName={cn(
-        '[&_[data-slot=table]]:text-[13px] [&_[data-slot=table]_td]:text-[13px] [&_[data-slot=table]_td_*]:text-[13px] [&_[data-slot=table]_th]:text-[13px] [&_[data-slot=table]_th_*]:text-[13px]'
+        '[&_[data-slot=table]]:text-[13px] [&_[data-slot=table]_td]:text-[13px] [&_[data-slot=table]_th]:text-[13px]'
       )}
       mobile={
         <UsageLogsMobileList

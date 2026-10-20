@@ -19,7 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 /**
  * Time utility functions for consistent time handling across the application
  */
-import dayjs from '@/lib/dayjs'
+import {
+  formatPacificTime,
+  formatPacificTimeWithZone,
+  toPacificTime,
+} from '@/lib/timezone'
 
 /**
  * Time granularity type
@@ -38,9 +42,9 @@ export function dateToUnixTimestamp(date: Date): number {
  * Sets time to 00:00:00
  */
 export function toStartOfDay(tsSec: number): number {
-  const d = new Date(tsSec * 1000)
-  d.setHours(0, 0, 0, 0)
-  return Math.floor(d.getTime() / 1000)
+  return toPacificTime(tsSec * 1000)
+    .startOf('day')
+    .unix()
 }
 
 /**
@@ -48,9 +52,7 @@ export function toStartOfDay(tsSec: number): number {
  * Returns new Date with time set to 00:00:00
  */
 export function getStartOfDay(date: Date = new Date()): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return d
+  return toPacificTime(date).startOf('day').toDate()
 }
 
 /**
@@ -58,9 +60,7 @@ export function getStartOfDay(date: Date = new Date()): Date {
  * Returns new Date with time set to 23:59:59.999
  */
 export function getEndOfDay(date: Date = new Date()): Date {
-  const d = new Date(date)
-  d.setHours(23, 59, 59, 999)
-  return d
+  return toPacificTime(date).endOf('day').toDate()
 }
 
 /**
@@ -73,13 +73,10 @@ export function getNormalizedDateRange(
   days: number,
   fromDate: Date = new Date()
 ): { start: Date; end: Date } {
-  const end = new Date(fromDate)
-  const start = new Date(fromDate)
-  start.setDate(end.getDate() - days)
-
+  const end = toPacificTime(fromDate)
   return {
-    start: getStartOfDay(start),
-    end: getEndOfDay(end),
+    start: end.subtract(days, 'day').startOf('day').toDate(),
+    end: end.endOf('day').toDate(),
   }
 }
 
@@ -114,17 +111,14 @@ export function computeTimeRange(
   const now = Math.floor(Date.now() / 1000)
 
   if (useStartOfDay) {
-    const defaultEnd = toStartOfDay(now)
-    const end = endDate
-      ? toStartOfDay(dateToUnixTimestamp(endDate))
-      : defaultEnd
+    const end = toPacificTime(endDate ?? now * 1000)
     const start = startDate
-      ? toStartOfDay(dateToUnixTimestamp(startDate))
-      : end - days * 24 * 3600
+      ? toPacificTime(startDate)
+      : end.subtract(days, 'day')
 
     return {
-      start_timestamp: start,
-      end_timestamp: end + 24 * 3600 - 1, // End of day
+      start_timestamp: start.startOf('day').unix(),
+      end_timestamp: end.endOf('day').unix(),
     }
   }
 
@@ -143,14 +137,14 @@ export function computeTimeRange(
  * Format Unix timestamp (seconds) to YYYY-MM-DD
  */
 export function formatDate(tsSec: number): string {
-  return dayjs(tsSec * 1000).format('YYYY-MM-DD')
+  return formatPacificTime(tsSec * 1000, 'YYYY-MM-DD')
 }
 
 /**
  * Format Date object to YYYY-MM-DD HH:mm:ss
  */
 export function formatDateTimeObject(date: Date): string {
-  return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+  return formatPacificTimeWithZone(date)
 }
 
 /**
@@ -163,7 +157,7 @@ export function formatChartTime(
   timestamp: number,
   granularity: TimeGranularity = 'day'
 ): string {
-  const d = dayjs(timestamp * 1000)
+  const d = toPacificTime(timestamp * 1000)
   let result = d.format('MM-DD')
 
   if (granularity === 'hour') {

@@ -28,11 +28,15 @@ import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
-import dayjs from '@/lib/dayjs'
 import { formatLogQuota, formatTimestampToDate } from '@/lib/format'
+import { formatPacificTimeWithZone } from '@/lib/timezone'
 
 import type { UsageLog } from '../data/schema'
-import { formatModelName, parseLogOther } from '../lib/format'
+import {
+  formatModelName,
+  parseLogOther,
+  renderAuditContent,
+} from '../lib/format'
 import {
   getLogTypeConfig,
   isDisplayableLogType,
@@ -125,7 +129,11 @@ export function CommonLogMobileCard<TData>(props: {
   const metadata: FieldName[] = ['user', 'channel', 'token', 'group']
   const visibleMetadata = metadata.filter((id) => fields[id].visible)
   const costCell = props.cells.get('quota')
-  const contentCell = props.cells.get('content')
+  const contentCell = props.cells.get('details') ?? props.cells.get('content')
+  const operation =
+    !displayable || log.type === 5
+      ? renderAuditContent(other, t) || log.content || t(config.label)
+      : null
   const channelCell = props.cells.get('channel')
   const cacheRead = other?.cache_tokens || 0
   const cacheWrite =
@@ -160,6 +168,11 @@ export function CommonLogMobileCard<TData>(props: {
           </div>
         )}
       </div>
+      {operation && props.cells.has('model_name') && (
+        <p className='line-clamp-2 text-sm [overflow-wrap:anywhere]'>
+          {context.sensitiveVisible ? operation : '••••'}
+        </p>
+      )}
       <div
         className='grid min-w-0 grid-cols-2 items-stretch gap-x-3'
         data-slot='log-time-and-timing'
@@ -180,7 +193,10 @@ export function CommonLogMobileCard<TData>(props: {
               onClick={() => setSelectedField('time')}
               className='text-muted-foreground h-auto min-h-6 px-0 py-0 text-xs font-normal whitespace-normal tabular-nums'
             >
-              {dayjs.unix(log.created_at).format('MM-DD HH:mm:ss')}
+              {formatPacificTimeWithZone(
+                log.created_at * 1000,
+                'MM-DD HH:mm:ss'
+              )}
             </Button>
           </div>
         )}
