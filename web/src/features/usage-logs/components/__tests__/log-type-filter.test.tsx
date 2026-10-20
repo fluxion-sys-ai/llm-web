@@ -25,13 +25,7 @@ import {
   RouterProvider,
 } from '@tanstack/react-router'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import {
-  cleanup,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -53,7 +47,7 @@ function FilterFixture() {
   )
 }
 
-async function renderFilter() {
+async function renderFilter(initialEntry = '/usage-logs/common') {
   vi.spyOn(api, 'get').mockImplementation(async (url) => ({
     data: {
       success: true,
@@ -70,7 +64,7 @@ async function renderFilter() {
   })
   const router = createRouter({
     routeTree: root.addChildren([auth.addChildren([logs])]),
-    history: createMemoryHistory({ initialEntries: ['/usage-logs/common'] }),
+    history: createMemoryHistory({ initialEntries: [initialEntry] }),
   })
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -89,15 +83,13 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-it('marks only retired log types as deprecated while keeping historical filters selectable', async () => {
+it('hides retired log types from the menu while keeping active filters selectable', async () => {
   const router = await renderFilter()
   await userEvent.click(screen.getByRole('combobox', { name: 'Type' }))
   for (const label of ['Manage', 'Login']) {
     expect(
-      within(
-        screen.getByRole('option', { name: new RegExp(`^${label}`) })
-      ).getByText('Deprecated')
-    ).toBeVisible()
+      screen.queryByRole('option', { name: new RegExp(`^${label}`) })
+    ).not.toBeInTheDocument()
   }
   for (const label of [
     'All Types',
@@ -107,24 +99,39 @@ it('marks only retired log types as deprecated while keeping historical filters 
     'Error',
     'Refund',
   ]) {
-    expect(
-      within(screen.getByRole('option', { name: label })).queryByText(
-        'Deprecated'
-      )
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('option', { name: label })).toBeVisible()
   }
-  await userEvent.click(screen.getByRole('option', { name: /^Manage/ }))
-  expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent(
-    'Deprecated'
-  )
+  await userEvent.click(screen.getByRole('option', { name: 'Consume' }))
   await userEvent.click(screen.getByRole('button', { name: 'Search' }))
   await waitFor(() =>
-    expect(router.state.location.search).toMatchObject({ type: ['3'], page: 1 })
-  )
-  await userEvent.click(screen.getByRole('combobox', { name: 'Type' }))
-  await userEvent.click(screen.getByRole('option', { name: /^Login/ }))
-  await userEvent.click(screen.getByRole('button', { name: 'Search' }))
-  await waitFor(() =>
-    expect(router.state.location.search).toMatchObject({ type: ['7'], page: 1 })
+    expect(router.state.location.search).toMatchObject({ type: ['2'], page: 1 })
   )
 })
+
+it.each([
+  ['Manage', '3'],
+  ['Login', '7'],
+])(
+  'preserves a saved %s filter and lets the user switch to All Types',
+  async (label, value) => {
+    const router = await renderFilter(
+      `/usage-logs/common?type=${encodeURIComponent(JSON.stringify([value]))}`
+    )
+    expect(screen.getByRole('combobox', { name: 'Type' })).toHaveTextContent(
+      label
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+    await waitFor(() =>
+      expect(router.state.location.search).toMatchObject({ type: [value] })
+    )
+    await userEvent.click(screen.getByRole('combobox', { name: 'Type' }))
+    expect(
+      screen.queryByRole('option', { name: new RegExp(`^${label}`) })
+    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('option', { name: 'All Types' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }))
+    await waitFor(() =>
+      expect(router.state.location.search).toMatchObject({ type: ['0'] })
+    )
+  }
+)
