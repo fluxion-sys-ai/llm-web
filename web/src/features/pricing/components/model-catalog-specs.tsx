@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useTranslation } from 'react-i18next'
 
 import { toIntlLocale } from '@/i18n/languages'
-import { formatTokens } from '@/lib/format'
+import { formatTokenCapacity } from '@/lib/format'
 
 import type { Modality, PricingModel } from '../types'
 
@@ -59,7 +59,7 @@ export function ModelCatalogSpecs(props: { model: PricingModel }) {
             className='mt-1 font-mono text-sm font-medium tabular-nums'
             title={`${metric.value?.toLocaleString(toIntlLocale(i18n.language))} ${t('tokens')}`}
           >
-            {formatTokens(metric.value ?? 0)}
+            {formatTokenCapacity(metric.value ?? 0)}
           </dd>
         </div>
       ))}

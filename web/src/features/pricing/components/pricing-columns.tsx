@@ -25,7 +25,7 @@ import {
   DataTableColumnHeader,
 } from '@/components/data-table'
 import { StatusBadge } from '@/components/status-badge'
-import { formatTokens } from '@/lib/format'
+import { formatTokenCapacity } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
@@ -311,7 +311,7 @@ export function usePricingColumns(
       cell: ({ row }) => (
         <span className='font-mono tabular-nums'>
           {row.original.context_length
-            ? formatTokens(row.original.context_length)
+            ? formatTokenCapacity(row.original.context_length)
             : '—'}
         </span>
       ),
@@ -324,7 +324,7 @@ export function usePricingColumns(
       cell: ({ row }) => (
         <span className='font-mono tabular-nums'>
           {row.original.max_output_tokens
-            ? formatTokens(row.original.max_output_tokens)
+            ? formatTokenCapacity(row.original.max_output_tokens)
             : '—'}
         </span>
       ),
