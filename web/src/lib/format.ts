@@ -260,6 +260,14 @@ export function formatTokens(tokens: number): string {
   return `${(tokens / 1000000).toFixed(2)}M`
 }
 
+/** Format model context/output capacities with 1024-based K/M units. */
+export function formatTokenCapacity(tokens: number): string {
+  if (!Number.isFinite(tokens) || tokens <= 0) return '-'
+  if (tokens < 1024) return tokens.toString()
+  if (tokens < 1024 ** 2) return `${Number((tokens / 1024).toFixed(1))}K`
+  return `${Number((tokens / 1024 ** 2).toFixed(2))}M`
+}
+
 /**
  * Format use time in seconds with appropriate unit
  */

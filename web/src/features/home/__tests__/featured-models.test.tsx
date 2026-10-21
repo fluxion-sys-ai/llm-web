@@ -172,9 +172,9 @@ test('a video-only backend still shows the complete featured cards from the refe
     ]) {
       expect(spec.getByText(label)).toBeVisible()
     }
-    expect(spec.getAllByText('1.05M').length).toBeGreaterThan(0)
+    expect(spec.getAllByText('1M').length).toBeGreaterThan(0)
   }
-  expect(specs[0].getByText('131.1K')).toBeVisible()
+  expect(specs[0].getByText('128K')).toBeVisible()
   expect(specs[1].getByText('Text · Image · Video')).toBeVisible()
   expect(specs[2].getByText('Text · Image')).toBeVisible()
   expect(section.getAllByRole('group', { name: 'Tags' })).toHaveLength(3)

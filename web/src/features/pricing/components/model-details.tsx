@@ -61,7 +61,7 @@ import {
   getSuccessRateTextClass,
 } from '@/features/performance-metrics/lib/format'
 import { useModelServiceStatuses } from '@/features/performance-metrics/use-model-service-status'
-import { formatTokens } from '@/lib/format'
+import { formatTokenCapacity } from '@/lib/format'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 
@@ -377,7 +377,7 @@ function ModelBackendQuickStats(props: { model: PricingModel }) {
       key: 'context',
       icon: Layers,
       label: t('Context'),
-      value: formatTokens(contextLength),
+      value: formatTokenCapacity(contextLength),
       hint: t('Input and output token budget'),
     })
   }
@@ -387,7 +387,7 @@ function ModelBackendQuickStats(props: { model: PricingModel }) {
       key: 'max-output',
       icon: Maximize2,
       label: t('Max output'),
-      value: formatTokens(maxOutput),
+      value: formatTokenCapacity(maxOutput),
       hint: t('Maximum tokens per response'),
     })
   }

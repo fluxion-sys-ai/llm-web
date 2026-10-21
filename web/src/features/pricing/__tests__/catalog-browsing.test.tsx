@@ -119,7 +119,7 @@ describe('catalog browsing', () => {
     render(<ModelCard model={flash} onClick={vi.fn()} />)
     expect(screen.getByRole('heading', { name: 'GLM 5.3 Flash' })).toBeVisible()
     const specs = screen.getByLabelText('Model specifications')
-    expect(within(specs).getByText('1.05M')).toHaveAttribute(
+    expect(within(specs).getByText('1M')).toHaveAttribute(
       'title',
       '1,048,576 tokens'
     )
@@ -162,9 +162,7 @@ describe('catalog browsing', () => {
       try {
         render(<ModelCard model={glm} onClick={vi.fn()} />)
         expect(
-          within(screen.getByLabelText('Model specifications')).getByText(
-            '1.05M'
-          )
+          within(screen.getByLabelText('Model specifications')).getByText('1M')
         ).toHaveAttribute('title', '1,048,576 tokens')
       } finally {
         await i18next.changeLanguage(previousLanguage)

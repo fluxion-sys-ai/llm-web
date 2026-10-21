@@ -192,8 +192,8 @@ test('pending pricing cannot show calculated amounts or group prices, and makes 
   expect(
     within(pricing).queryByText('Pricing by Group')
   ).not.toBeInTheDocument()
-  expect(screen.getByText('128.0K')).toBeVisible()
-  expect(screen.getByText('8.0K')).toBeVisible()
+  expect(screen.getByText('125K')).toBeVisible()
+  expect(screen.getByText('7.8K')).toBeVisible()
   await user.click(screen.getByRole('tab', { name: 'Performance' }))
   expect(screen.getByText('No performance data yet')).toBeVisible()
   expect(request).not.toHaveBeenCalled()
