@@ -28,20 +28,6 @@ export const defaultLLMUsageRules = {
   cost_usd: { capacity: 0, refill: 0 },
 }
 
-export const defaultLLMUsageLimitPolicy = {
-  ...defaultLLMUsageRules,
-  counter_epoch: 0,
-  user_overrides: {} as Record<string, LLMUsageRules>,
-}
-
-export const llmUsageUserIdSchema = z
-  .string()
-  .regex(/^[1-9][0-9]*$/)
-  .refine(
-    (value) => Number(value) <= 2147483647,
-    'Enter a user ID between 1 and 2147483647.'
-  )
-
 export const llmUsageBucketFields = [
   {
     name: 'uncached_input',
@@ -123,25 +109,4 @@ export function createLLMUsageRulesSchema(t: (key: string) => string) {
 
 export type LLMUsageRules = z.infer<
   ReturnType<typeof createLLMUsageRulesSchema>
->
-
-export function createLLMUsageLimitSchema(t: (key: string) => string) {
-  const rules = createLLMUsageRulesSchema(t)
-  return rules.safeExtend({
-    counter_epoch: z
-      .number()
-      .int()
-      .min(0)
-      .max(2 ** 52),
-    user_overrides: z
-      .record(llmUsageUserIdSchema, rules)
-      .refine(
-        (overrides) => Object.keys(overrides).length <= 1000,
-        t('Configure at most 1000 user overrides.')
-      ),
-  })
-}
-
-export type LLMUsageLimitPolicy = z.infer<
-  ReturnType<typeof createLLMUsageLimitSchema>
 >

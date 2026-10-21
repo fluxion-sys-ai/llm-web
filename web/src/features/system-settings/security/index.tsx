@@ -17,7 +17,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { SettingsPage } from '../components/settings-page'
-import { defaultLLMUsageLimitPolicy } from '../request-limits/lib/llm-usage-limit-policy'
 import type { SecuritySettings } from '../types'
 import {
   SECURITY_DEFAULT_SECTION,
@@ -26,7 +25,6 @@ import {
 } from './section-registry.tsx'
 
 const defaultSecuritySettings: SecuritySettings = {
-  LLMUsageLimitPolicy: JSON.stringify(defaultLLMUsageLimitPolicy),
   ModelRequestRateLimitEnabled: false,
   ModelRequestRateLimitCount: 0,
   ModelRequestRateLimitSuccessCount: 1000,

@@ -34,11 +34,8 @@ import { Switch } from '@/components/ui/switch'
 import {
   SettingsSwitchContent,
   SettingsSwitchItem,
-} from '../components/settings-form-layout'
-import {
-  llmUsageBucketFields,
-  type LLMUsageLimitPolicy,
-} from './lib/llm-usage-limit-policy'
+} from '../../system-settings/components/settings-form-layout'
+import { llmUsageBucketFields, type LLMUsageRules } from '../lib/usage-policy'
 
 const policyFields = [
   {
@@ -49,40 +46,28 @@ const policyFields = [
   },
   {
     name: 'max_concurrent',
-    label: 'Maximum concurrent model operations per user',
+    label: 'Maximum concurrent operations for this key',
     min: 1,
     max: 1000,
   },
 ] as const
 
 export function LLMUsagePolicyFields(props: {
-  form: UseFormReturn<LLMUsageLimitPolicy>
-  userId?: string
+  form: UseFormReturn<LLMUsageRules>
   disabled: boolean
 }) {
   const { t } = useTranslation()
-  const prefix = props.userId
-    ? (`user_overrides.${props.userId}.` as const)
-    : ''
   return (
     <>
       <FormField
         control={props.form.control}
-        name={`${prefix}enabled`}
+        name='enabled'
         render={({ field }) => (
           <SettingsSwitchItem>
             <SettingsSwitchContent>
-              <FormLabel>
-                {props.userId
-                  ? t('Enable limits for this user')
-                  : t('Enable default model usage limits')}
-              </FormLabel>
+              <FormLabel>{t('Enable limits for this key')}</FormLabel>
               <FormDescription>
-                {t(
-                  props.userId
-                    ? 'Disabling this override exempts this user from model usage limits.'
-                    : 'Applies to users without an override. User overrides can remain enabled when the default is disabled.'
-                )}
+                {t('Account limits still apply when key limits are disabled.')}
               </FormDescription>
               <FormMessage />
             </SettingsSwitchContent>
@@ -100,7 +85,7 @@ export function LLMUsagePolicyFields(props: {
         <FormField
           key={config.name}
           control={props.form.control}
-          name={`${prefix}${config.name}`}
+          name={config.name}
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t(config.label)}</FormLabel>
@@ -140,7 +125,7 @@ export function LLMUsagePolicyFields(props: {
               <FormField
                 key={kind}
                 control={props.form.control}
-                name={`${prefix}${bucket.name}.${kind}`}
+                name={`${bucket.name}.${kind}`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>

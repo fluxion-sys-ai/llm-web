@@ -111,3 +111,5 @@ export type ApiKeysDialogType =
   | 'delete'
   | 'batch-delete'
   | 'cc-switch'
+  | 'usage-limits'
+  | 'account-limits'
