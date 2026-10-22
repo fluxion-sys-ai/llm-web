@@ -5233,6 +5233,7 @@
     "Some channels failed: {{errorMsg}}": "部分渠道失败：{{errorMsg}}",
     "Some matching models are hidden or have no available channel.": "部分匹配模型已隐藏或暂无可用渠道。",
     "Some plugin information could not be read": "部分插件信息无法读取",
+    "Some usage is estimated. Limits will be adjusted when final usage arrives.": "部分用量暂按估算计入限额，收到最终用量后将自动调整。",
     "Something went wrong!": "出现错误！",
     "Sonnet Model": "Sonnet 模型",
     "Sora": "Sora",

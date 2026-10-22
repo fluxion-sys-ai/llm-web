@@ -166,3 +166,16 @@ test('account summary displays debt and unresolved usage', async () => {
     'Usage is awaiting reconciliation.'
   )
 })
+
+test('estimated usage is distinguished from blocked reconciliation', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({
+    data: { success: true, data: { ...summary, estimated: 1 } },
+  })
+  mount()
+  expect(await screen.findByRole('status')).toHaveTextContent(
+    'Some usage is estimated. Limits will be adjusted when final usage arrives.'
+  )
+  expect(
+    screen.queryByText('Usage is awaiting reconciliation.')
+  ).not.toBeInTheDocument()
+})

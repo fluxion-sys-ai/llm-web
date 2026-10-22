@@ -34,6 +34,7 @@ export type UsageSummaryData = {
   balance: number[]
   active: number
   unresolved: number
+  estimated?: number
   decision: { allowed: boolean; dimension: number; retry_after_ms: number }
   key?: Omit<UsageSummaryData, 'key' | 'unresolved'>
 }
@@ -51,6 +52,13 @@ export function UsageSummary(props: { data: UsageSummaryData }) {
       </p>
       {props.data.unresolved > 0 && (
         <p role='status'>{t('Usage is awaiting reconciliation.')}</p>
+      )}
+      {(props.data.estimated ?? 0) > 0 && (
+        <p role='status'>
+          {t(
+            'Some usage is estimated. Limits will be adjusted when final usage arrives.'
+          )}
+        </p>
       )}
       <Table>
         <TableHeader>

@@ -5233,6 +5233,7 @@
     "Some channels failed: {{errorMsg}}": "Một số kênh thất bại: {{errorMsg}}",
     "Some matching models are hidden or have no available channel.": "Một số mô hình khớp đã bị ẩn hoặc không có kênh khả dụng.",
     "Some plugin information could not be read": "Không đọc được một số thông tin plugin",
+    "Some usage is estimated. Limits will be adjusted when final usage arrives.": "Một phần mức sử dụng được ước tính. Hạn mức sẽ được điều chỉnh khi nhận được số liệu cuối cùng.",
     "Something went wrong!": "Có gì đó không ổn!",
     "Sonnet Model": "Mô hình Sonnet",
     "Sora": "Sora",

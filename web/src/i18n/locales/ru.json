@@ -5233,6 +5233,7 @@
     "Some channels failed: {{errorMsg}}": "Некоторые каналы не удались: {{errorMsg}}",
     "Some matching models are hidden or have no available channel.": "Часть соответствующих моделей скрыта или не имеет доступных каналов.",
     "Some plugin information could not be read": "Не удалось прочитать часть данных плагина",
+    "Some usage is estimated. Limits will be adjusted when final usage arrives.": "Часть расхода оценена предварительно. Лимиты будут скорректированы после получения итоговых данных.",
     "Something went wrong!": "Что-то пошло не так!",
     "Sonnet Model": "Модель Sonnet",
     "Sora": "Sora",
