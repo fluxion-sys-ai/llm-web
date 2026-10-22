@@ -77,9 +77,15 @@ test('editing a key posts only its policy to the key endpoint', async () => {
   vi.spyOn(api, 'get').mockResolvedValue({
     data: { success: true, data: summary },
   })
-  const put = vi
-    .spyOn(api, 'put')
-    .mockResolvedValue({ data: { success: true } })
+  const put = vi.spyOn(api, 'put').mockResolvedValue({
+    data: {
+      success: true,
+      data: {
+        policy: { ...defaultLLMUsageRules, max_concurrent: 2 },
+        clamped_fields: [],
+      },
+    },
+  })
   mount(7)
   const input = await screen.findByRole('spinbutton', {
     name: 'Maximum concurrent operations for this key',
@@ -163,19 +169,55 @@ test('account summary displays debt and unresolved usage', async () => {
   })
   expect(within(region).getByText('-3')).toBeInTheDocument()
   expect(within(region).getByRole('status')).toHaveTextContent(
-    'Usage is awaiting reconciliation.'
+    'Incomplete usage is awaiting review. This does not block new requests.'
   )
 })
 
-test('estimated usage is distinguished from blocked reconciliation', async () => {
+test('key denial is visible while account has credit', async () => {
   vi.spyOn(api, 'get').mockResolvedValue({
-    data: { success: true, data: { ...summary, estimated: 1 } },
+    data: {
+      success: true,
+      data: {
+        ...summary,
+        decision: { allowed: true, dimension: -1, retry_after_ms: 0 },
+        key: {
+          policy: summary.policy,
+          balance: [0, 0, -2, 0],
+          active: 1,
+          decision: { allowed: false, dimension: 2, retry_after_ms: 1000 },
+        },
+      },
+    },
   })
-  mount()
-  expect(await screen.findByRole('status')).toHaveTextContent(
-    'Some usage is estimated. Limits will be adjusted when final usage arrives.'
+  mount(7)
+  const key = await screen.findByRole('region', {
+    name: 'API key usage limits',
+  })
+  expect(within(key).getByText('-2')).toBeInTheDocument()
+  expect(within(key).getByRole('alert')).toHaveTextContent('Output tokens')
+})
+
+test('saving a clamped policy displays stored values and an explanation', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({
+    data: { success: true, data: summary },
+  })
+  vi.spyOn(api, 'put').mockResolvedValue({
+    data: {
+      success: true,
+      data: {
+        policy: { ...defaultLLMUsageRules, max_concurrent: 2 },
+        clamped_fields: ['max_concurrent'],
+      },
+    },
+  })
+  mount(7)
+  const input = await screen.findByRole('spinbutton', {
+    name: 'Maximum concurrent operations for this key',
+  })
+  fireEvent.change(input, { target: { value: '100' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(input).toHaveValue(2))
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'Reduced to the account limit'
   )
-  expect(
-    screen.queryByText('Usage is awaiting reconciliation.')
-  ).not.toBeInTheDocument()
 })

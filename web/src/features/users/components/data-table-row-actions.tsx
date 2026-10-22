@@ -65,6 +65,7 @@ import {
 } from '../constants'
 import { getUserActionMessage } from '../lib'
 import type { User, ManageUserAction } from '../types'
+import { UsageReconciliationDialog } from './dialogs/usage-reconciliation-dialog'
 import { UserBindingDialog } from './dialogs/user-binding-dialog'
 import { useUsers } from './users-provider'
 
@@ -85,6 +86,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       ADMIN_PERMISSION_RESOURCES.CUSTOMER_PRICING,
       ADMIN_PERMISSION_ACTIONS.READ
     )
+  const [usageOpen, setUsageOpen] = useState(false)
   const [pricingOpen, setPricingOpen] = useState(false)
   const { setOpen, setCurrentRow, triggerRefresh } = useUsers()
   const [resetPasskeyOpen, setResetPasskeyOpen] = useState(false)
@@ -241,6 +243,16 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </DropdownMenuShortcut>
         </DropdownMenuItem>
 
+        {(currentUser?.role ?? 0) >= USER_ROLE.ADMIN && (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault()
+              setUsageOpen(true)
+            }}
+          >
+            {t('Review incomplete usage')}
+          </DropdownMenuItem>
+        )}
         {canReadPricing && (
           <DropdownMenuItem
             onSelect={(event) => {
@@ -329,6 +341,13 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         />
       )}
 
+      {usageOpen && (
+        <UsageReconciliationDialog
+          open={usageOpen}
+          onOpenChange={setUsageOpen}
+          userId={user.id}
+        />
+      )}
       <UserBindingDialog
         open={bindingDialogOpen}
         onOpenChange={setBindingDialogOpen}

@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -31,6 +32,7 @@ import { api } from '@/lib/api'
 
 import {
   createLLMUsageRulesSchema,
+  llmUsageBucketFields,
   type LLMUsageRules,
 } from '../lib/usage-policy'
 import { LLMUsagePolicyFields } from './usage-policy-fields'
@@ -72,7 +74,12 @@ export function UsageLimitDialog(props: {
       )}
     >
       {query.isPending && <LoadingState />}
-      {query.isError && <ErrorState onRetry={() => void query.refetch()} />}
+      {query.isError && (
+        <ErrorState
+          title={t('Usage limits are temporarily unavailable')}
+          onRetry={() => void query.refetch()}
+        />
+      )}
       {query.isSuccess && (
         <div className='space-y-6'>
           <UsageSummary data={query.data} />
@@ -96,17 +103,23 @@ function KeyUsageForm(props: { keyId: number; initial: LLMUsageRules }) {
     resolver: zodResolver(createLLMUsageRulesSchema(t)),
     defaultValues: props.initial,
   })
+  useEffect(() => {
+    if (!form.formState.isDirty) form.reset(props.initial)
+  }, [props.initial, form])
+  const [adjusted, setAdjusted] = useState<string[]>([])
   const save = useMutation({
     mutationFn: async (policy: LLMUsageRules) => {
-      const response = await api.put<{ success: boolean; message?: string }>(
-        `/api/token/${props.keyId}/usage-limits`,
-        policy
-      )
+      const response = await api.put<{
+        success: boolean
+        message?: string
+        data: { policy: LLMUsageRules; clamped_fields: string[] }
+      }>(`/api/token/${props.keyId}/usage-limits`, policy)
       if (!response.data.success) throw new Error(response.data.message)
-      return policy
+      return response.data.data
     },
-    onSuccess: (policy) => {
-      form.reset(policy)
+    onSuccess: (result) => {
+      form.reset(result.policy)
+      setAdjusted(result.clamped_fields)
       void client.invalidateQueries({ queryKey: ['usage-limits'] })
       toast.success(t('Saved successfully'))
     },
@@ -118,6 +131,29 @@ function KeyUsageForm(props: { keyId: number; initial: LLMUsageRules }) {
         onSubmit={form.handleSubmit((policy) => save.mutate(policy))}
       >
         <LLMUsagePolicyFields form={form} disabled={save.isPending} />
+        {adjusted.length > 0 && (
+          <div role='status'>
+            {t(
+              'Reduced to the account limit. The form shows the saved values.'
+            )}
+            <ul>
+              {adjusted.map((field) => {
+                const [dimension, part] = field.split('.')
+                let label = t('Maximum concurrent operations for this key')
+                if (dimension === 'refill_period_seconds') {
+                  label = t('Refill period (seconds)')
+                }
+                const bucket = llmUsageBucketFields.find(
+                  (item) => item.name === dimension
+                )
+                if (bucket) {
+                  label = `${t(bucket.label)}: ${part === 'capacity' ? t('Burst capacity') : t('Refill per period')}`
+                }
+                return <li key={field}>{label}</li>
+              })}
+            </ul>
+          </div>
+        )}
         {save.isError && (
           <p role='alert'>{t('Failed to save usage limits. Please retry.')}</p>
         )}

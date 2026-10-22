@@ -29,34 +29,63 @@ import {
 
 import { llmUsageBucketFields, type LLMUsageRules } from '../lib/usage-policy'
 
-export type UsageSummaryData = {
+export type UsageBucketSummary = {
   policy: LLMUsageRules
   balance: number[]
   active: number
-  unresolved: number
-  estimated?: number
   decision: { allowed: boolean; dimension: number; retry_after_ms: number }
-  key?: Omit<UsageSummaryData, 'key' | 'unresolved'>
+}
+export type UsageSummaryData = UsageBucketSummary & {
+  unresolved: number
+  key?: UsageBucketSummary & { clamped_fields?: string[] }
 }
 
 export function UsageSummary(props: { data: UsageSummaryData }) {
-  const { t } = useTranslation()
   return (
-    <section aria-label={t('Account usage limits')} className='space-y-3'>
-      <h3 className='font-medium'>{t('Account usage limits')}</h3>
+    <div className='space-y-6'>
+      <UsageBucket
+        data={props.data}
+        scope='account'
+        unresolved={props.data.unresolved}
+      />
+      {props.data.key && <UsageBucket data={props.data.key} scope='key' />}
+    </div>
+  )
+}
+
+function UsageBucket(props: {
+  data: UsageBucketSummary
+  scope: 'account' | 'key'
+  unresolved?: number
+}) {
+  const { t } = useTranslation()
+  const title =
+    props.scope === 'account'
+      ? t('Account usage limits')
+      : t('API key usage limits')
+  const dimension = props.data.decision?.dimension ?? -1
+  const reason =
+    dimension === 4
+      ? t('Active operations')
+      : t(llmUsageBucketFields[dimension]?.label ?? 'Usage')
+  return (
+    <section aria-label={title} className='space-y-3'>
+      <h3 className='font-medium'>{title}</h3>
+      {props.data.decision && !props.data.decision.allowed && (
+        <p role='alert'>
+          {t('Limit reached: {{dimension}}', { dimension: reason })}
+        </p>
+      )}
       <p>
         {t('Active operations')}: {props.data.active} /{' '}
         {props.data.policy.enabled
           ? props.data.policy.max_concurrent
           : t('Unlimited')}
       </p>
-      {props.data.unresolved > 0 && (
-        <p role='status'>{t('Usage is awaiting reconciliation.')}</p>
-      )}
-      {(props.data.estimated ?? 0) > 0 && (
+      {(props.unresolved ?? 0) > 0 && (
         <p role='status'>
           {t(
-            'Some usage is estimated. Limits will be adjusted when final usage arrives.'
+            'Incomplete usage is awaiting review. This does not block new requests.'
           )}
         </p>
       )}
