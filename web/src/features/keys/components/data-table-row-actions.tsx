@@ -208,6 +208,14 @@ export function DataTableRowActions<TData>({
         modal={false}
       >
         <DropdownMenuItem
+          onClick={() => {
+            setCurrentRow(apiKey)
+            setOpen('usage-limits')
+          }}
+        >
+          {t('API key usage limits')}
+        </DropdownMenuItem>
+        <DropdownMenuItem
           disabled={isRealKeyLoading}
           onClick={async () => {
             const realKey = await resolveRealKey(apiKey.id)
