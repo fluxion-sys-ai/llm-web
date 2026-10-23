@@ -228,3 +228,43 @@ test('detail success rate uses the backend model summary rather than averaging g
   expect(screen.getByText('90.00%')).toBeVisible()
   expect(screen.queryByText('50.00%')).not.toBeInTheDocument()
 })
+
+test('Flash requests its own performance and never borrows the GLM summary', async () => {
+  const request = vi.spyOn(api, 'get').mockImplementation(async (url) => ({
+    data: {
+      success: true,
+      data:
+        url === '/api/perf-metrics/summary'
+          ? { models: [{ model_name: 'GLM-5.3', ...point, success_rate: 99 }] }
+          : {
+              model_name: 'GLM-5.3-Flash',
+              groups: [{ ...point, group: 'default', series: [point] }],
+            },
+    },
+  }))
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  clients.push(client)
+  render(
+    <QueryClientProvider client={client}>
+      <ModelDetailsPerformance
+        model={{
+          id: 53,
+          model_name: 'GLM-5.3-Flash',
+          enable_groups: ['default'],
+          quota_type: 0,
+          model_ratio: 1,
+          completion_ratio: 1,
+        }}
+      />
+    </QueryClientProvider>
+  )
+
+  await screen.findByText('Success rate (last 24h)')
+  expect(request).toHaveBeenCalledWith('/api/perf-metrics', {
+    params: { model: 'GLM-5.3-Flash', hours: 24 },
+  })
+  expect(screen.queryByText('99.00%')).not.toBeInTheDocument()
+  expect(screen.getByText('—')).toBeVisible()
+})

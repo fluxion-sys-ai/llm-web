@@ -84,7 +84,7 @@ afterEach(() => {
 test('real backend IDs keep their prices and receive display metadata when vendors are omitted', () => {
   const result = catalog([glm, deepseek])
 
-  expect(result.current.models).toHaveLength(3)
+  expect(result.current.models).toHaveLength(4)
   expect(result.current.models[0]).toMatchObject({
     ...glm,
     display_name: 'GLM 5.3',
@@ -213,6 +213,7 @@ test('video and image generation models stay out while backend-confirmed text mo
     'custom-chat-model',
     'Kimi-K3',
     'DeepSeek-V4.1-Flash',
+    'GLM-5.3-Flash',
   ])
 })
 
@@ -240,6 +241,7 @@ test('legacy OpenAI token pricing without modality metadata does not publish unv
     'GLM-5.3',
     'DeepSeek-V4.1-Flash',
     'Kimi-K3',
+    'GLM-5.3-Flash',
   ])
 })
 
@@ -249,10 +251,12 @@ test('a successful empty catalog announces the planned models with display speci
     'GLM-5.3',
     'Kimi-K3',
     'DeepSeek-V4.1-Flash',
+    'GLM-5.3-Flash',
   ])
   for (const model of result.current.models) {
     expect(model).toMatchObject({
-      availability: 'coming_soon',
+      availability:
+        model.model_name === 'GLM-5.3-Flash' ? 'unavailable' : 'coming_soon',
       pricing_status: 'pending',
       enable_groups: [],
     })
@@ -263,7 +267,11 @@ test('a successful empty catalog announces the planned models with display speci
     expect(model.output_modalities).toEqual(['text'])
     expect(model.capabilities).toBeUndefined()
     expect(model.billing_expr).toBeUndefined()
-    expect(model.supported_endpoint_types).toBeUndefined()
+    if (model.model_name === 'GLM-5.3-Flash') {
+      expect(model.supported_endpoint_types).toEqual(['openai'])
+    } else {
+      expect(model.supported_endpoint_types).toBeUndefined()
+    }
   }
   expect(result.current.vendors.map((vendor) => vendor.name)).toEqual([
     'Z.ai',
@@ -346,6 +354,7 @@ test('backend models replace announcements and deduplicate case-insensitive IDs 
     'deepseek-v4.1-flash',
     'kimi-k3',
     'GLM-5.3',
+    'GLM-5.3-Flash',
   ])
   expect(result.current.models[0]).toMatchObject(configured)
   expect(result.current.models[0].availability).toBeUndefined()
@@ -361,6 +370,59 @@ test('missing or unsuccessful backend responses never turn into announced catalo
   const result = catalog([], { success: false, vendors: [] })
   expect(result.current.models).toEqual([])
   expect(result.current.vendors).toEqual([])
+})
+
+test('Flash remains a separate unfeatured unavailable catalog entry when its backend row is absent', () => {
+  const result = buildLlmCatalog({ success: true, data: [glm] } as PricingData)
+  const flash = result.models.find(
+    (model) => model.model_name === 'GLM-5.3-Flash'
+  )
+
+  expect(flash).toMatchObject({
+    display_name: 'GLM 5.3 Flash',
+    featured: false,
+    availability: 'unavailable',
+    pricing_status: 'pending',
+    input_modalities: ['text', 'image', 'video'],
+    output_modalities: ['text'],
+    context_length: 1048576,
+    max_output_tokens: 131072,
+    enable_groups: [],
+  })
+  expect(
+    result.models.find((model) => model.model_name === 'GLM-5.3')
+  ).toMatchObject(glm)
+})
+
+test('a connected Flash retains independent backend prices and canonical identity beside GLM', () => {
+  const flash = {
+    ...glm,
+    id: 53,
+    model_name: 'GLM-5.3-Flash',
+    billing_mode: 'tiered_expr',
+    billing_expr: 'tier("standard", p * 0.12 + cr * 0.024 + c * 0.40)',
+  }
+  const result = buildLlmCatalog({
+    success: true,
+    data: [glm, flash],
+  } as PricingData)
+  const connected = result.models.find(
+    (model) => model.model_name === flash.model_name
+  )
+
+  expect(
+    result.models.filter(
+      (model) => model.model_name.toLowerCase() === 'glm-5.3-flash'
+    )
+  ).toHaveLength(1)
+  expect(connected).toMatchObject({
+    ...flash,
+    display_name: 'GLM 5.3 Flash',
+    featured: false,
+    official_price: { input: 0.15, cache: 0.03, output: 0.5 },
+  })
+  expect(connected?.availability).toBeUndefined()
+  expect(connected?.pricing_status).toBeUndefined()
 })
 
 test('lowercase preview IDs keep pending prices and supplied capabilities', () => {

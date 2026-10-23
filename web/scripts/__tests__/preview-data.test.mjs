@@ -124,6 +124,21 @@ async function startPreviewFixture(t, now) {
     })
 }
 
+test('Flash preview rejects text inference while its provider is unavailable for both stream modes', async (t) => {
+  const request = await startPreviewFixture(t, () => 1000000)
+  for (const stream of [false, true]) {
+    const result = await request('/pg/chat/completions', {
+      body: {
+        model: 'GLM-5.3-Flash',
+        messages: [{ role: 'user', content: 'Hello' }],
+        stream,
+      },
+    })
+    assert.equal(result.status, 503)
+    assert.equal((await result.json()).error.code, 'model_unavailable')
+  }
+})
+
 test('local HTTP preview requires login, preserves its cookie session, and revokes it at logout', async (t) => {
   const request = await startPreviewFixture(t, () => 1000000)
   const anonymous = await request('/api/user/auth/refresh')

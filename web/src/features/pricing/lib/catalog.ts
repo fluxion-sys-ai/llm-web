@@ -42,9 +42,11 @@ const displayMetadata = modelMetadata as Record<string, DisplayMetadata>
 // Website reference prices in USD per 1M tokens. Connected models use backend
 // sale prices; announced models retain the reference-price discount.
 // Z.ai reference checked 2026-10-14: https://docs.z.ai/guides/overview/pricing
+// GLM-5.3-Flash reference checked 2026-10-23 on the same Z.ai pricing page.
 // Moonshot reference checked 2026-10-19: https://platform.kimi.ai/docs/pricing/chat
 export const officialPrices: Record<string, PricingModel['official_price']> = {
   'glm-5.3': { input: 1.4, cache: 0.26, output: 4.4 },
+  'glm-5.3-flash': { input: 0.15, cache: 0.03, output: 0.5 },
   'deepseek-v4.1-flash': { input: 0.3, output: 1.2 },
   'kimi-k3': { input: 3, output: 15, cache: 0.3 },
   'qwen3.8-flash': { input: 0.15, output: 0.47 },
@@ -52,6 +54,9 @@ export const officialPrices: Record<string, PricingModel['official_price']> = {
 }
 
 export const featuredModelNames = ['GLM-5.3', 'Kimi-K3', 'DeepSeek-V4.1-Flash']
+
+// Catalog registration is independent of the three homepage recommendations.
+const catalogModelNames = [...featuredModelNames, 'GLM-5.3-Flash']
 
 const chatEndpoints = new Set<string>([
   ENDPOINT_TYPES.OPENAI,
@@ -124,7 +129,7 @@ export function buildLlmCatalog(data?: PricingData): {
       group_ratio: data.group_ratio,
     })
   }
-  for (const [index, modelName] of featuredModelNames.entries()) {
+  for (const [index, modelName] of catalogModelNames.entries()) {
     const normalizedName = modelName.toLowerCase()
     if (seenModelNames.has(normalizedName)) continue
     models.push({
@@ -133,9 +138,16 @@ export function buildLlmCatalog(data?: PricingData): {
       id: -(index + 1),
       key: modelName,
       model_name: modelName,
-      availability: 'coming_soon',
+      // A registered catalog model without a backend route is unavailable;
+      // its specifications and reference price do not grant inference access.
+      availability: featuredModelNames.includes(modelName)
+        ? 'coming_soon'
+        : 'unavailable',
       pricing_status: 'pending',
       enable_groups: [],
+      supported_endpoint_types: featuredModelNames.includes(modelName)
+        ? undefined
+        : ['openai'],
       // Required legacy fields are placeholders, never published prices.
       quota_type: 0,
       model_ratio: 0,

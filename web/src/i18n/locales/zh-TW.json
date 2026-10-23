@@ -155,6 +155,7 @@
     "A long-context reasoning model for complex coding and multi-step agent tasks.": "A long-context reasoning model for complex coding and multi-step agent tasks.",
     "A matching hash confirms the published file, not the safety of its code.": "校驗一致僅表示檔案與發布版本相符，不代表程式碼安全。",
     "A multimodal model for efficient coding, visual understanding, and long-running agent tasks.": "A multimodal model for efficient coding, visual understanding, and long-running agent tasks.",
+    "A multimodal model with optional reasoning for text, image, and video understanding.": "支援文字、圖像和影片理解的多模態模型，可依需要關閉推理。",
     "A multimodal reasoning model for coding assistance, document analysis, and visual tasks.": "A multimodal reasoning model for coding assistance, document analysis, and visual tasks.",
     "A multimodal reasoning model for large codebases, knowledge work, and extended tool use.": "A multimodal reasoning model for large codebases, knowledge work, and extended tool use.",
     "A multiplier of 0.7 charges 70% of the current normal fee. Other models keep their normal rates.": "倍率 0.7 表示按目前正常費用的 70% 計費。其他模型維持正常費率。",

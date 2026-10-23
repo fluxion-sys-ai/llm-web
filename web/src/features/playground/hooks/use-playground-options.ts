@@ -87,7 +87,7 @@ export function usePlaygroundOptions({
     if (isLoadingModels || optionError || !modelsData) return []
     const catalogIds = new Set(
       catalog.models
-        .filter((model) => model.availability !== 'coming_soon')
+        .filter((model) => model.availability === undefined)
         .map((model) => model.model_name)
     )
     return modelsData.filter((model) => catalogIds.has(model.value))

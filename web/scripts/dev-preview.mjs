@@ -33,6 +33,17 @@ export function createPreviewServer(options = {}) {
         response.writeHead(400).end()
         return
       }
+      if (body.model === 'GLM-5.3-Flash') {
+        response.writeHead(503, { 'Content-Type': 'application/json' }).end(
+          JSON.stringify({
+            error: {
+              code: 'model_unavailable',
+              message: 'Model service is temporarily unavailable.',
+            },
+          })
+        )
+        return
+      }
       const answer = previewAnswer()
       if (!body.stream) {
         response.setHeader('Content-Type', 'application/json')

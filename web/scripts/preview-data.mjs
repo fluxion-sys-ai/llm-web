@@ -167,6 +167,10 @@ export function previewResponse(
       return success({ quota: 625000, token: 28000, rpm: 0, tpm: 0, count: 42 })
     case '/api/perf-metrics/summary':
       return success({ models: [], window_hours: 24 })
+    case '/api/model-service-status':
+      return success({
+        models: [{ model_name: 'GLM-5.3-Flash', status: 'unavailable' }],
+      })
     case '/api/perf-metrics':
       return success({ model_name: '', groups: [] })
     case '/api/user/sessions':

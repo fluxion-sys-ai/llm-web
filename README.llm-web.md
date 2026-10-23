@@ -46,6 +46,7 @@ bun run dev:preview
 
 - **文案**：组件使用 `t('English text')`；翻译在 `web/src/i18n/locales/`，新增或更改文案时同步维护七种语言。
 - **模型**：`catalog.ts` 提供展示文案和 Coming soon 信息；已接入模型的后端字段优先。添加展示条目不会开通推理，真实可用性和价格由后端控制。`web/scripts/preview-catalog.mjs` 仅供本地模拟预览。
+- **GLM 5.3 Flash**：公开模型 ID 为 `GLM-5.3-Flash`，独立出现在模型目录，不加入首页三模型推荐。未返回后端定价行时仍保留卡片并显示暂不可用及待配置价格；注册后的价格来自后端独立计费表达式，服务状态来自 `/api/model-service-status`。文图视频及可选推理属于模型规格声明，不代表 provider 已通过验证；Playground 保持现有文本体验。本地预览模拟独立八折价格和服务不可用，绝不连接真实 provider。
 - **GPU 与插图**：首页插图是示意图，不代表真实架构或可用性；GPU 页未连接库存和资源部署接口。
 - **Blog**：目前是 Coming soon 页面，没有文章管理后台；新增文章需要补充页面内容和路由。
 - **公共页面**：复用 `PublicLayout` 和 `Footer`，保持 header/footer 一致。政策只修改正文，不粘贴独立 HTML 页面的整套导航与样式。

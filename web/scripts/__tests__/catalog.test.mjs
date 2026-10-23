@@ -32,6 +32,7 @@ test('pricing features the requested LLMs first and resolves every vendor', () =
       'DeepSeek V4.1 Flash',
       'Qwen3.8 Flash',
       'Qwen3.8 27B',
+      'GLM 5.3 Flash',
     ]
   )
   assert.deepEqual(
@@ -48,7 +49,9 @@ test('pricing features the requested LLMs first and resolves every vendor', () =
 test('catalog metadata cites its reference without publishing Fluxion prices', () => {
   const catalog = previewResponse('GET', '/api/pricing')
 
-  for (const model of catalog.data) {
+  for (const model of catalog.data.filter(
+    (model) => model.model_name !== 'GLM-5.3-Flash'
+  )) {
     assert.equal(model.pricing_status, 'pending')
     assert.equal(model.model_ratio, 0)
     assert.equal(model.completion_ratio, 0)
@@ -67,6 +70,28 @@ test('catalog metadata cites its reference without publishing Fluxion prices', (
   assert.deepEqual(catalog.data[0].input_modalities, ['text'])
   assert.deepEqual(catalog.data[2].input_modalities, ['text', 'image'])
   assert.deepEqual(catalog.data[1].input_modalities, ['text', 'image', 'video'])
+})
+
+test('Flash preview is unfeatured and independently configured while its service is down', () => {
+  const flash = previewResponse('GET', '/api/pricing').data.find(
+    (model) => model.model_name === 'GLM-5.3-Flash'
+  )
+
+  assert.equal(flash.featured, false)
+  assert.equal(flash.pricing_status, undefined)
+  assert.equal(flash.billing_mode, 'tiered_expr')
+  assert.equal(
+    flash.billing_expr,
+    'tier("standard", p * 0.12 + cr * 0.024 + c * 0.40)'
+  )
+  assert.deepEqual(flash.input_modalities, ['text', 'image', 'video'])
+  assert.deepEqual(flash.output_modalities, ['text'])
+  assert.equal(flash.catalog_source.name, 'Z.ai')
+  assert.equal(flash.catalog_source.checked_at, '2026-10-23')
+  assert.deepEqual(
+    previewResponse('GET', '/api/model-service-status').data.models,
+    [{ model_name: 'GLM-5.3-Flash', status: 'unavailable' }]
+  )
 })
 
 test('playground and sample usage use the complete catalog without measured performance', () => {

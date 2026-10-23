@@ -99,11 +99,25 @@ export const previewCatalog = [
       checked_at: '2026-10-08',
     },
   },
+  {
+    ...modelMetadata['glm-5.3-flash'],
+    model_name: 'GLM-5.3-Flash',
+    vendor_id: 1,
+    capabilities: ['reasoning', 'vision'],
+    catalog_source: {
+      name: 'Z.ai',
+      url: 'https://docs.z.ai/guides/overview/pricing',
+      checked_at: '2026-10-23',
+    },
+    // Local configured-price scenario, not a live provider or qualification.
+    billing_mode: 'tiered_expr',
+    billing_expr: 'tier("standard", p * 0.12 + cr * 0.024 + c * 0.40)',
+  },
 ].map((model, index) => ({
   ...model,
   id: index + 1,
   // Required legacy fields are placeholders, not free or published prices.
-  pricing_status: 'pending',
+  pricing_status: model.billing_expr ? undefined : 'pending',
   quota_type: 0,
   model_ratio: 0,
   completion_ratio: 0,
