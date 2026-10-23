@@ -20,14 +20,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, assert, expect, test, vi } from 'vitest'
 
 import { api } from '@/lib/api'
 
 import { ModelDetailsContent } from '../components/model-details'
 import { OFFICIAL_PRICE_DISCOUNT_PERCENT } from '../constants'
-import { officialPrices } from '../lib/catalog'
-import type { PricingModel, TokenUnit } from '../types'
+import { buildLlmCatalog, officialPrices } from '../lib/catalog'
+import type { PricingData, PricingModel, TokenUnit } from '../types'
 
 vi.mock('@visactor/react-vchart', () => ({ VChart: () => null }))
 
@@ -176,7 +176,7 @@ test('coming-soon API details explain unavailability instead of offering callabl
   expect(panel).not.toHaveTextContent('/v1/chat/completions')
 })
 
-test('pending pricing cannot show calculated amounts or group prices, and makes no performance request', async () => {
+test('pending pricing keeps unknown prices separate from service status and performance requests', async () => {
   const request = vi
     .spyOn(api, 'get')
     .mockResolvedValue({ data: { data: { groups: [] } } })
@@ -195,8 +195,42 @@ test('pending pricing cannot show calculated amounts or group prices, and makes 
   expect(screen.getByText('125K')).toBeVisible()
   expect(screen.getByText('7.8K')).toBeVisible()
   await user.click(screen.getByRole('tab', { name: 'Performance' }))
-  expect(screen.getByText('No performance data yet')).toBeVisible()
-  expect(request).not.toHaveBeenCalled()
+  expect(
+    await screen.findByText(
+      'Performance data is not yet available for this model.'
+    )
+  ).toBeVisible()
+  expect(request).toHaveBeenCalledWith('/api/model-service-status')
+  expect(request).toHaveBeenCalledWith('/api/perf-metrics', {
+    params: { model: catalogModel.model_name, hours: 24 },
+  })
+})
+
+test('unregistered Flash details show unavailability, pending prices, and independent API examples', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({
+    data: { success: true, data: { models: [] } },
+  })
+  const flash = buildLlmCatalog({
+    success: true,
+    data: [],
+  } as unknown as PricingData).models.find(
+    (model) => model.model_name === 'GLM-5.3-Flash'
+  )
+  assert(flash)
+  const user = userEvent.setup()
+  renderDetails(flash)
+
+  expect(screen.getByRole('heading', { name: 'GLM 5.3 Flash' })).toBeVisible()
+  expect(
+    screen.getByText('Service status: Temporarily unavailable')
+  ).toBeVisible()
+  const pricing = within(screen.getByRole('region', { name: 'Pricing' }))
+  expect(pricing.getByText('To be configured')).toBeVisible()
+  expect(pricing.queryByText(/\$|20% off/)).not.toBeInTheDocument()
+  await user.click(screen.getByRole('tab', { name: 'API' }))
+  const panel = screen.getByRole('tabpanel', { name: 'API' })
+  expect(panel).toHaveTextContent('GLM-5.3-Flash')
+  expect(panel).toHaveTextContent('/v1/chat/completions')
 })
 
 test('configured models retain their real price display and raw-name fallback', () => {

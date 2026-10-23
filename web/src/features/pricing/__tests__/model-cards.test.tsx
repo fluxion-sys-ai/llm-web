@@ -80,6 +80,25 @@ afterEach(() => {
 })
 
 describe('model cards', () => {
+  it('shows a known down service while prices are pending without implying free usage', () => {
+    render(
+      <ModelCard
+        model={pricingModel({
+          model_name: 'GLM-5.3-Flash',
+          pricing_status: 'pending',
+        })}
+        serviceStatus='unavailable'
+        onClick={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('Temporarily unavailable')).toBeVisible()
+    const pricing = within(screen.getByRole('group', { name: 'Pricing' }))
+    expect(pricing.getAllByText('To be configured')).toHaveLength(2)
+    expect(pricing.queryByText(/[$¥€]/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Details' })).toBeEnabled()
+  })
+
   it('keeps an unavailable model without known prices browsable without an availability badge', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()

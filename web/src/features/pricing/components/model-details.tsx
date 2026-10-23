@@ -931,8 +931,11 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
     simpleTaskPricing ||
     taskTiers.length === 0
 
-  const serviceStatuses = useModelServiceStatuses(!pricingPending)
-  const serviceStatus = serviceStatuses.get(props.model.model_name)
+  const serviceStatuses = useModelServiceStatuses(!comingSoon)
+  const serviceStatus =
+    props.model.availability === 'unavailable'
+      ? 'unavailable'
+      : serviceStatuses.get(props.model.model_name)
   let serviceLabel = t('No recent data')
   if (serviceStatus === 'available') serviceLabel = t('Available')
   if (serviceStatus === 'unavailable') {
@@ -942,7 +945,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
   return (
     <div className='@container/details space-y-6'>
       <ModelHeader model={props.model} />
-      {!pricingPending && (
+      {!comingSoon && (
         <Alert>
           <HeartPulse aria-hidden />
           <AlertDescription className='flex flex-col gap-1'>
@@ -1046,7 +1049,7 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
         </TabsContent>
 
         <TabsContent value='performance' className='outline-none'>
-          {pricingPending ? (
+          {comingSoon ? (
             <EmptyState
               icon={HeartPulse}
               title={t('No performance data yet')}

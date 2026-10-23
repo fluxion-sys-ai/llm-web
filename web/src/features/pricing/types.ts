@@ -59,8 +59,8 @@ export type PricingModel = {
   customer_price?: CustomerPriceAdjustment
   display_name?: string
   featured?: boolean
-  /** Announced models remain visible but must not be offered for API calls. */
-  availability?: 'coming_soon'
+  /** Catalog entries without a backend route remain visible, never callable. */
+  availability?: 'coming_soon' | 'unavailable'
   /** Unpublished Fluxion prices must never be rendered as zero-cost usage. */
   pricing_status?: 'pending'
   /** Official USD per 1M tokens, used for catalog price comparisons. */

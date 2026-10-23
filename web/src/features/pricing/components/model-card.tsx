@@ -68,6 +68,10 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   const { t, i18n } = useTranslation()
   const comingSoon = props.model.availability === 'coming_soon'
   const pricingPending = comingSoon || props.model.pricing_status === 'pending'
+  const serviceStatus =
+    props.model.availability === 'unavailable'
+      ? 'unavailable'
+      : props.serviceStatus
   const tokenUnit = props.tokenUnit ?? DEFAULT_TOKEN_UNIT
   const priceRate = props.priceRate ?? 1
   const usdExchangeRate = props.usdExchangeRate ?? 1
@@ -350,7 +354,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         </div>
       </CardContent>
       <CardFooter className='mt-auto border-0 bg-transparent pt-0'>
-        {pricingPending ? (
+        {comingSoon || (pricingPending && !serviceStatus) ? (
           <div className='border-border flex w-full items-center justify-between gap-2 border-t pt-2'>
             <Button
               variant='ghost'
@@ -365,7 +369,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
         ) : (
           <ModelPerfBadge
             perf={props.perf}
-            serviceStatus={props.serviceStatus}
+            serviceStatus={serviceStatus}
             className='border-border border-t pt-2'
           >
             <Button variant='ghost' size='sm' onClick={props.onClick}>

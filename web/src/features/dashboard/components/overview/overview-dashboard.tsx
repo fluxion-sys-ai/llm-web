@@ -401,7 +401,7 @@ export function OverviewDashboard() {
     if (modelsQuery.error || llmCatalog.error) return undefined
     const catalogIds = new Set(
       llmCatalog.models
-        .filter((model) => model.availability !== 'coming_soon')
+        .filter((model) => model.availability === undefined)
         .map((model) => model.model_name)
     )
     return modelsQuery.data?.find((model) => catalogIds.has(model))

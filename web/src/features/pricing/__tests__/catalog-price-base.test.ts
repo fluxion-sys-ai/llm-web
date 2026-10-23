@@ -20,9 +20,68 @@ import { assert, expect, it } from 'vitest'
 
 import type { CustomerBenefits } from '@/features/customer-pricing/types'
 
-import { getCatalogTokenPrices } from '../lib/catalog-price'
+import { officialPrices } from '../lib/catalog'
+import {
+  getCatalogTokenPrices,
+  getPublicCatalogTokenPrices,
+  hasCatalogDiscount,
+} from '../lib/catalog-price'
 import { resolveCustomerPrice } from '../lib/customer-price'
 import type { PricingModel } from '../types'
+
+const flash: PricingModel = {
+  id: 53,
+  model_name: 'GLM-5.3-Flash',
+  quota_type: 0,
+  model_ratio: 99,
+  completion_ratio: 99,
+  cache_ratio: 99,
+  billing_mode: 'tiered_expr',
+  billing_expr: 'tier("standard", p * 0.12 + cr * 0.024 + c * 0.40)',
+  enable_groups: ['default'],
+  group_ratio: { default: 1 },
+  official_price: officialPrices['glm-5.3-flash'],
+}
+
+it('uses the independent Flash billing base and applies each customer multiplier once', () => {
+  expect(getPublicCatalogTokenPrices(flash)).toEqual({
+    input: 0.12,
+    cache: 0.024,
+    output: 0.4,
+  })
+  const customerPrices = getCatalogTokenPrices({
+    ...flash,
+    customer_price: {
+      modelMultiplier: 0.7,
+      promotionMultiplier: 0.9,
+      multiplier: 0.63,
+    },
+  })
+  expect(customerPrices?.input).toBeCloseTo(0.0756)
+  expect(customerPrices?.cache).toBeCloseTo(0.01512)
+  expect(customerPrices?.output).toBeCloseTo(0.252)
+})
+
+it('preserves explicit Flash backend pricing overrides without claiming the reference discount', () => {
+  const override = {
+    ...flash,
+    billing_expr: 'tier("standard", p * 0.2 + cr * 0.01 + c * 0.8)',
+  }
+  const prices = getPublicCatalogTokenPrices(override)
+  assert(prices)
+  expect(prices).toEqual({ input: 0.2, cache: 0.01, output: 0.8 })
+  expect(hasCatalogDiscount(override, prices)).toBe(false)
+})
+
+it('does not publish zero or reference-discount prices for an unregistered Flash entry', () => {
+  expect(
+    getCatalogTokenPrices({
+      ...flash,
+      availability: 'unavailable',
+      pricing_status: 'pending',
+    })
+  ).toBeNull()
+})
 
 it('keeps the same catalog base when a promotion activates and expires despite different backend rates', () => {
   const model: PricingModel = {

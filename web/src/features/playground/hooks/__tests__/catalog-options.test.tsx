@@ -178,6 +178,35 @@ test('switching group falls back only to an allowed LLM and clears a group with 
   expect(result.current.canSubmit).toBe(false)
 })
 
+test('Flash is independently selectable beside GLM and preserves its complete request model ID', async () => {
+  client.setQueryData(['pricing'], {
+    ...pricing,
+    data: [
+      ...pricing.data,
+      { ...pricing.data[0], id: 53, model_name: 'GLM-5.3-Flash' },
+    ],
+  })
+  modelsByGroup.default.push('GLM-5.3-Flash')
+  const { result } = renderOptions('GLM-5.3-Flash')
+  await waitFor(() => expect(result.current.canSubmit).toBe(true))
+
+  expect(result.current.models.map((model) => model.value)).toContain('GLM-5.3')
+  expect(result.current.models.map((model) => model.value)).toContain(
+    'GLM-5.3-Flash'
+  )
+  expect(result.current.config.model).toBe('GLM-5.3-Flash')
+})
+
+test('a visible Flash fallback without a backend route cannot grant Playground access', async () => {
+  modelsByGroup.default = ['GLM-5.3-Flash']
+  const { result } = renderOptions('GLM-5.3-Flash')
+  await waitFor(() => expect(result.current.isLoadingModels).toBe(false))
+
+  expect(result.current.models).toEqual([])
+  expect(result.current.config.model).toBe('')
+  expect(result.current.canSubmit).toBe(false)
+})
+
 test('pending catalog loading hides unverified options and prevents submission until it resolves', async () => {
   client.removeQueries({ queryKey: ['pricing'] })
   let resolvePricing!: (response: { data: PricingData }) => void
