@@ -210,6 +210,42 @@ describe('overview setup guide', () => {
     ).toBeDisabled()
   })
 
+  it('does not reveal a key or offer a runnable request for an unavailable Flash catalog fallback', async () => {
+    userModels = ['GLM-5.3-Flash']
+    const revealKey = vi.spyOn(api, 'post').mockResolvedValue({
+      data: { success: true, data: { key: 'fixture-secret' } },
+    })
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    await waitFor(() =>
+      expect(screen.getAllByText('No available models')[0]).toBeVisible()
+    )
+    expect(screen.queryByText(/"model":/)).not.toBeInTheDocument()
+    const copyButton = screen.getByRole('button', {
+      name: 'Copy ready-to-run curl',
+    })
+    expect(copyButton).toBeDisabled()
+    await userEvent.setup().click(copyButton)
+    expect(revealKey).not.toHaveBeenCalled()
+  })
+
+  it('skips an unavailable Flash fallback and offers an authorized live model instead', async () => {
+    userModels = ['GLM-5.3-Flash', 'DeepSeek-V4.1-Flash']
+    window.localStorage.setItem(storageKey, 'expanded')
+    await renderOverview()
+
+    await waitFor(() =>
+      expect(screen.getByText(/"model":"DeepSeek-V4\.1-Flash"/)).toBeVisible()
+    )
+    expect(
+      screen.queryByText(/"model":"GLM-5\.3-Flash"/)
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Copy ready-to-run curl' })
+    ).toBeEnabled()
+  })
+
   it('does not invent a fallback model when the LLM catalog fails to load', async () => {
     catalogLookupError = new Error('Catalog unavailable')
     window.localStorage.setItem(storageKey, 'expanded')

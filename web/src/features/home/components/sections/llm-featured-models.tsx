@@ -56,14 +56,13 @@ export function LlmFeaturedModels() {
     }
     return map
   }, [perfQuery.data])
-  const featuredModels = [...models]
+  const featuredModels = models
+    .filter((model) => featuredOrder.has(model.model_name.toLowerCase()))
     .sort(
       (a, b) =>
-        Number(Boolean(b.featured)) - Number(Boolean(a.featured)) ||
         (featuredOrder.get(a.model_name.toLowerCase()) ?? featuredOrder.size) -
-          (featuredOrder.get(b.model_name.toLowerCase()) ?? featuredOrder.size)
+        (featuredOrder.get(b.model_name.toLowerCase()) ?? featuredOrder.size)
     )
-    .slice(0, 3)
 
   return (
     <section
@@ -108,7 +107,7 @@ export function LlmFeaturedModels() {
             <EmptyState title={t('No models available')} />
           )}
           {!isLoading && !error && featuredModels.length > 0 && (
-            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+            <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
               {featuredModels.map((model) => (
                 <ModelCard
                   key={model.model_name}

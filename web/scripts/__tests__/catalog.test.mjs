@@ -39,7 +39,7 @@ test('pricing features the requested LLMs first and resolves every vendor', () =
     catalog.data
       .filter((model) => model.featured)
       .map((model) => model.model_name),
-    ['glm-5.3', 'kimi-k3', 'deepseek-v4.1-flash']
+    ['glm-5.3', 'kimi-k3', 'deepseek-v4.1-flash', 'GLM-5.3-Flash']
   )
   for (const model of catalog.data) {
     assert.ok(catalog.vendors.some((vendor) => vendor.id === model.vendor_id))
@@ -72,12 +72,12 @@ test('catalog metadata cites its reference without publishing Fluxion prices', (
   assert.deepEqual(catalog.data[1].input_modalities, ['text', 'image', 'video'])
 })
 
-test('Flash preview is unfeatured and independently configured while its service is down', () => {
+test('Flash preview is featured and independently configured while its service is down', () => {
   const flash = previewResponse('GET', '/api/pricing').data.find(
     (model) => model.model_name === 'GLM-5.3-Flash'
   )
 
-  assert.equal(flash.featured, false)
+  assert.equal(flash.featured, true)
   assert.equal(flash.pricing_status, undefined)
   assert.equal(flash.billing_mode, 'tiered_expr')
   assert.equal(

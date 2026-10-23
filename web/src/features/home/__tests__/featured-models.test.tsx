@@ -25,7 +25,14 @@ import {
   Outlet,
   RouterProvider,
 } from '@tanstack/react-router'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import type { PricingModel } from '@/features/pricing/types'
@@ -66,8 +73,13 @@ async function renderFeaturedModels(models: PricingModel[]) {
     path: '/',
     component: LlmFeaturedModels,
   })
+  const modelRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/pricing/$modelId',
+    component: () => null,
+  })
   const router = createRouter({
-    routeTree: rootRoute.addChildren([homeRoute]),
+    routeTree: rootRoute.addChildren([homeRoute, modelRoute]),
     history: createMemoryHistory({ initialEntries: ['/'] }),
   })
   await router.load()
@@ -76,6 +88,7 @@ async function renderFeaturedModels(models: PricingModel[]) {
       <RouterProvider router={router} />
     </QueryClientProvider>
   )
+  return router
 }
 
 test('featured cards show matching live performance and keep missing models neutral', async () => {
@@ -128,7 +141,7 @@ test('featured cards show matching live performance and keep missing models neut
   expect(glm.getByText('83.7%')).toBeVisible()
   expect(glm.getByText('739ms')).toBeVisible()
   expect(glm.getByText('95.8t/s')).toBeVisible()
-  expect(otherModels).toHaveLength(1)
+  expect(otherModels).toHaveLength(2)
   for (const model of otherModels) {
     expect(model.getByText('—')).toBeVisible()
     expect(model.getByText('—s')).toBeVisible()
@@ -137,6 +150,33 @@ test('featured cards show matching live performance and keep missing models neut
   expect(api.get).toHaveBeenCalledWith('/api/perf-metrics/summary', {
     params: { hours: 24 },
   })
+})
+
+test('the homepage includes a separate unavailable Flash card when its backend row is absent', async () => {
+  await renderFeaturedModels([])
+
+  const section = within(
+    screen.getByRole('region', { name: 'Featured models' })
+  )
+  expect(
+    section
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+  ).toEqual(['GLM 5.3', 'GLM 5.3 Flash', 'Kimi K3', 'DeepSeek V4.1 Flash'])
+  expect(section.getByText(/Temporarily unavailable/)).toBeVisible()
+  expect(section.getByText('To be configured')).toBeVisible()
+  expect(section.getAllByRole('button', { name: 'Details' })).toHaveLength(4)
+})
+
+test('the homepage Flash details action keeps its independent canonical model ID', async () => {
+  const user = userEvent.setup()
+  const router = await renderFeaturedModels([])
+
+  await user.click(screen.getAllByRole('button', { name: 'Details' })[1])
+
+  await waitFor(() =>
+    expect(router.state.location.pathname).toBe('/pricing/GLM-5.3-Flash')
+  )
 })
 
 test('a video-only backend still shows the complete featured cards from the reference', async () => {
@@ -158,11 +198,11 @@ test('a video-only backend still shows the complete featured cards from the refe
     section
       .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.textContent)
-  ).toEqual(['GLM 5.3', 'Kimi K3', 'DeepSeek V4.1 Flash'])
+  ).toEqual(['GLM 5.3', 'GLM 5.3 Flash', 'Kimi K3', 'DeepSeek V4.1 Flash'])
   const specs = section
     .getAllByLabelText('Model specifications')
     .map((element) => within(element))
-  expect(specs).toHaveLength(3)
+  expect(specs).toHaveLength(4)
   for (const spec of specs) {
     for (const label of [
       'Context window',
@@ -176,31 +216,62 @@ test('a video-only backend still shows the complete featured cards from the refe
   }
   expect(specs[0].getByText('128K')).toBeVisible()
   expect(specs[1].getByText('Text · Image · Video')).toBeVisible()
-  expect(specs[2].getByText('Text · Image')).toBeVisible()
-  expect(section.getAllByRole('group', { name: 'Tags' })).toHaveLength(3)
+  expect(specs[2].getByText('Text · Image · Video')).toBeVisible()
+  expect(specs[3].getByText('Text · Image')).toBeVisible()
+  expect(section.getAllByRole('group', { name: 'Tags' })).toHaveLength(4)
   expect(section.getAllByText('+1')).toHaveLength(2)
   expect(section.getAllByText('USD / 1M tokens')).toHaveLength(3)
-  expect(section.getAllByRole('button', { name: 'Details' })).toHaveLength(3)
+  expect(section.getAllByRole('button', { name: 'Details' })).toHaveLength(4)
   expect(section.queryByText('Coming soon')).not.toBeInTheDocument()
 })
 
 test('backend response order does not reorder the featured cards', async () => {
   await renderFeaturedModels(
-    ['deepseek-v4.1-flash', 'GLM-5.3', 'Kimi-K3'].map((model_name, id) => ({
-      id,
-      model_name,
-      quota_type: 0,
-      model_ratio: 1,
-      completion_ratio: 1,
-      enable_groups: ['default'],
-      supported_endpoint_types: ['openai'],
-    }))
+    ['GLM-5.3-Flash', 'deepseek-v4.1-flash', 'GLM-5.3', 'Kimi-K3'].map(
+      (model_name, id) => ({
+        id,
+        model_name,
+        quota_type: 0,
+        model_ratio: 1,
+        completion_ratio: 1,
+        enable_groups: ['default'],
+        supported_endpoint_types: ['openai'],
+      })
+    )
   )
   expect(
     screen
       .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.textContent)
-  ).toEqual(['GLM 5.3', 'Kimi K3', 'DeepSeek V4.1 Flash'])
+  ).toEqual(['GLM 5.3', 'GLM 5.3 Flash', 'Kimi K3', 'DeepSeek V4.1 Flash'])
+})
+
+test('backend featured flags cannot displace Flash from the requested homepage order', async () => {
+  await renderFeaturedModels(
+    [
+      'other-featured-model',
+      'GLM-5.3-Flash',
+      'Kimi-K3',
+      'GLM-5.3',
+      'DeepSeek-V4.1-Flash',
+    ].map((model_name, id) => ({
+      id,
+      model_name,
+      featured: model_name !== 'GLM-5.3-Flash',
+      output_modalities: ['text'],
+      supported_endpoint_types: ['openai'],
+      quota_type: 0,
+      model_ratio: 1,
+      completion_ratio: 1,
+      enable_groups: ['default'],
+    }))
+  )
+
+  expect(
+    screen
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+  ).toEqual(['GLM 5.3', 'GLM 5.3 Flash', 'Kimi K3', 'DeepSeek V4.1 Flash'])
 })
 
 test.each([false, true])(
@@ -208,7 +279,7 @@ test.each([false, true])(
   async (connected) => {
     await renderFeaturedModels(
       connected
-        ? ['GLM-5.3', 'Kimi-K3', 'deepseek-v4.1-flash'].map(
+        ? ['GLM-5.3', 'Kimi-K3', 'deepseek-v4.1-flash', 'GLM-5.3-Flash'].map(
             (model_name, id) => ({
               id,
               model_name,
@@ -228,6 +299,7 @@ test.each([false, true])(
     const prices = screen.getAllByRole('group', { name: 'Pricing' })
     const expected = [
       ['1.12', '3.52', '1.40', '4.40'],
+      [],
       ['2.40', '12.00', '3.00', '15.00'],
       ['0.24', '0.96', '0.30', '1.20'],
     ]
@@ -236,6 +308,11 @@ test.each([false, true])(
       if (connected) {
         expect(pricing.getByText('7.00')).toBeVisible()
         expect(pricing.getByText('21.00')).toBeVisible()
+        expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
+        return
+      }
+      if (index === 1) {
+        expect(pricing.getByText('To be configured')).toBeVisible()
         expect(pricing.queryByText('20% off')).not.toBeInTheDocument()
         return
       }

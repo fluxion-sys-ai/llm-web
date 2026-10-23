@@ -372,7 +372,7 @@ test('missing or unsuccessful backend responses never turn into announced catalo
   expect(result.current.vendors).toEqual([])
 })
 
-test('Flash remains a separate unfeatured unavailable catalog entry when its backend row is absent', () => {
+test('featured Flash remains a separate unavailable catalog entry when its backend row is absent', () => {
   const result = buildLlmCatalog({ success: true, data: [glm] } as PricingData)
   const flash = result.models.find(
     (model) => model.model_name === 'GLM-5.3-Flash'
@@ -380,7 +380,7 @@ test('Flash remains a separate unfeatured unavailable catalog entry when its bac
 
   expect(flash).toMatchObject({
     display_name: 'GLM 5.3 Flash',
-    featured: false,
+    featured: true,
     availability: 'unavailable',
     pricing_status: 'pending',
     input_modalities: ['text', 'image', 'video'],
@@ -418,7 +418,7 @@ test('a connected Flash retains independent backend prices and canonical identit
   expect(connected).toMatchObject({
     ...flash,
     display_name: 'GLM 5.3 Flash',
-    featured: false,
+    featured: true,
     official_price: { input: 0.15, cache: 0.03, output: 0.5 },
   })
   expect(connected?.availability).toBeUndefined()

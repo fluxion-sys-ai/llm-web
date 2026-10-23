@@ -53,10 +53,19 @@ export const officialPrices: Record<string, PricingModel['official_price']> = {
   'qwen3.8-27b': { input: 0.425, output: 2.55 },
 }
 
-export const featuredModelNames = ['GLM-5.3', 'Kimi-K3', 'DeepSeek-V4.1-Flash']
+const catalogModelNames = [
+  'GLM-5.3',
+  'Kimi-K3',
+  'DeepSeek-V4.1-Flash',
+  'GLM-5.3-Flash',
+]
 
-// Catalog registration is independent of the three homepage recommendations.
-const catalogModelNames = [...featuredModelNames, 'GLM-5.3-Flash']
+export const featuredModelNames = [
+  'GLM-5.3',
+  'GLM-5.3-Flash',
+  'Kimi-K3',
+  'DeepSeek-V4.1-Flash',
+]
 
 const chatEndpoints = new Set<string>([
   ENDPOINT_TYPES.OPENAI,
@@ -132,6 +141,7 @@ export function buildLlmCatalog(data?: PricingData): {
   for (const [index, modelName] of catalogModelNames.entries()) {
     const normalizedName = modelName.toLowerCase()
     if (seenModelNames.has(normalizedName)) continue
+    const isFlash = modelName === 'GLM-5.3-Flash'
     models.push({
       ...displayMetadata[normalizedName],
       official_price: officialPrices[normalizedName],
@@ -140,14 +150,10 @@ export function buildLlmCatalog(data?: PricingData): {
       model_name: modelName,
       // A registered catalog model without a backend route is unavailable;
       // its specifications and reference price do not grant inference access.
-      availability: featuredModelNames.includes(modelName)
-        ? 'coming_soon'
-        : 'unavailable',
+      availability: isFlash ? 'unavailable' : 'coming_soon',
       pricing_status: 'pending',
       enable_groups: [],
-      supported_endpoint_types: featuredModelNames.includes(modelName)
-        ? undefined
-        : ['openai'],
+      supported_endpoint_types: isFlash ? ['openai'] : undefined,
       // Required legacy fields are placeholders, never published prices.
       quota_type: 0,
       model_ratio: 0,
